@@ -1,0 +1,1 @@
+BUG: More instances of is_plugin_active() being called
