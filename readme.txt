@@ -49,7 +49,7 @@ The MailChimp list you wish to add any member to (segmented by Interests and/or 
 
 = I found a bug in the plugin. =
 
-Please post it in the issues section of GitHub and we'll fix it as soon as we can. Thanks for helping. https://github.com/eighty20results.com/e20r-mailchimp-for-membership-plugins/issues
+Please post it in the issues section of GitHub and we'll fix it as soon as we can. Thanks for helping. https://github.com/eighty20results/e20r-mailchimp-for-membership-plugins/issues
 
 = I need help installing, configuring, or customizing the plugin. =
 
