@@ -102,6 +102,8 @@ class PMPro extends Membership_Plugin {
 				2
 			);
 			
+			add_filter( 'e20r-mailchimp-user-old-membership-levels', array( $this, 'recent_membership_levels_for_user' ), 10, 4 );
+			
 			// FIXME: Refactor and move the functionality to correct membership support plugin & split w/Membership Handler
 			add_action( 'pmpro_checkout_after_tos_fields', array( Member_Handler::get_instance(), 'view_additional_lists' ), 10 );
 			
@@ -211,6 +213,46 @@ class PMPro extends Membership_Plugin {
 		
 		$class = strtolower( get_class( $this ) );
 		return apply_filters( "e20r_mailchimp_{$class}_listsubscribe_fields", $level_fields, $user, $list_id );
+	}
+	
+	/**
+	 * Return old/previous membership levels the user (recently) had.
+	 *
+	 * @param \stdClass[] $levels_to_unsubscribe_from
+	 * @param int $user_id
+	 * @param int[] $current_user_level_ids
+	 * @param string[] $statuses
+	 *
+	 * @return int[]
+	 */
+	public function recent_membership_levels_for_user( $levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses ) {
+		
+		global $wpdb;
+		
+		if ( function_exists( 'pmpro_getMembershipLevelsForUser' ) ) {
+			
+			if ( ! empty( $current_user_level_ids ) ) {
+				$level_in_list = esc_sql( implode( ',', $current_user_level_ids ) );
+			} else {
+				$level_in_list = 0;
+			}
+			
+			$status_in_list = "'" . implode( "','", $statuses ) . "'";
+			
+			$sql = $wpdb->prepare(
+				"SELECT DISTINCT(pmu.membership_id)
+                            FROM {$wpdb->pmpro_memberships_users} AS pmu
+                            WHERE pmu.user_id = %d
+                              AND pmu.membership_id NOT IN ( {$level_in_list} )
+                              AND pmu.status IN ( $status_in_list )
+                              AND pmu.modified > NOW() - INTERVAL 15 MINUTE ",
+				$user_id
+			);
+			
+			$levels_to_unsubscribe_from = array_merge( $levels_to_unsubscribe_from, $wpdb->get_col( $sql ) );
+		}
+		
+		return $levels_to_unsubscribe_from;
 	}
 	
 	/**
