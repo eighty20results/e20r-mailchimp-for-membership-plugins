@@ -38,8 +38,6 @@ use E20R\Utilities\Utilities;
  * Deny TESTING the "GROUPINGS" entry in the `e20r_mailchimp_merge_fields` suppled array of merge fields
  */
 
-use E20R\BLUR_PROTECTED_CONTENT\MODULES\PMPro;
-
 if ( ! defined( 'E20R_MC_TESTING' ) ) {
 	define( 'E20R_MC_TESTING', false );
 }
@@ -398,32 +396,8 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 					'inactive',
 				) );
 				
-				// PMPro specific
-				if ( function_exists( 'pmpro_getMembershipLevelsForUser' ) ) {
-					
-					if ( ! empty( $level_ids ) ) {
-						$level_in_list = esc_sql( implode( ',', $level_ids ) );
-					} else {
-						$level_in_list = 0;
-					}
-					
-					$status_in_list = "'" . implode( "','", $statuses ) . "'";
-					
-					$sql = $wpdb->prepare(
-						"SELECT DISTINCT(pmu.membership_id)
-                            FROM {$wpdb->pmpro_memberships_users} AS pmu
-                            WHERE pmu.user_id = %d
-                              AND pmu.membership_id NOT IN ( {$level_in_list} )
-                              AND pmu.status IN ( $status_in_list )
-                              AND pmu.modified > NOW() - INTERVAL 15 MINUTE ",
-						$user_id
-					);
-					
-					$levels_to_unsubscribe_from = $wpdb->get_col( $sql );
-				}
-				
 				// Fetch user's list of levels to drop the subscription from for other membership plugin options
-				$levels_to_unsubscribe_from = apply_filters( 'e20r-mailchimp-user-old-membership-levels', $levels_to_unsubscribe_from, $user_id, $current_user_levels, $statuses );
+				$levels_to_unsubscribe_from = apply_filters( 'e20r-mailchimp-user-old-membership-levels', $levels_to_unsubscribe_from, $user_id, $level_ids, $statuses );
 			}
 			
 			return $levels_to_unsubscribe_from;
