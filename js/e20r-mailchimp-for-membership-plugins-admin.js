@@ -19,7 +19,7 @@
 jQuery(document).ready(function( $ ) {
     "use strict";
 
-    var pmpromc_admin = {
+    var e20rmc_admin = {
         init: function() {
 
             window.console.log("Loading the E20R Admin class");
@@ -127,5 +127,5 @@ jQuery(document).ready(function( $ ) {
         }
     };
 
-    pmpromc_admin.init();
+    e20rmc_admin.init();
 });
