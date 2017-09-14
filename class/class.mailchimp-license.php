@@ -21,6 +21,7 @@ namespace E20R\Utilities\Licensing;
 
 
 use E20R\MailChimp\Controller;
+use E20R\Utilities\Utilities;
 
 class Mailchimp_License extends License_Client {
 	
@@ -50,10 +51,29 @@ class Mailchimp_License extends License_Client {
 	}
 	
 	/**
+	 * Load a custom license warning on init
+	 */
+	public function check_licenses() {
+		
+		$utils = Utilities::get_instance();
+		
+		switch ( Licensing::is_license_expiring( 'e20r_mc' ) ) {
+			
+			case true:
+				$utils->add_message( sprintf( __( 'The license for %s will renew soon. As this is an automatic payment, you will not have to do anything. To modify %syour license%s, you will need to go to %syour account page%s' ), 'Support and Updates Plus License', '<a href="https://eighty20results.com/shop/licenses/" target="_blank">', '</a>', '<a href="https://eighty20results.com/account/" target="_blank">', '</a>' ), 'info', 'backend' );
+				break;
+			case - 1:
+				$utils->add_message( sprintf( __( 'Your %s license has expired. To continue to get updates and support for this plugin, you will need to %srenew and install your license%s.' ), 'Support and Updates Plus License', '<a href="https://eighty20results.com/shop/licenses/" target="_blank">', '</a>' ), 'error', 'backend' );
+				break;
+		}
+	}
+	
+	/**
 	 * Load action hooks & filters for Client License handler
 	 */
 	public function load_hooks() {
 		add_filter( 'e20r-license-add-new-licenses', array( $this, 'add_new_license_info', ), 10, 2 );
+		add_action( 'admin_init', array( $this, 'check_licenses' ) );
 	}
 	
 	/**
@@ -64,14 +84,21 @@ class Mailchimp_License extends License_Client {
 	 *
 	 * @return array
 	 */
-	public function add_new_license_info( $license_settings, $plugin_settings ) {
+	public function add_new_license_info( $license_settings, $plugin_settings = null ) {
 		
-		$plugin_settings = array(
-			'label' => __( 'E20R MailChimp for Membership Plugins', Controller::plugin_slug ),
-			'key_prefix' => 'e20rmc',
-			'stub' => Controller::plugin_slug
+		if ( !is_array( $plugin_settings ) ) {
+			$plugin_settings = array();
+		}
+		
+		$plugin_settings['e20r_mc'] = array(
+			'label'      => __( 'E20R MailChimp', Controller::plugin_slug ),
+			'key_prefix' => 'e20r_mc',
+			'stub'       => Controller::plugin_slug,
 		);
 		
-		return parent::add_new_license_info( $license_settings, $plugin_settings );
+	
+		$license_settings = parent::add_new_license_info( $license_settings, $plugin_settings['e20r_mc'] );
+		
+		return $license_settings;
 	}
 }
