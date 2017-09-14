@@ -85,6 +85,18 @@ abstract class Membership_Plugin {
 	}
 	
 	/**
+	 * Return old/previous membership levels the user (recently) had.
+	 *
+	 * @param \stdClass[] $levels_to_unsubscribe_from
+	 * @param int $user_id
+	 * @param int[] $current_user_level_ids
+	 * @param string[] $statuses
+	 *
+	 * @return int[]
+	 */
+	abstract public function recent_membership_levels_for_user( $levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses );
+	
+	/**
 	 * Returns the membership level ID that is currently being assigned to the member (during checkout)
 	 *
 	 * @param int $level_id
