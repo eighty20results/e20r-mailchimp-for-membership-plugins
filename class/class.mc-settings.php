@@ -91,6 +91,8 @@ class MC_Settings {
 			'e20r_mc_settings',
 			array( $this, 'settings_page' )
 		);
+		
+		Licensing::add_options_page();
 	}
 	
 	/**
@@ -238,8 +240,7 @@ class MC_Settings {
 			);
 		}
   
-		
-		if ( true === Licensing::is_licensed( Controller::plugin_slug )) {
+		if ( true === Licensing::is_licensed( 'e20r_mc' )) {
 			
 			add_settings_section(
 				'e20r_mc_section_igs',
@@ -292,6 +293,8 @@ class MC_Settings {
 				'e20r_mc_settings'
 			);
 		}
+		
+		Licensing::register_settings();
 	}
 	
 	/**
