@@ -94,7 +94,7 @@ class MailChimp_API {
 	public function __construct() {
 		
 		// Fix the 'groupings setting once it has been converted to interest group(s).
-		add_filter( 'e20r_mailchimp_listsubscribe_fields', array( $this, 'fix_listsubscribe_fields' ), - 1, 3 );
+		add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array( $this, 'fix_listsubscribe_fields' ), - 1, 3 );
 	}
 	
 	/**
@@ -955,7 +955,7 @@ class MailChimp_API {
 	}
 	
 	/**
-	 * Early filter for 'e20r_mailchimp_listsubscribe_fields' once the groupings parameter has been processed.
+	 * Early filter for 'e20r-mailchimp-user-defined-merge-tag-fields' once the groupings parameter has been processed.
 	 *
 	 * @param array         $fields  Array of MailChimp Merge Fields defined by the user
 	 * @param \WP_User|null $user
