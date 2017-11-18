@@ -19,8 +19,11 @@
 
 namespace E20R\MailChimp\Membership_Support;
 
+use E20R\MailChimp\Interest_Groups;
+use E20R\MailChimp\MailChimp_API;
 use E20R\MailChimp\Member_Handler;
 use E20R\MailChimp\Controller;
+use E20R\MailChimp\Merge_Fields;
 use E20R\Utilities\Utilities;
 
 class PMPro extends Membership_Plugin {
@@ -32,6 +35,8 @@ class PMPro extends Membership_Plugin {
 	 * @access private
 	 */
 	private static $instance = null;
+	
+	protected $plugin_type = 'pmpro';
 	
 	/**
 	 * PMPro constructor.
@@ -56,6 +61,9 @@ class PMPro extends Membership_Plugin {
 	
 	public function load_hooks() {
 		
+	    $utils = Utilities::get_instance();
+	    $utils->log("Processing the 'load_hooks' method for the PMPro plugin");
+	    
 		add_filter(
 			'e20r-mailchimp-supported-membership-plugin-list',
 			array( $this, 'add_supported_plugin' ),
@@ -76,14 +84,20 @@ class PMPro extends Membership_Plugin {
 	public function plugin_load( $on_checkout_page ) {
 		
 		$utils = Utilities::get_instance();
+		$utils->log("Processing the 'plugin_load' method for PMPro");
 		
 		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+            
+            $utils->log("Should load PMPro filters");
+            
+			add_action( 'e20r-mailchimp-init-default-groups', array( $this, 'init_default_groups' ), 10 , 0 );
+			add_filter( 'e20r-mailchimp-membership-plugin-prefix', array( $this, 'set_prefix' ), 10, 1 );
 			
-			add_filter( 'e20r_mailchimp_membership_plugin_present', array( $this, 'has_membership_plugin' ), 10, 1 );
-			add_filter( 'e20r-mailchimp-all-membership-levels', array( $this, 'all_membership_level_defs' ), 10, 1 );
-			add_filter( 'e20r_mailchimp_member_merge_field_values', array( $this, 'set_mf_values_for_member' ), 10, 3 );
-			add_filter( 'e20r_mailchimp_member_merge_field_defs', array( $this, 'set_mf_definition' ), 10, 3 );
-			add_filter( 'e20r_mailchimp_membership_list_all_members', array( $this, 'list_members_for_update'), 10, 1 );
+			add_filter( 'e20r-mailchimp-membership-plugin-present', array( $this, 'has_membership_plugin' ), 10, 1 );
+			add_filter( 'e20r-mailchimp-all-membership-levels', array( $this, 'all_membership_level_defs' ), 10, 2 );
+			add_filter( 'e20r-mailchimp-member-merge-field-values', array( $this, 'set_mf_values_for_member' ), 10, 4 );
+			add_filter( 'e20r-mailchimp-member-merge-field-defs', array( $this, 'set_mf_definition' ), 10, 3 );
+			add_filter( 'e20r-mailchimp-membership-list-all-members', array( $this, 'list_members_for_update'), 10, 1 );
 			add_filter(
 				'e20r-mailchimp-get-user-membership-level',
 				array( $this, 'primary_membership_level' ),
@@ -103,6 +117,10 @@ class PMPro extends Membership_Plugin {
 			);
 			
 			add_filter( 'e20r-mailchimp-user-old-membership-levels', array( $this, 'recent_membership_levels_for_user' ), 10, 4 );
+			add_filter( 'e20r-mailchimp-interest-category-label', array( $this, 'get_interest_cat_label'), 10 , 1);
+			add_filter( 'e20r-mailchimp-membership-new-user-level', array( $this, 'get_new_level_ids' ), 10, 3 );
+			add_filter( 'e20r-mailchimp-non-active-statuses', array( $this, 'statuses_inactive_membership' ), 10, 1 );
+			add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array( $this, 'compatibility_merge_tag_fields' ), 10, 3 );
 			
 			// FIXME: Refactor and move the functionality to correct membership support plugin & split w/Membership Handler
 			add_action( 'pmpro_checkout_after_tos_fields', array( Member_Handler::get_instance(), 'view_additional_lists' ), 10 );
@@ -132,24 +150,185 @@ class PMPro extends Membership_Plugin {
 				
 				$utils->log( "Adding after_change_membership_level actions" );
 				
-				add_action( 'pmpro_after_change_membership_level', array(
-					Member_Handler::get_instance(),
-					'add_new_membership_level',
-				), 99, 3 );
-				add_action( 'pmpro_after_change_membership_level', array( Member_Handler::get_instance(), 'cancelled_membership' ), 999, 3 );
+				add_action(
+					'pmpro_after_change_membership_level',
+					array( Member_Handler::get_instance(), 'on_add_to_new_level', ),
+					99,
+					3
+				);
+				
+				add_action(
+					'pmpro_after_change_membership_level',
+					array( Member_Handler::get_instance(), 'cancelled_membership' ),
+					999,
+					3
+				);
 			}
-			
+			/*
 			if ( ! empty( $e20r_mc_levels ) && ! has_action(
 					'pmpro_after_checkout',
 					array( Member_Handler::get_instance(), 'after_checkout' ) ) ) {
 				
 				$utils->log( "Adding after_checkout action" );
 				add_action( 'pmpro_after_checkout', array( Member_Handler::get_instance(), 'after_checkout' ), 15, 2 );
-			}
+			}*/
 		} else {
 			
 			$utils->log( "Not loading for PMPro" );
 		}
+	}
+    
+    /**
+     * Load listsubscribe fields from PMPro MailChimp add-on (assumes the filter exists)
+     *
+     * @param array $fields
+     * @param \WP_User $user
+     * @param string $list_id
+     *
+     * @return array
+     */
+	public function compatibility_merge_tags( $fields, $user, $list_id ) {
+        
+        /**
+         * Always used in on the site together with the 'e20r-mailchimp-user-defined-merge-tag-fields' filter.
+         *
+         * @filter  pmpro_mailchimp_listsubscribe_fields - The merge field value/data array to submit to the MailChimp distribution list
+         * @uses    e20r-mailchimp-user-defined-merge-tag-fields - The field definitions
+         *
+         * @param array  $field_values - Array: array( 'FIELDNAME' => $settings, 'FIELDNAME2' => $settings, ... )
+         * @param string $list_id      - The MailChimp identifier for the Mailing list
+         * @param int    $level_id     - The membership level ID to select field settings for (if applicable)
+         *
+         * @since   1.0
+         */
+        
+        return apply_filters( 'pmpro_mailchimp_listsubscribe_fields', $fields, $user, $list_id );
+	}
+ 
+	/**
+	 * Return the Membership statuses that signify an inactive 'membership'
+	 * @param $statuses
+	 *
+	 * @return array
+	 */
+	public function statuses_inactive_membership( $statuses ) {
+		
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			$statuses = array(
+				'admin_changed',
+				'admin_cancelled',
+				'cancelled',
+				'changed',
+				'expired',
+				'inactive',
+			);
+		}
+		
+		return $statuses;
+	}
+	
+	/**
+	 * @param int[] $level_ids
+	 * @param \WP_User $user
+	 * @param \MemberOrder|\WC_Order $order
+	 *
+	 * @return int[]
+	 */
+	public function get_new_level_ids( $level_ids, $user, $order ) {
+	
+		$utils = Utilities::get_instance();
+		
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			
+			$utils->log("Loading current membership level IDs for {$user->user_email}");
+			
+			$level_ids = array();
+			$user_levels = pmpro_getMembershipLevelsForUser( $user->ID, false );
+			
+			foreach( $user_levels as $level ) {
+				$level_ids[] = $level->id;
+			}
+		}
+		
+		$utils->log("Returning " . count( $level_ids ) . " PMPro Membership levels for {$user->user_email}");
+		return $level_ids;
+	}
+	
+	/**
+	 * Load the default Interest Groups for PMPro
+	 */
+	public function init_default_groups() {
+		
+		$utils = Utilities::get_instance();
+		
+		$utils->log("Possibly loading groups to MailChimp for PMPro");
+		
+		// Only execute if we're configured for the PMPro option
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			
+			$mc_api = MailChimp_API::get_instance();
+			$ig_class = Interest_Groups::get_instance();
+			$mg_class = Merge_Fields::get_instance();
+			
+			$levels = $this->all_membership_level_defs( array() );
+			
+			$label = apply_filters( 'e20r-mailchimp-interest-category-label', null );
+			
+			foreach( $levels as $level ) {
+				
+				if ( false === $ig_class->has_category( $level->id, $label ) ) {
+					
+					$utils->log("Have to add {$label} Group: {$level->id}/{$level->name}");
+					$ig_class->create_categories_for_membership( $level->id );
+				}
+				
+				$level_lists = $mc_api->get_option( "level_pmp_{$level->id}_lists" );
+				
+				if ( empty( $level_lists ) ) {
+					$utils->log( "Warning: No level lists found in level_pmp_{$level->id}_lists settings!" );
+					$level_lists = $mc_api->get_option( 'members_list' );
+				}
+				
+				foreach ( $level_lists as $list_id ) {
+					
+					$utils->log( "List config for {$list_id} found" );
+					
+					// Force update from upstream interest groups
+					if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', false ) ) ) {
+						
+						$msg = sprintf( __( "Unable to refresh MailChimp Interest Group information for %s", Controller::plugin_slug ), $level->name );
+						$utils->add_message( $msg, 'error', 'backend' );
+						
+						$utils->log( "Error: Unable to update interest group information for list {$list_id} from API server" );
+					}
+					
+					// Force refresh of upstream merge fields
+					if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mc_api->get_cache( $list_id, 'merge_fields', false ) ) ) {
+						
+						$msg = sprintf( __( "Unable to refresh MailChimp Merge Field information for %s", Controller::plugin_slug ), $level->name );
+						$utils->add_message( $msg, 'error', 'backend' );
+						
+						$utils->log( "Error: Unable to update merge field information for list {$list_id} from API server" );
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Return what to call the default/main interest group for this plugin
+	 *
+	 * @param string $label
+	 *
+	 * @return string
+	 */
+	public function get_interest_cat_label( $label ) {
+		
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			$label = __( 'Membership Levels', Controller::plugin_slug );
+		}
+		
+		return $label;
 	}
 	
 	/**
@@ -159,7 +338,10 @@ class PMPro extends Membership_Plugin {
 	 */
 	public function on_update_membership_level( $level_id ) {
 		
-		parent::on_update_membership_level( $level_id );
+		// parent::on_update_membership_level( $level_id );
+		$ig_controller = Interest_Groups::get_instance();
+		
+		$ig_controller->create_categories_for_membership( $level_id );
 	}
 	
 	/**
@@ -173,9 +355,13 @@ class PMPro extends Membership_Plugin {
 	 */
 	public function new_user_level_assigned( $level_id, $user_id, $order ) {
 		
-		$utils = Utilities::get_instance();
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			$utils = Utilities::get_instance();
+			
+			$level_id = $utils->get_variable( 'level', null );
+		}
 		
-		return $utils->get_variable( 'level', null );
+		return $level_id;
 	}
 	
 	/**
@@ -187,7 +373,11 @@ class PMPro extends Membership_Plugin {
 	 */
 	public function is_on_checkout_page( $on_checkout_page ) {
 		
-		return ( isset( $_REQUEST['submit-checkout'] ) || ( isset( $_REQUEST['confirm'] ) && isset( $_REQUEST['gateway'] ) ) );
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			$on_checkout_page = ( isset( $_REQUEST['submit-checkout'] ) || ( isset( $_REQUEST['confirm'] ) && isset( $_REQUEST['gateway'] ) ) );
+		}
+		
+		return $on_checkout_page;
 	}
 	
 	/**
@@ -199,9 +389,9 @@ class PMPro extends Membership_Plugin {
 	 *
 	 * @return array
 	 */
-	public function set_mf_values_for_member( $level_fields, $user, $list_id ) {
+	public function set_mf_values_for_member( $level_fields, $user, $list_id, $level_id ) {
 		
-		if ( function_exists( 'pmpro_getMembershipLevelForUser' ) ) {
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) && !empty( $user ) && !empty( $level_id ) ) {
 			
 			$level = pmpro_getMembershipLevelForUser( $user->ID );
 			
@@ -227,9 +417,10 @@ class PMPro extends Membership_Plugin {
 	 */
 	public function recent_membership_levels_for_user( $levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses ) {
 		
-		global $wpdb;
-		
-		if ( function_exists( 'pmpro_getMembershipLevelsForUser' ) ) {
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			
+			$utils = Utilities::get_instance();
+			global $wpdb;
 			
 			if ( ! empty( $current_user_level_ids ) ) {
 				$level_in_list = esc_sql( implode( ',', $current_user_level_ids ) );
@@ -237,18 +428,18 @@ class PMPro extends Membership_Plugin {
 				$level_in_list = 0;
 			}
 			
-			$status_in_list = "'" . implode( "','", $statuses ) . "'";
-			
 			$sql = $wpdb->prepare(
 				"SELECT DISTINCT(pmu.membership_id)
                             FROM {$wpdb->pmpro_memberships_users} AS pmu
                             WHERE pmu.user_id = %d
                               AND pmu.membership_id NOT IN ( {$level_in_list} )
-                              AND pmu.status IN ( $status_in_list )
-                              AND pmu.modified > NOW() - INTERVAL 15 MINUTE ",
+                              AND pmu.status IN ( [IN] )
+                              AND pmu.modified > NOW() - INTERVAL 15 MINUTE
+                          ORDER BY pmu.id DESC",
 				$user_id
 			);
 			
+			$sql = $utils->prepare_in( $sql, $statuses, '%s' );
 			$levels_to_unsubscribe_from = array_merge( $levels_to_unsubscribe_from, $wpdb->get_col( $sql ) );
 		}
 		
@@ -266,8 +457,10 @@ class PMPro extends Membership_Plugin {
 		
 		global $wpdb;
 		
-		// Grab the PMPro version of the members list from the DB on the system and sort it by user ID & status
-		$member_list = $wpdb->get_results( "SELECT DISTINCT mu.user_id, mu.membership_id, mu.status FROM {$wpdb->pmpro_memberships_users} as mu ORDER BY mu.user_id, status" );
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			// Grab the PMPro version of the members list from the DB on the system and sort it by user ID & status
+			$member_list = $wpdb->get_results( "SELECT DISTINCT mu.user_id, mu.membership_id, mu.status FROM {$wpdb->pmpro_memberships_users} as mu ORDER BY mu.user_id, status" );
+		}
 		
 		return $member_list;
 	}
@@ -282,15 +475,15 @@ class PMPro extends Membership_Plugin {
 	 */
 	public function set_mf_definition( $merge_field_defs, $list_id ) {
 		
-		$merge_field_defs[] = array_merge(
-			$merge_field_defs,
-			array(
-				array( 'tag' => 'MLVLID', 'name' => 'Membership ID', 'type' => 'number', 'public' => false ),
-				array( 'tag' => 'MEMBERSHIP', 'name' => 'Membership', 'type' => 'text', 'public' => false ),
-				array( 'tag' => 'ZIP', 'name' => 'Zip code', 'type' => 'text', 'public' => false ),
-			)
-		);
-		
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			$merge_field_defs[] = array_merge(
+				$merge_field_defs,
+				array(
+					array( 'tag' => 'MLVLID', 'name' => 'Membership ID', 'type' => 'number', 'public' => false ),
+					array( 'tag' => 'MEMBERSHIP', 'name' => 'Membership', 'type' => 'text', 'public' => false ),
+				)
+			);
+		}
 		$class = strtolower( get_class( $this ) );
 		
 		return apply_filters( "e20r_mailchimp_{$class}_mergefields", $merge_field_defs, $list_id );
@@ -306,7 +499,7 @@ class PMPro extends Membership_Plugin {
 	 */
 	public function get_level_definition( $level_info, $level_id ) {
 		
-		if ( function_exists( 'pmpro_getLevel' ) ) {
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
 			$level_info = pmpro_getLevel( $level_id );
 		}
 		
@@ -345,7 +538,15 @@ class PMPro extends Membership_Plugin {
 	 */
 	public function has_membership_plugin( $is_active ) {
 		
-		return function_exists( 'pmpro_hasMembershipLevel' );
+		$utils = Utilities::get_instance();
+		
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			
+			$utils->log("We're checking that PMPro is loaded and active");
+			$is_active = function_exists( 'pmpro_hasMembershipLevel' );
+			$utils->log("PMPro is active? " .  ( $is_active ? 'Yes' : 'No' ) );
+		}
+		return $is_active;
 	}
 	
 	/**
@@ -355,22 +556,25 @@ class PMPro extends Membership_Plugin {
 	 *
 	 * @return array
 	 */
-	public function all_membership_level_defs( $levels ) {
+	public function all_membership_level_defs( $levels, $prefix = 'pmp' ) {
 		
 		$utils = Utilities::get_instance();
 		
-		global $wpdb;
-		
-		$utils->log( "Loading levels cache for PMPro" );
-		
-		if ( isset( $wpdb->pmpro_membership_levels ) ) {
-			$pmp_levels = $wpdb->get_results( "SELECT * FROM {$wpdb->pmpro_membership_levels} ORDER BY id" );
-		} else if ( ! isset( $wpdb->pmpro_membership_levels ) ) {
-			$pmp_levels = false;
-		}
-		
-		if ( ! empty( $pmp_levels ) ) {
-			$levels = array_merge( $levels, $pmp_levels );
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) && 'pmp' === $prefix ) {
+			
+			global $wpdb;
+			
+			$utils->log( "Loading levels cache for PMPro" );
+			
+			if ( isset( $wpdb->pmpro_membership_levels ) ) {
+				$pmp_levels = $wpdb->get_results( "SELECT * FROM {$wpdb->pmpro_membership_levels} ORDER BY id" );
+			} else if ( ! isset( $wpdb->pmpro_membership_levels ) ) {
+				$pmp_levels = false;
+			}
+			
+			if ( ! empty( $pmp_levels ) ) {
+				$levels = array_merge( $levels, $pmp_levels );
+			}
 		}
 		
 		return $levels;
@@ -389,7 +593,7 @@ class PMPro extends Membership_Plugin {
 		$utils = Utilities::get_instance();
 		$level = null;
 		
-		if ( function_exists( 'pmpro_hasMembershipLevel' ) ) {
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
 			$level = pmpro_getMembershipLevelForUser( $user_id );
 		}
 		
@@ -415,7 +619,7 @@ class PMPro extends Membership_Plugin {
 		
 		$utils = Utilities::get_instance();
 		
-		if ( function_exists( 'pmpro_getMembershipLevelsForUser' ) ) {
+		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
 			
 			$levels = pmpro_getMembershipLevelsForUser( $user_id );
 			
