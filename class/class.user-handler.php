@@ -70,7 +70,7 @@ class User_Handler {
 			
 			// Add the user to the selected list(s)
 			foreach ( $lists as $list ) {
-				$mc_controller->subscribe( $list, $list_user );
+				$mc_controller->subscribe( $list, $list_user, null );
 			}
 		}
 	}
@@ -102,9 +102,9 @@ class User_Handler {
 		if ( true === $update_user ) {
 			
 			//get all lists
-			$api = MailChimp_API::get_instance();
+			$mc_api = MailChimp_API::get_instance();
 			
-			if ( empty( $api ) ) {
+			if ( empty( $mc_api ) ) {
 				global $pmpro_msg;
 				global $pmpro_msgt;
 				
@@ -113,12 +113,12 @@ class User_Handler {
 				
 				return;
 			}
+            
+            $mc_api->set_key();
 			
-			$api->set_key();
-			
-			if ( ! empty( $api ) ) {
+			if ( ! empty( $mc_api ) ) {
 				
-				$lists = $api->get_all_lists();
+				$lists = $mc_api->get_all_lists();
 			}
 			
 			if ( ! empty( $lists ) ) {
@@ -126,12 +126,12 @@ class User_Handler {
 				foreach ( $lists as $list ) {
 					
 					//check for member
-					$member = $api->get_listinfo_for_member( $list->id, $old_user_data );
+					$member = $mc_api->get_listinfo_for_member( $list->id, $old_user_data );
 					
 					//update member's email and other values (only if user is already subscribed - not pending!)
 					if ( 'subscribed' === $member->status ) {
 						
-						$api->update_list_member( $list->id, $old_user_data, $new_user_data );
+						$mc_api->update_list_member( $list->id, $old_user_data, $new_user_data );
 					}
 				}
 			}
@@ -144,9 +144,9 @@ class User_Handler {
 	 * @param \WP_User $user
 	 */
 	public function add_profile_fields( $user ) {
-		
-	    $mc = MailChimp_API::get_instance();
-		$additional_lists   = $mc->get_option( 'additional_lists' );
+        
+        $mc_api = MailChimp_API::get_instance();
+		$additional_lists   = $mc_api->get_option( 'additional_lists' );
 		$additional_lists_array = array();
 		
 		$all_lists     = array();
@@ -155,24 +155,19 @@ class User_Handler {
 			$additional_lists = array();
 		}
   
-		$api = MailChimp_API::get_instance();
 		$utils = Utilities::get_instance();
 		
-		if ( empty( $api ) ) {
-		 
-			global $pmpro_msg;
-			global $pmpro_msgt;
-			
-			$pmpro_msg  = __( "Unable to load MailChimp API interface", Controller::plugin_slug );
-			$pmpro_msgt = "error";
+		if ( empty( $mc_api ) ) {
+   
+			$utils->add_message( __( "Unable to load MailChimp API interface", Controller::plugin_slug ), 'error', 'backend' );
 			
 			return;
 		}
+        
+        $mc_api->set_key();
 		
-		$api->set_key();
-		
-		if ( ! empty( $api ) ) {
-			$all_lists = $api->get_all_lists();
+		if ( ! empty( $mc_api ) ) {
+			$all_lists = $mc_api->get_all_lists();
 		}
 		
 		// Do we have any lists to display?
