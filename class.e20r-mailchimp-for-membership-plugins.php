@@ -629,9 +629,6 @@ $e20r_mailchimp_plugins[] = array(
 	'class_name'  => 'WooCommerce',
 );
 
-// add_action( 'e20r_mailchimp_listsubscribe_fields', 'test_pmpromc_listsubscribe_fields', 10, 3 );
-// add_action( 'e20r_mailchimpmerge_field_settings', 'test_e20rmc_custom_merge_fields', 10, 3 );
-
 spl_autoload_register( 'E20R\MailChimp\Controller::auto_loader' );
 
 register_activation_hook( __FILE__, array( Controller::get_instance(), "activation" ) );
