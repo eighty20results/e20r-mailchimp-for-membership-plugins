@@ -67,7 +67,7 @@ class Merge_Fields {
 		/**
 		 * Always used in on the site together with the 'e20r_mailchimp_merge_fields' filter.
 		 *
-		 * @filter e20r_mailchimp_mergefield_settings - List of MailChimp merge fields to use & how they're supposed to be configured
+		 * @filter e20r-mailchimp-merge-tag-settings - List of MailChimp merge fields to use & how they're supposed to be configured
 		 *
 		 * @param array  $filter_definitions Default:
 		 *                                   array(
@@ -81,7 +81,7 @@ class Merge_Fields {
 		 * @param string $list_id            - the MailChimp identifier for the mailing list
 		 *
 		 */
-		$new_merge_fields = apply_filters( 'e20r_mailchimp_mergefield_settings', $list_settings->merge_fields, $list_id );
+		$new_merge_fields = apply_filters( 'e20r-mailchimp-merge-tag-settings', $list_settings->merge_fields, $list_id );
 		
 		foreach ( $new_merge_fields as $key => $field_def ) {
 			
@@ -186,7 +186,8 @@ class Merge_Fields {
 			}
 			
 			// The field is already present upstream...
-			$all_upstream = $this->get_from_remote( $list_id, true );
+			$all_upstream = $mc_api->get_cache( $list_id, 'merge_fields', false );
+			
 			$merge_fields = array();
 			foreach ( $all_upstream as $u_field ) {
 				
@@ -225,24 +226,24 @@ class Merge_Fields {
 		$mc_api           = MailChimp_API::get_instance();
 		$utils            = Utilities::get_instance();
 		$list_settings    = $mc_api->get_list_conf_by_id( $list_id );
-		$available_fields = apply_filters( 'e20r_mailchimp_mergefield_settings', $list_settings->merge_fields, null );
+		$available_fields = apply_filters( 'e20r-mailchimp-merge-tag-settings', $list_settings->merge_fields, null );
 		$field_def        = null;
 		
 		/**
-		 * @filter e20r_mailchimp_mergefield_default_field_visibility - Configure the default visibility for a new merge field
+		 * @filter e20r-mailchimp-default-merge-tag-visibility - Configure the default visibility for a new merge field
 		 *
 		 * @param bool   $visibility Default: false (not shown in MailChimp forms)
 		 * @param string $list_id
 		 */
-		$default_visibility = apply_filters( 'e20r_mailchimp_mergefield_default_field_visibility', false, $list_id );
+		$default_visibility = apply_filters( 'e20r-mailchimp-default-merge-tag-visibility', false, $list_id );
 		
 		/**
-		 * @filter e20r_mailchimp_mergefield_default_field_type - Configure the default visibility for a new merge field
+		 * @filter e20r-mailchimp-default-merge-tag-field-type - Configure the default visibility for a new merge field
 		 *
 		 * @param string $field_type Default: 'text'
 		 * @param string $list_id
 		 */
-		$default_type = apply_filters( 'e20r_mailchimp_mergefield_default_field_type', 'text', $list_id );
+		$default_type = apply_filters( 'e20r-mailchimp-default-merge-tag-field-type', 'text', $list_id );
 		
 		// Look for an existing definition for the requested field tag/merge field tag
 		foreach ( $available_fields as $key => $field ) {
@@ -486,12 +487,7 @@ class Merge_Fields {
 		$level            = null;
 		$membership_level = null;
 		
-		$has_membership_system = apply_filters( 'e20r_mailchimp_membership_plugin_present', function_exists( "pmpro_hasMembershipLevel" ) );
-		
-		if ( true === $has_membership_system && ! empty( $level ) ) {
-			
-			$utils->log( "User {$user->user_email} has an an active membership level" );
-		}
+		$has_membership_system = apply_filters( 'e20r-mailchimp-membership-plugin-present', false );
 		
 		$data_fields = array();
 		$level       = null;
@@ -500,11 +496,16 @@ class Merge_Fields {
 			
 			$level = apply_filters( 'e20r-mailchimp-get-membership-level-definition', $level, $level_id );
 			
+			if ( true === $has_membership_system && ! empty( $level ) ) {
+				
+				$utils->log( "User {$user->user_email} has an an active membership level" );
+			}
+			
 			/**
-			 * Always used in on the site together with the 'e20r_mailchimp_mergefield_settings' filter.
+			 * Always used in on the site together with the 'e20r-mailchimp-merge-tag-settings' filter.
 			 *
-			 * @filter  e20r_mailchimp_listsubscribe_fields - The merge field value/data array to submit to the MailChimp distribution list
-			 * @uses    e20r_mailchimp_mergefield_settings - The field definitions
+			 * @filter  e20r-mailchimp-user-defined-merge-tag-fields - The merge field value/data array to submit to the MailChimp distribution list
+			 * @uses    e20r-mailchimp-merge-tag-settings - The field definitions
 			 *
 			 * @param array     $field_values - Array: array( 'FIELDNAME' => value, 'FIELDNAME2' => value, ... )
 			 * @param \WP_USer  $user         - User object we're processing for
@@ -513,7 +514,34 @@ class Merge_Fields {
 			 *
 			 * @since   1.0
 			 */
-			$new_data_fields = apply_filters( "e20r_mailchimp_listsubscribe_fields", array(), $user, $list_id, $level_id );
+			$new_data_fields = apply_filters( "e20r-mailchimp-user-defined-merge-tag-fields", array(), $user, $list_id, $level_id );
+			$data_fields     = array_combine(
+				array_merge(
+					array_keys( $data_fields ),
+					array_keys( $new_data_fields )
+				),
+				array_merge(
+					array_values( $data_fields ),
+					array_values( $new_data_fields )
+				)
+			);
+		}
+		
+		if ( empty( $level_ids ) ) {
+			/**
+			 * Always used in on the site together with the 'e20r-mailchimp-merge-tag-settings' filter.
+			 *
+			 * @filter  e20r-mailchimp-user-defined-merge-tag-fields - The merge field value/data array to submit to the MailChimp distribution list
+			 * @uses    e20r-mailchimp-merge-tag-settings - The field definitions
+			 *
+			 * @param array    $field_values - Array: array( 'FIELDNAME' => value, 'FIELDNAME2' => value, ... )
+			 * @param \WP_USer $user         - User object we're processing for
+			 * @param string   $list_id      - The MailChimp identifier for the Mailing list
+			 * @param null     $level        - The membership level definition for this user's primary membership level
+			 *
+			 * @since   1.0
+			 */
+			$new_data_fields = apply_filters( "e20r-mailchimp-user-defined-merge-tag-fields", array(), $user, $list_id, null );
 			$data_fields     = array_combine(
 				array_merge(
 					array_keys( $data_fields ),
@@ -557,8 +585,8 @@ class Merge_Fields {
 	 */
 	public function maybe_push_merge_fields( $list_id, $level_id = null ) {
 		
-		$utils       = Utilities::get_instance();
-		$mc_api      = MailChimp_API::get_instance();
+		$utils  = Utilities::get_instance();
+		$mc_api = MailChimp_API::get_instance();
 		
 		
 		$utils->log( "Loading settings for list: {$list_id}" );
@@ -567,10 +595,10 @@ class Merge_Fields {
 		$list_settings = $mc_api->get_list_conf_by_id( $list_id );
 		
 		/**
-		 * Always used in on the site together with the 'e20r_mailchimp_listsubscribe_fields' filter.
+		 * Always used in on the site together with the 'e20r-mailchimp-user-defined-merge-tag-fields' filter.
 		 *
-		 * @filter  e20r_mailchimp_mergefield_settings - The merge field value/data array to submit to the MailChimp distribution list
-		 * @uses    e20r_mailchimp_listsubscribe_fields - The field definitions
+		 * @filter  e20r-mailchimp-merge-tag-settings - The merge field value/data array to submit to the MailChimp distribution list
+		 * @uses    e20r-mailchimp-user-defined-merge-tag-fields - The field definitions
 		 *
 		 * @param array  $field_values - Array: array( 'FIELDNAME' => $settings, 'FIELDNAME2' => $settings, ... )
 		 * @param string $list_id      - The MailChimp identifier for the Mailing list
@@ -578,7 +606,7 @@ class Merge_Fields {
 		 *
 		 * @since   1.0
 		 */
-		$field_defs = apply_filters( 'e20r_mailchimp_mergefield_settings', $list_settings->merge_fields, $list_id, $level_id );
+		$field_defs = apply_filters( 'e20r-mailchimp-merge-tag-settings', $list_settings->merge_fields, $list_id, $level_id );
 		
 		$utils->log( "User specified merge field config for {$list_id}: " . print_r( $field_defs, true ) );
 		
@@ -613,7 +641,7 @@ class Merge_Fields {
 		// check if there's a difference between what we have stored & what the user has specified in filters, etc.
 		if ( empty( $to_remote ) && false == $is_compared ) {
 			$utils->log( "Using all of the fields received by the filter" );
-			$to_remote = apply_filters( 'e20r_mailchimp_mergefield_settings', $list_settings->merge_fields, $list_id );
+			$to_remote = apply_filters( 'e20r-mailchimp-merge-tag-settings', $list_settings->merge_fields, $list_id );
 			
 		} else {
 			$utils->log( "Found " . count( $to_remote ) . " new field definitions to add upstream..." );
@@ -640,13 +668,7 @@ class Merge_Fields {
 	public function admin_defined_listsubscribe( $fields, $user, $list_id = null ) {
 		
 		$utils = Utilities::get_instance();
-		
-		if ( ! is_user_logged_in() ) {
-			$utils->log( "User isn't logged in, so can't do this.." );
-			
-			return $fields;
-		}
-		
+  
 		global $current_user;
 		
 		if ( empty( $user ) ) {
@@ -661,48 +683,75 @@ class Merge_Fields {
 		}
 		
 		
-		if ( ! isset( $user->membership_levels ) ) {
+		if ( !empty( $user) && ! isset( $user->membership_levels ) ) {
 			$user->membership_levels = pmpro_getMembershipLevelsForUser( $user->ID, true );
 		}
 		
-		if ( ! isset( $user->membership_level ) ) {
+		if ( !empty( $user) && ! isset( $user->membership_level ) ) {
 			$user->membership_level = pmpro_getMembershipLevelForUser( $user->ID, true );
 		}
 		
-		if ( empty( $user->membership_level->id ) ) {
+        $prefix      = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
+		$level_id = isset( $user->membership_level->id ) ? $user->membership_level->id : null;
+		
+		// Try to locate the level ID for the user (even if they're cancelling)
+		if ( !empty($user) && empty( $level_id ) ) {
 			
 			$utils->log( "No membership level found for {$user->ID}" );
-			
-			return $fields;
+			// TODO: Grab the most recent membership level (or last order) for the user (by filter)
+            
+            if ( empty( $level_id ) ) {
+                //$levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses
+                $previous_level_ids = apply_filters( 'e20r-mailchimp-user-old-membership-levels', array(), $user->ID, $level_id, array( 'cancelled' ) );
+                if ( !empty( $previous_level_ids ) ) {
+                    
+                    // Grab the first level ID from the previous level ID list (most recent)
+                    $level_id = array_shift( $previous_level_ids );
+                } else {
+                    $utils->log("Error: Unable to locate the user's previous 'membership' level/product order");
+                    // Giving up!
+                    return $fields;
+                }
+            }
 		}
-		
-		$api            = MailChimp_API::get_instance();
+        
+        $mc_api            = MailChimp_API::get_instance();
 		$settings_class = MC_Settings::get_instance();
 		
-		$level_settings = $api->get_option( "level_{$user->membership_level->id}_merge_fields" );
-		
-		// Tro to grab the list ID from settings
-		if ( empty( $list_id ) ) {
-			$list_ids = $api->get_option( "level_{$user->membership_level->id}_lists" );
-			$list_id  = $list_ids[0];
+		if ( !empty( $user ) && isset( $user->membership_level->id ) ) {
+			$level_settings = $mc_api->get_option( "level_{$prefix}_{$level_id}_merge_fields" );
 		}
 		
-		$list_settings = $api->get_list_conf_by_id( $list_id );
+		// Tro to grab the list ID from settings
+		if ( empty( $list_id ) && !empty( $level_id  )) {
+			
+		    $list_ids = $mc_api->get_option( "level_{$prefix}_{$level_id}_lists" );
+			
+			if ( empty( $list_ids ) ) {
+			    $utils->log("No level specific list found for {$level_id}");
+			    $list_ids = $mc_api->get_option("members_list" );
+            }
+            
+            // Grab the first entry in the array of list IDs
+			$list_id  = array_shift($list_ids );
+		}
+		
+		
+		$list_settings = $mc_api->get_list_conf_by_id( $list_id );
 		
 		if ( empty( $level_settings[ $list_id ] ) ) {
-			$utils->log( "No settings defined for {$user->membership_level->id}" );
+			$utils->log( "No settings defined for {$level_id}" );
 			
 			return $fields;
 		}
 		
-		$utils->log( "Merge field level settings for {$user->membership_level->id}: " . print_r( $level_settings[ $list_id ], true ) );
+		$utils->log( "Merge field level settings for {$level_id}: " . print_r( $level_settings[ $list_id ], true ) );
 		$meta_defs = $settings_class->get_user_meta_keys();
 		$value     = null;
 		
 		foreach ( $level_settings[ $list_id ] as $mf_tag => $meta_key ) {
 			
 			if ( - 1 === intval( $meta_key ) ) {
-				/* @uses a the 'e20r_mailchimp_mergefield_settings' filter */
 				continue;
 			} else {
 				
