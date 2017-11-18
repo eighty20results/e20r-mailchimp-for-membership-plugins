@@ -117,13 +117,13 @@ class Member_Handler {
 		$this->load_member_plugin_support();
 		
 		// Configure any default merge tags and listsubscribe fields
-		add_filter( 'e20r_mailchimp_mergefield_settings', array( $this, 'default_merge_field_settings' ), 10, 2 );
-		add_filter( 'e20r_mailchimp_listsubscribe_fields',
+		add_filter( 'e20r-mailchimp-merge-tag-settings', array( $this, 'default_merge_field_settings' ), 10, 2 );
+		add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields',
 			array( Merge_Fields::get_instance(), 'admin_defined_listsubscribe', ),
 			999,
 			3
 		);
-		add_filter( 'e20r_mailchimp_listsubscribe_fields', array( $this, 'default_listsubscribe_fields' ), 10, 3 );
+		add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array( $this, 'default_listsubscribe_fields' ), 10, 3 );
 		
 		//On the checkout page?
 		$on_checkout_page = apply_filters( 'e20r-mailchimp-on-membership-checkout-page', false );
