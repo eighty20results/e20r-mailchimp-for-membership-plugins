@@ -64,6 +64,7 @@ abstract class Membership_Plugin {
 		$mc_api = MailChimp_API::get_instance();
 		$utils = Utilities::get_instance();
 		
+		$utils->log("Loading option for 'membership_plugin' {$plugin_slug}");
 		$membership_plugin = $mc_api->get_option( 'membership_plugin' );
 		
 		if ( false === strpos( $plugin_slug, $membership_plugin ) ) {
@@ -71,9 +72,40 @@ abstract class Membership_Plugin {
 			return false;
 		}
 		
+		$utils->log("Selected plugin is {$membership_plugin}");
 		return true;
 	}
 	
+	abstract public function init_default_groups();
+	
+	/**
+	 * Return the Membership statuses that signify an inactive 'membership'
+	 *
+	 * @param $statuses
+	 *
+	 * @return array
+	 */
+	abstract public function statuses_inactive_membership( $statuses );
+	
+	public function set_prefix( $prefix ) {
+		
+		$mc_api = MailChimp_API::get_instance();
+		
+		$type = $mc_api->get_option( 'membership_plugin' );
+		
+		switch( $type ) {
+			case 'woocommerce':
+				$prefix = 'wc';
+				break;
+			case 'pmpro':
+				$prefix = 'pmp';
+				break;
+			default:
+				$prefix = 'na';
+		}
+		
+		return $prefix;
+	}
 	/**
 	 * Trigger on an update/save operation for a membership plugin 'save the membership level' action
 	 *
