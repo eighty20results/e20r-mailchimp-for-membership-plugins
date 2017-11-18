@@ -102,6 +102,15 @@ class MC_Settings {
 		
 		$utils  = Utilities::get_instance();
 		$mc_api = MailChimp_API::get_instance();
+		$prefix = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
+		
+		$membership_option = $mc_api->get_option( 'membership_plugin' );
+		
+		if ( ! empty( $membership_option ) ) {
+			
+			$utils->log( "Check to see if current interest group(s) and merge fields exist for {$membership_option}" );
+			do_action( 'e20r-mailchimp-init-default-groups' );
+		}
 		
 		//setup settings
 		register_setting( 'e20r_mc_settings', 'e20r_mc_settings', array( $this, 'settings_validate' ) );
@@ -129,12 +138,34 @@ class MC_Settings {
 			'e20r_mc_section_general'
 		);
 		
+		$membership_options = array(
+			'option_name'        => 'membership_plugin',
+			'option_default'     => - 1,
+			'option_description' => __( "Select the membership/shopping cart service you're using together with this plugin.", Controller::plugin_slug ),
+			'options'            => array(
+				array(
+					'value' => - 1,
+					'label' => __( 'Not selected', Controller::plugin_slug ),
+				),
+				array(
+					'value' => 'pmpro',
+					'label' => __( 'Paid Memberships Pro', Controller::plugin_slug ),
+				),
+				array(
+					'value' => 'woocommerce',
+					'label' => __( 'WooCommerce', Controller::plugin_slug ),
+				),
+			),
+		);
+		
+		
 		add_settings_field(
 			'e20r_mc_option_membership_plugin',
 			__( 'Membership Plugin to use', Controller::plugin_slug ),
-			array( $this, 'option_membership_plugin' ),
+			array( $this, 'select' ),
 			'e20r_mc_settings',
-			'e20r_mc_section_general'
+			'e20r_mc_section_general',
+			$membership_options
 		);
 		
 		add_settings_field(
@@ -203,7 +234,7 @@ class MC_Settings {
 			$unsub_options
 		);
 		
-		if ( true === apply_filters( 'e20r_mailchimp_membership_plugin_present', false ) ) {
+		if ( true === apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) ) {
 			
 			// List for memberships (segmented by interest groups)
 			add_settings_section(
@@ -227,7 +258,7 @@ class MC_Settings {
 			add_settings_section(
 				'e20r_mc_section_registration',
 				__( 'User Registration', Controller::plugin_slug ),
-				array( $this, 'section_registration' ),
+				array( $this, 'section_user_registration' ),
 				'e20r_mc_settings'
 			);
 			
@@ -239,8 +270,8 @@ class MC_Settings {
 				'e20r_mc_section_registration'
 			);
 		}
-  
-		if ( true === Licensing::is_licensed( 'e20r_mc' )) {
+		
+		if ( true === Licensing::is_licensed( 'e20r_mc', true ) ) {
 			
 			add_settings_section(
 				'e20r_mc_section_igs',
@@ -253,21 +284,26 @@ class MC_Settings {
 			
 			if ( ! empty( $options ) ) {
 				
-				$utils->log( "Found settings/options for the list(s)" );
+				$utils->log( "Found settings/options for the {$prefix} list(s)" );
 				
 				foreach ( $options as $key => $settings ) {
 					
-					if ( preg_match( '/level_(\d.*)_lists/', $key, $matches ) ) {
+					if ( preg_match( "/level_{$prefix}_(\d.*)_lists/", $key, $matches ) ) {
 						
 						$level_id = $matches[1];
+						$utils->log( "Processing for {$prefix} with level ID {$level_id}" );
 						
-						if ( apply_filters( 'e20r_mailchimp_membership_plugin_present', function_exists( 'pmpro_getLevel' ) ) ) {
-							$level = pmpro_getLevel( $level_id );
-						}
-						
-						$level = apply_filters( 'e20r-mailchimp-get-membership-level-definition', $level, $level->id );
+						$level = apply_filters( 'e20r-mailchimp-get-membership-level-definition', null, $level_id );
 						
 						if ( isset( $level->id ) ) {
+							
+							$utils->log( "List info from matches: {$matches[0]}" );
+							$selected_lists = $options[ $matches[0] ];
+							
+							if ( empty( $selected_lists ) ) {
+								$utils->log( "Using default list info for {$level_id}!" );
+								$selected_lists = $mc_api->get_option( 'members_list' );
+							}
 							
 							add_settings_field(
 								"e20r_mc_option_interest_categories_{$level->id}",
@@ -275,7 +311,7 @@ class MC_Settings {
 								array( $this, 'option_interest_categories' ),
 								'e20r_mc_settings',
 								'e20r_mc_section_igs',
-								array( 'level' => $level, 'selected_lists' => $options[ $matches[0] ] )
+								array( 'level' => $level, 'selected_lists' => $selected_lists )
 							);
 						}
 						
@@ -283,6 +319,7 @@ class MC_Settings {
 				}
 			}
 		} else {
+			
 			$utils->log( "Won't load GUI settings for interest groups and merge fields" );
 			// TODO: Create notice about added value of buying license (added features and support).
 			//section_unlicensed_igs
@@ -305,19 +342,19 @@ class MC_Settings {
 		global $e20r_mc_lists;
 		
 		$utils = Utilities::get_instance();
-		$api   = MailChimp_API::get_instance();
+		$mc_api   = MailChimp_API::get_instance();
+        
+        $mc_api->set_key();
 		
-		$api->set_key();
-		
-		$unsubscribe = $api->get_option( 'unsubscribe' );
+		$unsubscribe = $mc_api->get_option( 'unsubscribe' );
 		
 		//defaults
 		if ( empty( $unsubscribe ) ) {
 			$unsubscribe = 2;
-			$api->save_option( $unsubscribe, 'unsubscribe' );
+            $mc_api->save_option( $unsubscribe, 'unsubscribe' );
 		}
 		
-		if ( empty( $api ) ) {
+		if ( empty( $mc_api ) ) {
 			
 			$msg = __( "Unable to load MailChimp API interface", Controller::plugin_slug );
 			$utils->add_message( $msg, 'error', 'backend' );
@@ -326,10 +363,10 @@ class MC_Settings {
 			return;
 		}
 		
-		if ( ! empty( $api ) ) {
+		if ( ! empty( $mc_api ) ) {
 			
 			$utils->log( "Loading lists from cache or upstream" );
-			$e20r_mc_lists = $api->get_all_lists( true );
+			$e20r_mc_lists = $mc_api->get_all_lists( true );
 			$all_lists     = array();
 			
 			if ( ! empty( $e20r_mc_lists ) ) {
@@ -349,7 +386,7 @@ class MC_Settings {
 		}
 		
 		$update_status = get_option( 'e20r_mailchimp_old_updated', false );
-		$lists         = $api->get_option( 'members_list' );
+		$lists         = $mc_api->get_option( 'members_list' );
 		$list_id       = null;
 		
 		if ( ! empty( $lists ) ) {
@@ -359,7 +396,7 @@ class MC_Settings {
 		?>
         <div class="wrap">
             <div id="icon-options-general" class="icon32"><br></div>
-            <h2><?php _e( 'MailChimp Integration Options and Settings', '' ); ?></h2>
+            <h2><?php _e( 'MailChimp Integration Options and Settings', Controller::plugin_slug ); ?></h2>
 			
 			<?php $utils->display_messages( 'backend' ); ?>
 
@@ -376,7 +413,7 @@ class MC_Settings {
 					printf( '<br/><br/><a href="http://eepurl.com/c1glUn" target="_blank">%s</a>', __( 'Get your Free MailChimp account.', Controller::plugin_slug ) );
 					?>
                 </p>
-				<?php if ( apply_filters( 'e20r_mailchimp_membership_plugin_present', function_exists( 'pmpro_getAllLevels' ) ) && 1 !== $update_status ) { ?>
+				<?php if ( apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) && 1 !== $update_status ) { ?>
                     <hr/>
                     <div id="e20r_mc_update_members" class="postbox">
                         <div class="inside">
@@ -386,8 +423,8 @@ class MC_Settings {
 								_e( 'This plugin can create and synchronize membership level specific MailChimp List Group and Merge Tag information when a user joins or cancels their membership to your site.', Controller::plugin_slug );
 								?>&nbsp;<?php
 								_e( 'It will happen automatically when a new member joins, or an existing member changes their membership level.', Controller::plugin_slug );
-                                ?><br/><br/><?php
-								printf( __( '%sTo update existing members, you need to run an update of their accounts%s. The background update will be applied to active members who are still subscribed to mailchimp.com mailing list you have configured for the membership level. This means that we will not add active members who do not have "subscribed" as their status on mailchimp.com for the Membership Level specific mailichimp list you configured.', Controller::plugin_slug ), '<strong>', '</strong>');
+								?><br/><br/><?php
+								printf( __( '%sTo update existing members, you need to run an update of their accounts%s. The background update will be applied to active members who are still subscribed to mailchimp.com mailing list you have configured for the membership level. This means that we will not add active members who do not have "subscribed" as their status on mailchimp.com for the Membership Level specific mailichimp list you configured.', Controller::plugin_slug ), '<strong>', '</strong>' );
 								?>&nbsp;<?php
 								printf(
 									__( '<a href="%s" target="_blank">%s</a>.', Controller::plugin_slug ),
@@ -397,29 +434,30 @@ class MC_Settings {
 								?><br/><br/>
                             </p>
 							<?php wp_nonce_field( 'e20rmc_update_members', 'e20rmc_update_nonce' ); ?>
-                            <?php if ( true === Licensing::is_licensed( Controller::plugin_slug ) ) { ?>
-                            <p><?php
-                                printf( '<strong>%s</strong>', __( 'Please Note: This operation can be very resource intensive. If you are on a low-cost hosting plan in a shared hosting environment, it may trigger the suspension of your website!', Controller::plugin_slug ) );
-                                ?>
-                            </p>
-                            <input type="hidden" id="e20rmc-list-is-defined" value="<?php esc_attr_e( $list_id ); ?>"/>
-                            <span style="line-height: 2.5em;">
+							<?php if ( true === Licensing::is_licensed( 'e20r_mc', true ) ) { ?>
+                                <p><?php
+									printf( '<strong>%s</strong>', __( 'Please Note: This operation can be very resource intensive. If you are on a low-cost hosting plan in a shared hosting environment, it may trigger the suspension of your website!', Controller::plugin_slug ) );
+									?>
+                                </p>
+                                <input type="hidden" id="e20rmc-list-is-defined"
+                                       value="<?php esc_attr_e( $list_id ); ?>"/>
+                                <span style="line-height: 2.5em;">
                             <input type="checkbox" id="e20rmc-warning-ack" <?php checked( $update_status, 2 ); ?>><label
-                                        for="e20rmc_background"><em><?php _e( 'I understand the risks, please let me proceed.', Controller::plugin_slug ); ?></em></label>
+                                            for="e20rmc_background"><em><?php _e( 'I understand the risks, please let me proceed.', Controller::plugin_slug ); ?></em></label>
                             </span>
-                            <br/>
-                            <input type="button" class="button-primary" id="e20rmc_background"
-                                   value="<?php _e( 'Start Background update of existing member accounts', Controller::plugin_slug ); ?>"/>
-							<?php if ( 2 == $update_status ) { ?>
-                                <span class="e20rmc-update-status">
-                                <img
-                                        class="e20r-spinner-image"
-                                        src="<?php echo includes_url( 'images/wpspin-2x.gif' ); ?>"/>
-								<?php _e( 'Updating existing Member Accounts against mailchimp.com', Controller::plugin_slug ); ?>
-                                </span><?php } ?>
-                            <?php } else { ?>
-                                <?php printf( __('%1$sPurchase or renew your %3$svalid support and update license (buy and install now)%4$s to enable the automated background update for pre-existing active members%2$s', Controller::plugin_slug ),'<strong style="color: red;">', '</strong>', '<a href="https://eighty20results.com/shop/licenses/e20r-mailchimp-membership-plugins" target="_blank">', '</a>' ); ?>
-			                <?php } ?>
+                                <br/>
+                                <input type="button" class="button-primary" id="e20rmc_background"
+                                       value="<?php _e( 'Start Background update of existing member accounts', Controller::plugin_slug ); ?>"/>
+								<?php if ( 2 == $update_status ) { ?>
+                                    <span class="e20rmc-update-status">
+                                    <img
+                                            class="e20r-spinner-image"
+                                            src="<?php echo includes_url( 'images/wpspin-2x.gif' ); ?>"/>
+									<?php _e( 'Updating existing Member Accounts against mailchimp.com', Controller::plugin_slug ); ?>
+                                    </span><?php } ?>
+							<?php } else { ?>
+								<?php printf( __( '%1$sPurchase or renew your %3$svalid support and update license (buy and install now)%4$s to enable the automated background update for pre-existing active members%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', '<a href="https://eighty20results.com/shop/licenses/e20r-mailchimp-membership-plugins" target="_blank">', '</a>' ); ?>
+							<?php } ?>
                         </div>
                     </div>
 				<?php } ?>
@@ -470,6 +508,7 @@ class MC_Settings {
 	/**
 	 * Load the settings field to select supported membership plugin to use.
 	 */
+	/*
 	public function option_membership_plugin() {
 		
 		$mc_api = MailChimp_API::get_instance();
@@ -492,7 +531,7 @@ class MC_Settings {
 		
 		printf( "</select>" );
 	}
-	
+	*/
 	/**
 	 * Number of lists to fetch per operation from Mailchimp API server
 	 */
@@ -502,6 +541,9 @@ class MC_Settings {
 		$list_count = isset( $options['mc_api_fetch_list_limit'] ) ? $options['mc_api_fetch_list_limit'] : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
 		
 		printf( '<input type="number" name="e20r_mc_settings[mc_api_fetch_list_limit]" class="e20r-settings-fields" value="%s">', esc_attr( $list_count ) );
+		printf( '<br/><small>%s</small>', sprintf( __( "%sNOTE%s: Try increasing this number if you expect to see lists or groups from the server, but they're missing on this page", Controller::plugin_slug ), '<strong>', '</strong>' ) );
+		
+		
 	}
 	
 	/**
@@ -540,17 +582,17 @@ class MC_Settings {
 	 */
 	public function section_levels() {
 		
-	    global $e20r_mailchimp_plugins;
-	    $mc_api = MailChimp_API::get_instance();
-	    
-		$e20r_mc_levels = Member_Handler::get_instance()->get_levels();
-		$plugin_list = apply_filters( 'e20r-mailchimp-supported-membership-plugin-list', array() );
-		$plugin_active = $mc_api->get_option( 'membership_plugin' );
+		global $e20r_mailchimp_plugins;
+		$mc_api = MailChimp_API::get_instance();
 		
-		//do we have PMPro installed?
-		if ( apply_filters( 'e20r_mailchimp_membership_plugin_present', false ) ) {
+		$e20r_mc_levels = Member_Handler::get_instance()->get_levels();
+		$plugin_list    = apply_filters( 'e20r-mailchimp-supported-membership-plugin-list', array() );
+		$plugin_active  = $mc_api->get_option( 'membership_plugin' );
+		
+		//do we have Membership plugin installed?
+		if ( apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) ) {
 			?>
-            <p><?php printf( __( "The %s plugin is installed and active.", Controller::plugin_slug ), $plugin_list[$plugin_active]['label']); ?></p>
+            <p><?php printf( __( "The %s plugin is installed, active and selected.", Controller::plugin_slug ), $plugin_list[ $plugin_active ]['label'] ); ?></p>
 			<?php
 			//do we have levels?
 			if ( empty( $e20r_mc_levels ) ) {
@@ -606,7 +648,15 @@ class MC_Settings {
 			}
 		}
 	}
-	
+    
+    /**
+     * Header section in settings for when there's no membership plugin configured for MailChimp integration
+     */
+	public function section_user_registration() {
+	   ?>
+        <p><?php _e("No membership plugin has been identified for integration. We'll simply use the standard WordPress user registration as the trigger for adding new users to a MailChimp mailing list.", Controller::plugin_slug ); ?></p>
+        <?php
+    }
 	/**
 	 * Selects the list to use as the Member's list (on MailChimp.com)
 	 *
@@ -648,47 +698,47 @@ class MC_Settings {
 		?>
         <div id="e20r_mc_update_members" class="postbox">
             <div class="inside">
-                <h3><?php _e( "Easy configuration of Interest Groups and Merge Tags", Controller::plugin_slug ); ?></h3>
+                <h3><?php _e( "Easy configuration of MailChimp Groups, Interests and Merge Tags", Controller::plugin_slug ); ?></h3>
                 <p><?php
 					_e( 'To simplify assigning interest groups and merge tag data, we have created a graphical (point and click) section for this options/settings page.', Controller::plugin_slug );
-                ?><br/><br/><?php
+					?><br/><br/><?php
 					_e( 'The "Point and Click" configuration feature is available when you have an active Support and Updates license installed.', Controller::plugin_slug );
 					?><br/><br/>
                 </p>
-                <?php printf( __( '%1$sPurchase or renew your %3$sSupport and Updates license%4$s to enable "Point and click" configuration for Merge Tags and Interest Groups!%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', '<a href="https://eighty20results.com/shop/licenses/e20r-mailchimp-membership-plugins" target="_blank">', '</a>' ); ?>
+				<?php printf( __( '%1$sPurchase or renew your %3$sSupport and Updates license%4$s to enable "Point and click" configuration for Merge Tags and Interest Groups!%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', '<a href="https://eighty20results.com/shop/licenses/e20r-mailchimp-membership-plugins" target="_blank">', '</a>' ); ?>
             </div>
         </div>
 
         <p><?php
-	        printf(__( 'Read the documentation about %show to assign interest groups to subscribers, using a Wordpress filter%s. (Requires programming experience)', Controller::plugin_slug ),'<a href="https://eighty20results.com/documentation/e20r-mailchimp-membership-plugins/interest-groups/" target="_blank">', '</a>' );
-            ?><br/><br/>
-            <?php
-	        printf( __( 'You manage (add/remove/change) your Interest Group definitions in your account on the %s', Controller::plugin_slug ),
-		        sprintf( '<a href="%s" target="_blank">%s</a>.<br/>', esc_url_raw( $mc_url ), __( "MailChimp Server", Controller::plugin_slug ) )
-	        );
-	        ?></p>
+			printf( __( 'Read the documentation about %show to assign interest groups to subscribers, using a Wordpress filter%s. (Requires programming experience)', Controller::plugin_slug ), '<a href="https://eighty20results.com/documentation/e20r-mailchimp-membership-plugins/interest-groups/" target="_blank">', '</a>' );
+			?><br/><br/>
+			<?php
+			printf( __( 'You manage (add/remove/change) your Interest Group definitions in your account on the %s', Controller::plugin_slug ),
+				sprintf( '<a href="%s" target="_blank">%s</a>.<br/>', esc_url_raw( $mc_url ), __( "MailChimp Server", Controller::plugin_slug ) )
+			);
+			?></p>
         <p><?php
 			
 			_e( 'To update your groups and interests, select the MailChimp list, then the "Manage Subscribers" menu, and select the "Groups" sub-menu', Controller::plugin_slug ); ?>
         </p>
         <h3><?php _e( 'Configure Merge Tags', Controller::plugin_slug ); ?></h3>
         <p>
-			<?php printf( __( 'You can define mailchimp mailing list specific merge tags, and include the member\'s data for those tags, using the %1$se20r_mailchimp_mergefield_settings%2$s and %1$se20r_mailchimp_listsubscribe_fields%2$s filter combination.', Controller::plugin_slug ), '<code>', '</code>' ); ?>
+			<?php printf( __( 'You can define mailchimp mailing list specific merge tags, and include the member\'s data for those tags, using the %1$se20r-mailchimp-merge-tag-settings%2$s and %1$se20r-mailchimp-user-defined-merge-tag-fields%2$s filter combination.', Controller::plugin_slug ), '<code>', '</code>' ); ?>
             <br/><br/>
-			<?php printf( __( 'If any of your merge fields should should include membership specific data for the user, it is likely the corresponding data is stored as something other than User Meta Data (i.e. not stored in the %1$swp_usermeta%2$s database table). In these cases, you will %3$shave%4$s to use the %1$se20r_mailchimp_listsubscribe_fields%2$s filter to populate the merge fields for the new member.', Controller::plugin_slug ), '<code>', '</code>', '<em>', '</em>' );
-			printf( __( "With your Support and Updates license, you may %srequest custom code%s to populate up to 3 custom merge tags for your users.", Controller::plugin_slug ), '<a href="options-general.php?page=e20r_mc_settings#support">', '</a>');
+			<?php printf( __( 'If any of your merge fields should should include membership specific data for the user, it is likely the corresponding data is stored as something other than User Meta Data (i.e. not stored in the %1$swp_usermeta%2$s database table). In these cases, you will %3$shave%4$s to use the %1$se20r-mailchimp-user-defined-merge-tag-fields%2$s filter to populate the merge fields for the new member.', Controller::plugin_slug ), '<code>', '</code>', '<em>', '</em>' );
+			printf( __( "With your Support and Updates license, you may %srequest custom code%s to populate up to 3 custom merge tags for your users.", Controller::plugin_slug ), '<a href="options-general.php?page=e20r_mc_settings#support">', '</a>' );
 			?>
         </p>
 		<?php
 	}
- 
+	
 	/**
 	 * Interest Group section
 	 */
 	public function section_igs() {
 		
-		$has_membership_system = apply_filters( 'e20r_mailchimp_membership_plugin_present', false );
-		$mc_url = "https://" . MailChimp_API::get_mc_dc() . ".admin.mailchimp.com/lists/";
+		$has_membership_system = apply_filters( 'e20r-mailchimp-membership-plugin-present', false );
+		$mc_url                = "https://" . MailChimp_API::get_mc_dc() . ".admin.mailchimp.com/lists/";
 		
 		if ( true === $has_membership_system ) {
 			?>
@@ -703,9 +753,9 @@ class MC_Settings {
             <p>
 				<?php printf( __( "The default setting for all merge fields is '%sFrom custom code/filter%s'.", Controller::plugin_slug ), '<strong>', '</strong>' ); ?>
                 <br/><br/>
-				<?php printf( __( 'The best approach is to define your list specific merge fields, and insert data for those fields, using the %1$se20r_mailchimp_mergefield_settings%2$s and %1$se20r_mailchimp_listsubscribe_fields%2$s filter combination.', Controller::plugin_slug ), '<code>', '</code>' ); ?>
+				<?php printf( __( 'The best approach is to define your list specific merge fields, and insert data for those fields, using the %1$se20r-mailchimp-merge-tag-settings%2$s and %1$se20r-mailchimp-user-defined-merge-tag-fields%2$s filter combination.', Controller::plugin_slug ), '<code>', '</code>' ); ?>
                 <br/><br/>
-				<?php printf( __( 'If any of your merge fields should show membership level specific data for the user, it\'s likely the corresponding data is stored as something other than User Meta Data (i.e. not stored in the %1$swp_usermeta%2$s database table). In these cases, you %3$shave%4$s to use the %1$se20r_mailchimp_listsubscribe_fields%2$s filter to populate the merge fields for the new member.', Controller::plugin_slug ), '<code>', '</code>', '<em>', '</em>' );
+				<?php printf( __( 'If any of your merge fields should show membership level specific data for the user, it\'s likely the corresponding data is stored as something other than User Meta Data (i.e. not stored in the %1$swp_usermeta%2$s database table). In these cases, you %3$shave%4$s to use the %1$se20r-mailchimp-user-defined-merge-tag-fields%2$s filter to populate the merge fields for the new member.', Controller::plugin_slug ), '<code>', '</code>', '<em>', '</em>' );
 				?>
             </p>
             <p>
@@ -763,10 +813,10 @@ class MC_Settings {
 		
 		$level          = $args['level'];
 		$selected_lists = $args['selected_lists'];
+		$prefix         = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
 		
-		if ( ! isset( $level->id ) ||
-		     ( isset( $level->id ) && empty( $selected_lists ) )
-		) {
+		if ( ! isset( $level->id ) ) {
+			$utils->log( "No level info, nor selected lists found!" . print_r( $level, true ) );
 			
 			return;
 			
@@ -782,7 +832,9 @@ class MC_Settings {
 				
 				if ( isset( $list_options->interest_categories ) && ! empty( $list_options->interest_categories ) ) {
 					
-					$categories = $list_options->interest_categories; ?>
+					$categories = $list_options->interest_categories;
+					$utils->log( "Found " . count( $categories ) . " interest categories for {$list_id}/{$level->id}/{$level->name}" );
+					?>
                     <div style="font-size: 1.1em; font-style: italic; font-weight: 600; padding: 10px 0;">
 						<?php printf( __( '%1$s (ID: %2$s)', Controller::plugin_slug ), esc_attr( $e20r_mc_lists[ $list_id ]['name'] ), esc_attr( $list_id ) ); ?>
                     </div>
@@ -817,14 +869,14 @@ class MC_Settings {
 									<?php
 								}
 								
-								$ig_settings = $mc_api->get_option( "level_{$level->id}_interests" );
+								$ig_settings = $mc_api->get_option( "level_{$prefix}_{$level->id}_interests" );
 								
 								foreach ( $category->interests as $int_id => $label ) {
 									$id_value = isset( $ig_settings[ $list_id ][ $cat_id ][ $int_id ] ) ? $ig_settings[ $list_id ][ $cat_id ][ $int_id ] : false;
 									?>
                                     <div class="e20rmc-ic-checkboxgroup">
                                         <input type="checkbox"
-                                               name="e20r_mc_settings[level_<?php esc_attr_e( $level->id ); ?>_interests][<?php esc_attr_e( $list_id ); ?>][<?php esc_attr_e( $cat_id ); ?>][<?php esc_attr_e( $int_id ); ?>]"
+                                               name="e20r_mc_settings[level_<?php esc_attr_e( $prefix ); ?>_<?php esc_attr_e( $level->id ); ?>_interests][<?php esc_attr_e( $list_id ); ?>][<?php esc_attr_e( $cat_id ); ?>][<?php esc_attr_e( $int_id ); ?>]"
                                                class="e20rmc-interest-category_<?php esc_attr_e( $ig_name ); ?>"
                                                value="1" <?php checked( true, $id_value ); ?> />
                                         <span class="e20rmc-interest-category-type"><?php esc_attr_e( $label ); ?></span>
@@ -862,7 +914,7 @@ class MC_Settings {
                         </div>
 						<?php
 						
-						$mf_settings = $mc_api->get_option( "level_{$level->id}_merge_fields" );
+						$mf_settings = $mc_api->get_option( "level_{$prefix}_{$level->id}_merge_fields" );
 						
 						foreach ( $list_options->merge_fields as $tag => $field_def ) { ?>
                             <div class="e20rmc-merge-field-definition">
@@ -870,7 +922,7 @@ class MC_Settings {
                                     <?php printf( '%s (%s/%s):', esc_attr( $field_def['name'] ), esc_attr( $tag ), esc_attr( $field_def['type'] ) ); ?>
                                 </label>
                             </span>
-                                <select name="e20r_mc_settings[level_<?php esc_attr_e( $level->id ); ?>_merge_fields][<?php esc_attr_e( $list_id ); ?>][<?php esc_attr_e( $tag ); ?>]"
+                                <select name="e20r_mc_settings[level_<?php esc_attr_e( $prefix ); ?>_<?php esc_attr_e( $level->id ); ?>_merge_fields][<?php esc_attr_e( $list_id ); ?>][<?php esc_attr_e( $tag ); ?>]"
                                         id="e20rmc-merge-field-meta_<?php esc_attr_e( $tag ); ?>"
                                         class="e20r-mailchimp-merge-field-select">
                                     <option value="-1">
@@ -899,7 +951,7 @@ class MC_Settings {
 				<?php }
 				
 				$filtered_fields = $this->get_filter_meta_fields();
-				$utils->log( "Filtered field count: " . count( $filtered_fields ) . " vs configure merge tag count: " . count( $list_options->merge_fields ));
+				$utils->log( "Filtered field count: " . count( $filtered_fields ) . " vs configure merge tag count: " . count( $list_options->merge_fields ) );
 				if ( isset( $list_options->merge_fields ) && ! empty( $filtered_fields ) && ( count( $list_options->merge_fields ) != count( $filtered_fields ) ) ) { ?>
                     <div class="e20rmc-available merge-fields">
                         <div style="font-size: 1.1em; font-style: italic; font-weight: 600; padding: 10px 0;">
@@ -907,7 +959,7 @@ class MC_Settings {
                         </div>
 						<?php
 						
-						$mf_settings = $mc_api->get_option( "level_{$level->id}_merge_fields" );
+						$mf_settings = $mc_api->get_option( "level_{$prefix}_{$level->id}_merge_fields" );
 						
 						foreach ( $filtered_fields as $tag => $field_def ) {
 							
@@ -919,7 +971,7 @@ class MC_Settings {
                                     <?php printf( '%s (%s/%s):', esc_attr( $field_def['name'] ), esc_attr( $tag ), esc_attr( $field_def['type'] ) ); ?>
                                 </label>
                             </span>
-                                    <select name="e20r_mc_settings[level_<?php esc_attr_e( $level->id ); ?>_merge_fields][<?php esc_attr_e( $list_id ); ?>][<?php esc_attr_e( $tag ); ?>]"
+                                    <select name="e20r_mc_settings[level_<?php esc_attr_e( $prefix ); ?>_<?php esc_attr_e( $level->id ); ?>_merge_fields][<?php esc_attr_e( $list_id ); ?>][<?php esc_attr_e( $tag ); ?>]"
                                             id="e20rmc-merge-field-meta_<?php esc_attr_e( $tag ); ?>"
                                             class="e20r-mailchimp-merge-field-select">
                                         <option value="-1">
@@ -1004,13 +1056,14 @@ class MC_Settings {
 	 * @return array
 	 */
 	public function settings_validate( $input ) {
-		
-		$api                   = MailChimp_API::get_instance();
+        
+        $mc_api                   = MailChimp_API::get_instance();
 		$membership_controller = Member_Handler::get_instance();
 		$utils                 = Utilities::get_instance();
 		
 		$new_input = array();
-		$defaults  = $api->get_default_options();
+		$defaults  = $mc_api->get_default_options();
+		$prefix    = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
 		
 		// $newinput = array();
 		
@@ -1060,46 +1113,46 @@ class MC_Settings {
 			// Process all membership levels (configure membership level specific lists, interests and merge fields)
 			foreach ( $levels as $level ) {
 				
-				if ( ! isset( $new_input["level_{$level->id}_lists"] ) || ! is_array( $new_input["level_{$level->id}_lists"] ) ) {
-					$new_input["level_{$level->id}_lists"] = $new_input['members_list'];
+				if ( ! isset( $new_input["level_{$prefix}_{$level->id}_lists"] ) || ! is_array( $new_input["level_{$prefix}_{$level->id}_lists"] ) ) {
+					$new_input["level_{$prefix}_{$level->id}_lists"] = $new_input['members_list'];
 				}
 				
 				// Instantiate for new level interest settings
-				if ( ! isset( $new_input["level_{$level->id}_interests"] ) ) {
-					$new_input["level_{$level->id}_interests"] = array();
+				if ( ! isset( $new_input["level_{$prefix}_{$level->id}_interests"] ) ) {
+					$new_input["level_{$prefix}_{$level->id}_interests"] = array();
 				}
 				
-				if ( ! isset( $new_input["level_{$level->id}_merge_fields"] ) ) {
-					$new_input["level_{$level->id}_merge_fields"] = array();
+				if ( ! isset( $new_input["level_{$prefix}_{$level->id}_merge_fields"] ) ) {
+					$new_input["level_{$prefix}_{$level->id}_merge_fields"] = array();
 				}
 				
 				// Process all lists defined for the membership level
-				foreach ( $new_input["level_{$level->id}_lists"] as $list_id ) {
+				foreach ( $new_input["level_{$prefix}_{$level->id}_lists"] as $list_id ) {
 					
 					// The the list specific options for the current level being processes
 					$list_options = $api->get_list_conf_by_id( $list_id );
 					$utils->log( "Loaded list options for level {$level->id}/{$list_id}" );
 					
 					// Instantiate for new lists
-					if ( ! isset( $new_input["level_{$level->id}_interests"][ $list_id ] ) ) {
-						$new_input["level_{$level->id}_interests"][ $list_id ] = array();
+					if ( ! isset( $new_input["level_{$prefix}_{$level->id}_interests"][ $list_id ] ) ) {
+						$new_input["level_{$prefix}_{$level->id}_interests"][ $list_id ] = array();
 					}
 					
-					if ( ! isset( $new_input["level_{$level->id}_merge_fields"][ $list_id ] ) ) {
-						$new_input["level_{$level->id}_merge_fields"][ $list_id ] = array();
+					if ( ! isset( $new_input["level_{$prefix}_{$level->id}_merge_fields"][ $list_id ] ) ) {
+						$new_input["level_{$prefix}_{$level->id}_merge_fields"][ $list_id ] = array();
 					}
 					
 					// Skip if not configured
-					if ( ! isset( $input["level_{$level->id}_interests"][ $list_id ] ) ) {
+					if ( ! isset( $input["level_{$prefix}_{$level->id}_interests"][ $list_id ] ) ) {
 						continue;
 					}
 					
 					// Process configured interest categories
-					foreach ( $input["level_{$level->id}_interests"][ $list_id ] as $category_id => $category ) {
+					foreach ( $input["level_{$prefix}_{$level->id}_interests"][ $list_id ] as $category_id => $category ) {
 						
 						// Instantiate for new categories
-						if ( ! isset( $new_input["level_{$level->id}_interests"][ $list_id ][ $category_id ] ) ) {
-							$new_input["level_{$level->id}_interests"][ $list_id ][ $category_id ] = array();
+						if ( ! isset( $new_input["level_{$prefix}_{$level->id}_interests"][ $list_id ][ $category_id ] ) ) {
+							$new_input["level_{$prefix}_{$level->id}_interests"][ $list_id ][ $category_id ] = array();
 						}
 						
 						// Configure interests
@@ -1109,13 +1162,13 @@ class MC_Settings {
 						
 						foreach ( $category->interests as $interest_id => $interest_label ) {
 							
-							$new_input["level_{$level->id}_interests"][ $list_id ][ $category_id ][ $interest_id ] = $input["level_{$level->id}_interests"][ $list_id ][ $category_id ][ $interest_id ];
+							$new_input["level_{$prefix}_{$level->id}_interests"][ $list_id ][ $category_id ][ $interest_id ] = $input["level_{$prefix}_{$level->id}_interests"][ $list_id ][ $category_id ][ $interest_id ];
 						}
 						/*
-						if ( isset( $input["level_{$level->id}_interests"][ $list_id ][ $category_id ] ) && ! empty( $input["level_{$level->id}_interests"][ $list_id ][ $category_id ] ) ) {
+						if ( isset( $input["level_{$prefix}_{$level->id}_interests"][ $list_id ][ $category_id ] ) && ! empty( $input["level_{$prefix}_{$level->id}_interests"][ $list_id ][ $category_id ] ) ) {
 							
 							foreach (  as $configured_interest_id => $value ) {
-								$new_input["level_{$level->id}_interests"][ $list_id ][ $category_id ][ $configured_interest_id ] = $value;
+								$new_input["level_{$prefix}_{$level->id}_interests"][ $list_id ][ $category_id ][ $configured_interest_id ] = $value;
 							}
 					    }
 						*/
@@ -1132,10 +1185,10 @@ class MC_Settings {
 						// Default value
 						$input_value = - 1;
 						
-						if ( isset ( $input["level_{$level->id}_merge_fields"][ $list_id ][ $tag ] ) ) {
+						if ( isset ( $input["level_{$prefix}_{$level->id}_merge_fields"][ $list_id ][ $tag ] ) ) {
 							
 							$utils->log( "Processing merge field: {$tag}" );
-							$input_value = $input["level_{$level->id}_merge_fields"][ $list_id ][ $tag ];
+							$input_value = $input["level_{$prefix}_{$level->id}_merge_fields"][ $list_id ][ $tag ];
 							
 							if ( - 1 !== $input_value && isset( $meta_fields[ $tag ] ) ) {
 								$input_value = $meta_fields[ $tag ];
@@ -1146,7 +1199,7 @@ class MC_Settings {
 					} // End of merge_field processing
 					
 					// Set the merge field configuration for the list/level
-					$new_input["level_{$level->id}_merge_fields"][ $list_id ] = $new_merge_fields;
+					$new_input["level_{$prefix}_{$level->id}_merge_fields"][ $list_id ] = $new_merge_fields;
 					
 				} // End of foreach for level list info loop
 			} // End of foreach for membership level loop
@@ -1168,7 +1221,7 @@ class MC_Settings {
 		$utils->log( "Update nonce verified" );
 		$status = get_option( 'e20r_mailchimp_old_updated', false );
 		
-		if ( false != $status ) {
+		if ( false != $status && 2 != $status ) {
 			
 			$msg = __( 'Update operation is either in progress, or it has completed successfully.', Controller::plugin_slug );
 			$utils->log( $msg );
@@ -1179,11 +1232,10 @@ class MC_Settings {
 		}
 		
 		$list_id               = $utils->get_variable( 'list_defined', null );
-		$mc_api                = MailChimp_API::get_instance();
 		$ig_class              = Interest_Groups::get_instance();
-		$has_membership_system = apply_filters( 'e20r_mailchimp_membership_plugin_present', false );
+		$has_membership_system = apply_filters( 'e20r-mailchimp-membership-plugin-present', false );
 		$member_list           = array();
-		$found_member_lists    = array();
+		$found_member_groups   = array();
 		
 		if ( false === $has_membership_system ) {
 			
@@ -1222,21 +1274,23 @@ class MC_Settings {
 			 *                           string \stdClass()->status
 			 *                )
 			 */
-			$member_list = apply_filters( 'e20r_mailchimp_membership_list_all_members', $member_list );
+			$member_list = apply_filters( 'e20r-mailchimp-membership-list-all-members', $member_list );
 			
 			$utils->log( "Processing " . count( $member_list ) . " member accounts" );
 			
+			$label = apply_filters( 'e20r-mailchimp-interest-category-label', null );
+			
 			foreach ( $member_list as $member ) {
 				
-				if ( ! in_array( $member->membership_id, array_keys( $found_member_lists ) ) ) {
+				if ( ! in_array( $member->membership_id, array_keys( $found_member_groups ) ) ) {
 					
-					$levels_category = $ig_class->has_category( $member->membership_id, __( "Membership Levels", Controller::plugin_slug ) );
+					$levels_category = $ig_class->has_category( $member->membership_id, $label );
 					
 					if ( false === $levels_category ) {
 						$ig_class->create_categories_for_membership( $member->membership_id );
 					}
 					
-					$found_member_lists[ $member->membership_id ] = true;
+					$found_member_groups[ $member->membership_id ] = true;
 				}
 				
 				$this->background_handler->push_to_queue( $member );
@@ -1282,8 +1336,8 @@ class MC_Settings {
 		
 		wp_verify_nonce( 'e20rmc', "e20rmc_refresh_{$list_id}" );
 		$utils->log( "Nonce is verified" );
-		
-		$api      = MailChimp_API::get_instance();
+        
+        $mc_api      = MailChimp_API::get_instance();
 		$mg_class = Merge_Fields::get_instance();
 		$ig_class = Interest_Groups::get_instance();
 		$utils    = Utilities::get_instance();
@@ -1293,23 +1347,29 @@ class MC_Settings {
 		
 		$utils->log( "Loading data for {$level_id}" );
 		
-		if ( empty( $api ) ) {
+		if ( empty( $mc_api ) ) {
 			
-			$pmpro_msg  = __( "Unable to load MailChimp API interface", Controller::plugin_slug );
-			$pmpro_msgt = "error";
-			$utils->log( $pmpro_msg );
-			wp_send_json_error( $pmpro_msg );
+			$error_msg  = __( "Unable to load MailChimp API interface", Controller::plugin_slug );
+			$error_msgt = "error";
+			$utils->log( $error_msg );
+			wp_send_json_error( $error_msg );
 			wp_die();
 		}
 		
+		/*
 		if ( function_exists( 'pmpro_getLevel' ) ) {
 			$level = pmpro_getLevel( $level_id );
 		}
+		*/
 		
 		$level = apply_filters( 'e20r-mailchimp-get-membership-level-definition', $level, $level_id );
 		
+		// $ig_class->get_from_remote( $list_id, true );
+		$utils->log( "Creating interest group the specified membership level (ID: {$level_id} )?" );
+		$ig_class->create_categories_for_membership( $level_id );
+		
 		// Force update of upstream interest groups
-		if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $ig_class->get_from_remote( $list_id, true ) ) ) {
+		if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', true ) ) ) {
 			
 			$msg = sprintf( __( "Unable to refresh MailChimp Interest Group information for %s", Controller::plugin_slug ), $level->name );
 			$utils->add_message( $msg, 'error', 'backend' );
@@ -1319,12 +1379,8 @@ class MC_Settings {
 			wp_die();
 		}
 		
-		// $ig_class->get_from_remote( $list_id, true );
-		$utils->log( "Creating interest group the specified membership level (ID: {$level_id} )?" );
-		$ig_class->create_categories_for_membership( $level_id );
-		
 		// Force refresh of upstream merge fields
-		if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mg_class->get_from_remote( $list_id, true ) ) ) {
+		if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mc_api->get_cache( $list_id, 'merge_fields', true ) ) ) {
 			
 			$msg = sprintf( __( "Unable to refresh MailChimp Merge Field information for %s", Controller::plugin_slug ), $level->name );
 			$utils->add_message( $msg, 'error', 'backend' );
@@ -1401,15 +1457,15 @@ class MC_Settings {
 	}
 	
 	/**
-	 * Return the tag names from the e20r_mailchimp_mergefield_settings filter
+	 * Return the tag names from the e20r-mailchimp-merge-tag-settings filter
 	 *
-	 * @uses e20r_mailchimp_mergefield_settings
+	 * @uses e20r-mailchimp-merge-tag-settings
 	 *
 	 * @return array
 	 */
 	private function get_filter_mf_tags() {
 		
-		$filtered = apply_filters( 'e20r_mailchimp_mergefield_settings', array(), null );
+		$filtered = apply_filters( 'e20r-mailchimp-merge-tag-settings', array(), null );
 		$ret_val  = array();
 		
 		foreach ( $filtered as $field_defs ) {
@@ -1422,15 +1478,15 @@ class MC_Settings {
 	/**
 	 * Extract the merge fields from any default or user/admin supplied filters.
 	 *
-	 * @uses e20r_mailchimp_mergefield_settings
+	 * @uses e20r-mailchimp-merge-tag-settings
 	 *
 	 * @return array
 	 */
 	private function get_filter_meta_fields() {
 		
 		$ret_val  = array();
-		$filtered = apply_filters( 'e20r_mailchimp_mergefield_settings', $ret_val, null );
-  
+		$filtered = apply_filters( 'e20r-mailchimp-merge-tag-settings', $ret_val, null );
+		
 		foreach ( $filtered as $field_defs ) {
 			$ret_val[ $field_defs['tag'] ] = $field_defs;
 		}
