@@ -20,6 +20,7 @@
 namespace E20R\MailChimp;
 
 use E20R\Utilities\Utilities;
+use E20R\Utilities\E20R_Background_Process;
 
 class Mailchimp_Updater extends E20R_Background_Process {
 	
@@ -40,8 +41,9 @@ class Mailchimp_Updater extends E20R_Background_Process {
 		$utils    = Utilities::get_instance();
 		$ig_class = Interest_Groups::get_instance();
 		
-		$members_lists = $mc_api->get_option( "level_{$member->membership_id}_lists" );
-		$list_info    = $mc_api->get_option( "level_{$member->membership_id}_interests" );
+		$prefix      = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
+		$members_lists = $mc_api->get_option( "level_{$prefix}_{$member->membership_id}_lists" );
+		$list_info    = $mc_api->get_option( "level_{$prefix}_{$member->membership_id}_interests" );
 		$user         = get_userdata( $member->user_id );
 		// $list_id                = array_pop( $members_lists );
 		// $member_ig_category_ids = array_keys( $list_info[ $list_id ] );
@@ -54,11 +56,11 @@ class Mailchimp_Updater extends E20R_Background_Process {
 		}
 		
 		/**
-		 * @filter e20r_mailchimp_list_statuses_to_update - The Mailchimp.com user/account statuses that can be updated
+		 * @filter e20r-mailchimp-list-statuses-to-update - The Mailchimp.com user/account statuses that can be updated
 		 *
 		 * @param array $apply_to_statuses - Default: array( 'subscribed' ). Supported: array( 'subscribed', 'unsubscribed', 'cleaned', 'pending' )
 		 */
-		$apply_to_statuses = apply_filters( 'e20r_mailchimp_list_statuses_to_update', array( 'subscribed' ) );
+		$apply_to_statuses = apply_filters( 'e20r-mailchimp-list-statuses-to-update', array( 'subscribed' ) );
 		
 		foreach ( $members_lists as $list_id ) {
 			
@@ -87,7 +89,7 @@ class Mailchimp_Updater extends E20R_Background_Process {
 		
 		$utils = Utilities::get_instance();
 		
-		$utils->log( "Background processing complete for Membership list" );
+		$utils->log( "Background processing complete for user ('member') update" );
 		
 		if ( defined('WP_DEBUG' ) && true === WP_DEBUG && defined( 'E20R_MC_TESTING' ) && true === E20R_MC_TESTING) {
 			$updated_value = 0;
