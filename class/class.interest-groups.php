@@ -688,13 +688,13 @@ class Interest_Groups {
 		/**
 		 * Always used in on the site together with the 'e20r_mailchimp_merge_fields' filter.
 		 *
-		 * @filter e20r_mailchimp_mergefield_settings - The merge field value/data array to submit to the MailChimp distribution list
+		 * @filter e20r-mailchimp-merge-tag-settings - The merge field value/data array to submit to the MailChimp distribution list
 		 *
 		 * @param array         $field_values - Array: array( 'FIELDNAME' => $field_value, 'FIELDNAME2' => $field_value2, ... )
 		 * @param \WP_User|null $user         - The user object to fetch data for/about
 		 * @param string        $list_id      - The MailChimp identifier for the Mailing list
 		 */
-		$user_merge_fields = apply_filters( 'e20r_mailchimp_mergefield_settings', array(), null, $list_id );
+		$user_merge_fields = apply_filters( 'e20r-mailchimp-merge-tag-settings', array(), null, $list_id );
 		$v2_category_def   = array();
 		$is_converted      = get_option( 'e20r_mc_ics_converted', false );
 		
