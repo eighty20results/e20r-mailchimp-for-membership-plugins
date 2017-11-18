@@ -108,39 +108,6 @@ class MailChimp_API {
 	}
 	
 	/**
-	 * Return the value of the named option
-	 *
-	 * @param string $name
-	 *
-	 * @return mixed
-	 */
-	public function get_option( $name = null ) {
-		
-		if ( empty( $this->options ) ) {
-			$this->options = get_option( 'e20r_mc_settings' );
-		}
-		
-		if ( ! is_null( $name ) ) {
-			
-			// New option...
-			if ( ! isset( $this->options[ $name ] ) ) {
-				$defaults = $this->get_default_options();
-				
-				$this->options[ $name ] = $defaults[ $name ];
-			}
-			
-			return isset( $this->options[ $name ] ) ? $this->options[ $name ] : null;
-		} else {
-			if ( empty( $this->options ) ) {
-				$this->options = $this->get_default_options();
-				update_option( 'e20r_mc_settings', $this->options, false );
-			}
-			
-			return $this->options;
-		}
-	}
-	
-	/**
 	 * Save the named option (or as all options if no named option is specified)
 	 *
 	 * @param array       $value The individual setting value, or the full array of settings
@@ -175,6 +142,7 @@ class MailChimp_API {
 	public function get_default_options() {
 		
 		$membership_class = Member_Handler::get_instance();
+		$utils            = Utilities::get_instance();
 		
 		$options = array(
 			"api_key"                 => "",
@@ -186,23 +154,63 @@ class MailChimp_API {
 			"mc_api_fetch_list_limit" => apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 ),
 			"last_server_refresh"     => 0,
 			"groupings_updated"       => false,
-            "membership_plugin"       => null,
+			"membership_plugin"       => null,
 		);
 		
-		$levels_list = $membership_class->get_levels();
-		
+		$utils->log("Loading the levels from the membership plugin");
+        $prefix      = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
+        
+		$levels_list = $membership_class->get_levels($prefix );
+  
 		if ( ! empty( $levels_list ) ) {
 			
 			foreach ( $levels_list as $level ) {
-				$options["level_{$level->id}_lists"]        = array();
-				$options["level_{$level->id}_interests"]    = array();
-				$options["level_{$level->id}_merge_fields"] = array();
+				$options["level_{$prefix}_{$level->id}_lists"]        = array();
+				$options["level_{$prefix}_{$level->id}_interests"]    = array();
+				$options["level_{$prefix}_{$level->id}_merge_fields"] = array();
 			}
 		}
 		
 		return $options;
 	}
-	
+    
+    /**
+     * Return the value of the named option
+     *
+     * @param string $name
+     *
+     * @return mixed
+     */
+    public function get_option( $name = null ) {
+        
+        $utils = Utilities::get_instance();
+        
+        if ( empty( $this->options ) ) {
+            $this->options = get_option( 'e20r_mc_settings' );
+        }
+        
+        if ( ! is_null( $name ) ) {
+            
+            // New option...
+            if ( ! isset( $this->options[ $name ] ) ) {
+                
+                $defaults = $this->get_default_options();
+                $utils->log( "Defaults contain " . count( $defaults ) . " options. Processing {$name}" );
+                
+                $this->options[ $name ] = $defaults[ $name ];
+            }
+            
+            return isset( $this->options[ $name ] ) ? $this->options[ $name ] : null;
+        } else {
+            if ( empty( $this->options ) ) {
+                $this->options = $this->get_default_options();
+                update_option( 'e20r_mc_settings', $this->options, false );
+            }
+            
+            return $this->options;
+        }
+    }
+    
 	/**
 	 * Return the mcapi list settings variable data for a specific list, or the entire config
 	 *
@@ -456,11 +464,10 @@ class MailChimp_API {
 			switch ( wp_remote_retrieve_response_code( $response ) ) {
 				case 401:
 					$msg = sprintf(
-						__(
-							'Sorry, but MailChimp was unable to verify your API key. MailChimp gave this response: <p><em>%s</em></p> Please try entering your API key again.',
-							Controller::plugin_slug
-						),
-						wp_remote_retrieve_response_message( $response )
+						'%s: <p><em>%s</em> %s',
+						__( 'Sorry, but MailChimp was unable to verify your API key. MailChimp gave this response', Controller::plugin_slug ),
+						wp_remote_retrieve_response_message( $response ),
+						__( 'Please try entering your API key again.', Controller::plugin_slug )
 					);
 					
 					$utils->add_message( $msg, 'error', 'backend' );
@@ -483,55 +490,115 @@ class MailChimp_API {
 					
 					return false;
 			}
-		} else {
-			
-			$body = $utils->decode_response( $response['body'] );
-			
-			if ( ! isset( $body->lists ) ) {
-				$utils->add_message( __( 'No Mailing lists found in your MailChimp account!', Controller::plugin_slug ), 'error', 'backend' );
-				
-				return false;
-			}
-			
-			
-			$ig_class = Interest_Groups::get_instance();
-			$mf_class = Merge_Fields::get_instance();
-			
-			$utils->log( "Found lists upstream.." );
-			foreach ( $body->lists as $key => $list ) {
-				
-				// Grab existing settings
-				$list_settings = $this->get_list_conf_by_id( $list->id );
-				
-				// Create the all_lists member variable
-				$this->all_lists[ $list->id ]           = array();
-				$this->all_lists[ $list->id ]['id']     = $list->id;
-				$this->all_lists[ $list->id ]['web_id'] = $list->id;
-				$this->all_lists[ $list->id ]['name']   = $list->name;
-				
-				// Update the list settings
-				$list_settings->name                = $list->name;
-				$list_settings->id                  = $list->id;
-				$list_settings->interest_categories = $ig_class->get_from_remote( $list->id, false );
-				$list_settings->merge_fields        = $mf_class->get_from_remote( $list->id, false );
-				
-				// Save the list configuration to persistent storage
-				$this->save_list_conf( $list_settings, null, $list->id );
-			}
-			
-			// Update the setting (keep it fresh
-			update_option( 'e20r_mc_lists', $this->all_lists, false );
-			$this->save_option( current_time( 'timestamp' ), 'last_server_refresh' );
 		}
 		
 		return true;
 	}
 	
+	public function load_lists( $force = false ) {
+     
+	    $utils = Utilities::get_instance();
+	    
+        /**
+         * Set the number of lists to return from the MailChimp server.
+         *
+         * @since 1.0.0
+         *
+         * @param   int $max_lists - Max number of lists to return
+         */
+        $limit = $this->get_option( 'mc_api_fetch_list_limit' );
+        $max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
+        
+        $last_refreshed = $this->get_option( 'last_server_refresh' );
+        
+        if ( false === $force && $last_refreshed > ( current_time( 'timestamp' ) - ( 5 * 60 ) ) ) {
+            $utils->log( "We'll pretend we refreshed the list - it's been less than 5 minutes" );
+            
+            return true;
+        }
+        
+        $url      = $this->get_api_url( "/lists/?count={$max}" );
+        $response = wp_remote_get( $url, $this->url_args );
+        $code     = wp_remote_retrieve_response_code( $response );
+        
+        // Fix: is_wp_error() appears to be unreliable since WordPress v4.5
+        if ( 200 > $code || 300 <= $code ) {
+            
+            $utils->log( "Something wrong with the request?!?" );
+            
+            switch ( wp_remote_retrieve_response_code( $response ) ) {
+                case 401:
+                    $msg = sprintf(
+                        '%s: <p><em>%s</em> %s',
+                        __( 'Sorry, but MailChimp was unable to verify your API key. MailChimp gave this response', Controller::plugin_slug ),
+                        wp_remote_retrieve_response_message( $response ),
+                        __( 'Please try entering your API key again.', Controller::plugin_slug )
+                    );
+                    
+                    $utils->add_message( $msg, 'error', 'backend' );
+                    $utils->log( $msg );
+                    
+                    return false;
+                    break;
+                
+                default:
+                    $msg = sprintf(
+                        __(
+                            'Error while communicating with the Mailchimp servers: <p><em>%s</em></p>',
+                            Controller::plugin_slug
+                        ),
+                        wp_remote_retrieve_response_message( $response )
+                    );
+                    
+                    $utils->add_message( $msg, 'error', 'backend' );
+                    $utils->log( wp_remote_retrieve_response_message( $response ) );
+                    
+                    return false;
+            }
+        } else {
+            
+            $body = $utils->decode_response( $response['body'] );
+            
+            if ( ! isset( $body->lists ) ) {
+                $utils->add_message( __( 'No Mailing lists found in your MailChimp account!', Controller::plugin_slug ), 'error', 'backend' );
+                
+                return false;
+            }
+            
+            $utils->log( "Found lists upstream.." );
+            foreach ( $body->lists as $key => $list ) {
+                
+                // Grab existing settings
+                $list_settings = $this->get_list_conf_by_id( $list->id );
+                
+                // Create the all_lists member variable
+                $this->all_lists[ $list->id ]           = array();
+                $this->all_lists[ $list->id ]['id']     = $list->id;
+                $this->all_lists[ $list->id ]['web_id'] = $list->id;
+                $this->all_lists[ $list->id ]['name']   = $list->name;
+                
+                // Update the list settings
+                $list_settings->name                = $list->name;
+                $list_settings->id                  = $list->id;
+                $list_settings->interest_categories = $this->get_cache( $list->id, 'interest_groups', false );
+                $list_settings->merge_fields        = $this->get_cache( $list->id, 'merge_fields', false ); // $mf_class->get_from_remote( $list->id, false );
+                
+                // Save the list configuration to persistent storage
+                $this->save_list_conf( $list_settings, null, $list->id );
+            }
+            
+            // Update the setting (keep it fresh
+            update_option( 'e20r_mc_lists', $this->all_lists, false );
+            $this->save_option( current_time( 'timestamp' ), 'last_server_refresh' );
+        }
+        
+        return true;
+    }
 	/**
 	 * Subscribe user's email address to the specified list.
 	 *
 	 * @param string        $list_id      -- MC specific list ID
-	 * @param \WP_User|null $user_obj     - The WP_User object
+	 * @param \WP_User|null $user         - The WP_User object
 	 * @param array         $merge_fields - Merge fields (see Mailchimp API docs).
 	 * @param array         $interests    - The Interests to add the user to/remove them from
 	 * @param string        $email_type   - The type of message to send (text or html)
@@ -541,33 +608,30 @@ class MailChimp_API {
 	 *
 	 * @since 1.0.0
 	 */
-	public function subscribe( $list_id = '', \WP_User $user_obj = null, $merge_fields = null, $interests = null, $email_type = 'html', $dbl_opt_in = null ) {
+	public function subscribe( $list_id = '', \WP_User $user = null, $merge_fields = null, $interests = null, $email_type = 'html', $dbl_opt_in = null ) {
 		
-		$mf_controller = Merge_Fields::get_instance();
-		$ig_controller = Interest_Groups::get_instance();
-		$utils         = Utilities::get_instance();
+		$utils = Utilities::get_instance();
 		
 		if ( is_null( $dbl_opt_in ) ) {
 			$dbl_opt_in = $this->get_option( 'double_opt_in' );
 		}
 		
 		// Can't be empty
-		$test = (array) ( $user_obj );
+		$test = (array) ( $user );
 		
 		if ( empty( $list_id ) || empty( $test ) ) {
-			
-			global $msg;
-			global $msgt;
 			
 			$msgt = "error";
 			
 			if ( empty( $list_id ) ) {
-				$msg = __( "No list ID specified for subscribe operation", "e20r-mailchimp-for-pmproe2" );
+				$msg = __( "No list specified for MailChimp subscribe operation", Controller::plugin_slug );
 			}
 			
 			if ( empty( $test ) ) {
-				$msg = __( "No user specified for subscribe operation", "e20r-mailchimp-for-pmproe2" );
+				$msg = __( "No user specified for MailChimp subscribe operation", Controller::plugin_slug );
 			}
+			
+			$utils->add_message( $msg, 'error', 'backend' );
 			
 			return false;
 		}
@@ -575,7 +639,7 @@ class MailChimp_API {
 		//build request
 		$request = array(
 			'email_type'    => $email_type,
-			'email_address' => $user_obj->user_email,
+			'email_address' => $user->user_email,
 			'status'        => ( 1 == $dbl_opt_in ? 'pending' : 'subscribed' ),
 		);
 		
@@ -590,7 +654,7 @@ class MailChimp_API {
 		}
 		
 		$args = $this->build_request( 'PUT', $utils->encode( $request ) );
-		$url  = $this->get_api_url( "/lists/{$list_id}/members/" . $this->subscriber_id( $user_obj->user_email ) );
+		$url  = $this->get_api_url( "/lists/{$list_id}/members/" . $this->subscriber_id( $user->user_email ) );
 		
 		//Connect to api server
 		$resp = wp_remote_request( $url, $args );
@@ -619,8 +683,8 @@ class MailChimp_API {
 			
 			$utils->log( "Error submitting subscription request to MailChimp.com: " . print_r( $utils->decode_response( $resp['body'] ), true ) );
 			$utils->add_message( wp_remote_retrieve_response_message( $resp ), 'error', 'backend' );
-				
-            return false;
+			
+			return false;
 			/* } */
 		}
 		
@@ -631,7 +695,7 @@ class MailChimp_API {
 	 * Unsubscribe user from the specified distribution list (MC)
 	 *
 	 * @param string        $list_id      - MC distribution list ID
-	 * @param \WP_User|null $user_objs    - The User's WP_User object
+	 * @param \WP_User|null $users        - The User's WP_User object
 	 * @param array         $merge_fields - The merge tags and values to configure
 	 * @param array         $interests    - The Interests to add the user to/remove them from
 	 *
@@ -639,19 +703,19 @@ class MailChimp_API {
 	 *
 	 * @since 1.0.0
 	 */
-	public function unsubscribe( $list_id = '', \WP_User $user_objs = null, $merge_fields = null, $interests = null ) {
+	public function unsubscribe( $list_id = '', \WP_User $users = null, $merge_fields = null, $interests = null ) {
 		
 		$utils         = Utilities::get_instance();
 		$unsub_setting = $this->get_option( 'unsubscribe' );
 		
 		// Can't be empty
-		if ( empty( $list_id ) || empty( $user_objs ) ) {
+		if ( empty( $list_id ) || empty( $users ) ) {
 			return false;
 		}
 		
 		// Force the emails into an array
-		if ( ! is_array( $user_objs ) ) {
-			$user_objs = array( $user_objs );
+		if ( ! is_array( $users ) ) {
+			$users = array( $users );
 		}
 		
 		$url  = $this->get_api_url( "/lists/{$list_id}/members" );
@@ -669,12 +733,12 @@ class MailChimp_API {
 		
 		$retval = true;
 		
-		foreach ( $user_objs as $user ) {
+		foreach ( $users as $user ) {
 			
 			switch ( $unsub_setting ) {
 				case 2:
 					// Update the mailing list interest groups for the user
-					$retval = $retval && $this->remote_user_update( $user_objs, $list_id, true );
+					$retval = $retval && $this->remote_user_update( $users, $list_id, true );
 					break;
 				
 				default:
@@ -745,16 +809,17 @@ class MailChimp_API {
 		
 		$url = $this->get_api_url( "/lists/{$list_id}/members/" . $this->subscriber_id( $user_data->user_email ) );
 		
-		$request = $this->build_request( 'GET', NULL );
+		$request = $this->build_request( 'GET', null );
 		
 		$resp        = wp_remote_get( $url, $request );
 		$code        = wp_remote_retrieve_response_code( $resp );
 		$member_info = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-  
+		
 		if ( 200 > $code || 300 <= $code ) {
 			
 			$msg = "{$member_info->title} - {$member_info->detail}";
 			$utils->log( $msg );
+			
 			// $utils->add_message( $msg, 'error', 'backend' );
 			
 			return false;
@@ -780,7 +845,7 @@ class MailChimp_API {
 		
 		$subscriber_id = $mc_api->subscriber_id( $user->user_email );
 		$url           = $mc_api->get_api_url( "/lists/{$list_id}/members/{$subscriber_id}" );
-  
+		
 		$args = array(
 			'email_address' => $user->user_email,
 			'email_type'    => apply_filters( 'e20r_mailchimp_default_mail_type', 'html' ),
@@ -920,7 +985,7 @@ class MailChimp_API {
 	/**
 	 * Get locally cached value(s) for the specific MailChimp data
 	 *
-	 * @param string $list_id List ID or (for 'interests' type, use "list_id:category_id")
+	 * @param string $list_id List ID or (for 'interests' type, use "{list_id}-{category_id}")
 	 * @param string $type    Field type to get the cache of
 	 * @param bool   $force   Force the system to bypass the cache & return the data from the MC server
 	 *
@@ -936,24 +1001,24 @@ class MailChimp_API {
 		
 		switch ( $type ) {
 			case 'merge_fields':
-				$transient_key = "e20rmc_mf_{$list_id}";
+				$cache_key = "e20rmc_mf_{$list_id}";
 				break;
 			case 'interest_groups':
-				$transient_key = "e20rmc_ig_{$list_id}";
+				$cache_key = "e20rmc_ig_{$list_id}";
 				break;
 			case 'interests':
-				$transient_key = "e20rmc_int_{$list_id}";
+				$cache_key = "{$list_id}";
 				break;
 			default:
-				$transient_key = null;
+				$cache_key = null;
+				$utils->log("Key for transient is NULL. That makes no sense!?!");
 		}
 		
-		$utils->log( "Using transient key: {$transient_key}" );
-		$cache = Cache::get( $transient_key, 'e20r_mc_api' );
+		$utils->log( "Using transient key: {$cache_key}" );
 		
-		if ( $force === true || is_null( $transient_key ) || empty( $cache ) ) {
+		if ( ! is_null( $cache_key ) && ( ( null === ( $cache = Cache::get( $cache_key, 'e20r_mc_api' ) ) ) || $force === true ) ) {
 			
-			$utils->log( "Invalid or empty cache for {$type}" );
+			$utils->log( "Invalid or empty cache for {$type}. Being forced? " . ( $force ? 'Yes' : 'No' ) );
 			
 			// Invalid cache, load from MC API server
 			switch ( $type ) {
@@ -973,11 +1038,11 @@ class MailChimp_API {
 					
 					// Using 2 part identifier split by ':' character
 					// array[0] = List ID, array[1] = Category ID
-					$ids = explode( ':', $list_id );
+					$ids = explode( '-', $list_id );
 					
 					// If the keys can't be located, return empty
 					if ( ! empty( $ids[0] ) && ! empty( $ids[1] ) ) {
-						$cache = $ig_controller->get_remote_for_category( $ids[0], $ids[1] );
+						$cache = $ig_controller->get_interests_for_category( $ids[0], $ids[1] );
 					} else {
 						$msg = __( "Unable to extract the required category or list identifier for the MailChimp API server", Controller::plugin_slug );
 						$utils->add_message( $msg, 'error', 'backend' );
@@ -1008,25 +1073,28 @@ class MailChimp_API {
 		
 		switch ( $type ) {
 			case 'merge_fields':
-				$transient_key = "e20rmc_mf_{$list_id}";
+				$cache_key = "e20rmc_mf_{$list_id}";
 				break;
 			case 'interest_groups':
-				$transient_key = "e20rmc_ig_{$list_id}";
+				$cache_key = "e20rmc_ig_{$list_id}";
 				break;
-			default:
-				$transient_key = null;
+            case 'interests':
+                $cache_key = "{$list_id}";
+                break;
+            default:
+				$cache_key = null;
 		}
 		
-		if ( ! is_null( $transient_key ) ) {
+		if ( ! is_null( $cache_key ) ) {
 			
 			/**
 			 * @filter pmpromc_api_cache_timeout_secs   Configure timeout value for cached MC API Server info
 			 *
 			 * @param int $cache_timeout Time before the cache refreshes (Default: HOUR_IN_SECONDS)
 			 */
-			$cache_timeout = apply_filters( 'e20r_mailchimp_cache_timeout_secs', HOUR_IN_SECONDS );
+			$cache_timeout = apply_filters( 'e20r_mailchimp_cache_timeout_secs', ( 5 * MINUTE_IN_SECONDS ) );
 			
-			return Cache::set( $transient_key, $data, $cache_timeout, 'e20r_mc_api' );
+			return Cache::set( $cache_key, $data, $cache_timeout, 'e20r_mc_api' );
 		}
 		
 		return false;
@@ -1042,19 +1110,19 @@ class MailChimp_API {
 		
 		switch ( $type ) {
 			case 'merge_fields':
-				$transient_key = "e20rmc_mf_{$list_id}";
+				$cache_key = "e20rmc_mf_{$list_id}";
 				break;
 			case 'interest_groups':
-				$transient_key = "e20rmc_ig_{$list_id}";
+				$cache_key = "e20rmc_ig_{$list_id}";
 				break;
 			case 'interests':
-				$transient_key = "e20rmc_int_{$list_id}";
+				$cache_key = "{$list_id}";
 				break;
 			default:
-				$transient_key = null;
+				$cache_key = null;
 		}
 		
-		Cache::delete( $transient_key, 'e20r_mc_api' );
+		Cache::delete( $cache_key, 'e20r_mc_api' );
 	}
 	
 	/**
@@ -1069,7 +1137,7 @@ class MailChimp_API {
 	public function get_all_lists( $force = false ) {
 		
 		$utils = Utilities::get_instance();
-		
+		$utils->log("Looking for lists in the system. Do we force it? " . ( $force ? 'yes' : 'no') );
 		if ( empty( $this->all_lists ) || true === $force ) {
 			
 			// Load from local cache (if possible)
@@ -1077,12 +1145,15 @@ class MailChimp_API {
 			
 			// Load from Mailchimp.com
 			if ( empty( $this->all_lists ) || true === $force ) {
-				
+                
+                $utils->log("Loading lists from Mailchimp");
+                
 				$api_key = $this->get_option( 'api_key' );
 				
 				if ( ! empty( $api_key ) ) {
 					$utils->log( "Forcing a reload from the upstream API server" );
 					$this->connect();
+					$this->load_lists( $force );
 				}
 			}
 		}
