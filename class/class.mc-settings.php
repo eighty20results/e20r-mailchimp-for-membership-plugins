@@ -188,7 +188,7 @@ class MC_Settings {
 		
             $user_selection = array(
                 'option_name'        => 'wcuser',
-                'option_default'     => E20R_MAILCHIMP_NA,
+                'option_default'     => E20R_MAILCHIMP_BILLING_USER,
                 'option_description' => __( 'Select the user email to add to the list on completion of the checkout.', Controller::plugin_slug ),
                 'options'            => array(
                     array(
