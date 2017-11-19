@@ -54,6 +54,18 @@ if ( ! defined( 'E20R_MAILCHIMP_URL' ) ) {
 	define( 'E20R_MAILCHIMP_URL', plugin_dir_url( __FILE__ ) );
 }
 
+if ( !defined( 'E20R_MAILCHIMP_NA' ) ) {
+	define( 'E20R_MAILCHIMP_NA', -1 );
+}
+
+if ( !defined( 'E20R_MAILCHIMP_CURRENT_USER' ) ) {
+	define( 'E20R_MAILCHIMP_CURRENT_USER', 0);
+}
+
+if ( !defined( 'E20R_MAILCHIMP_BILLING_USER' ) ) {
+	define( 'E20R_MAILCHIMP_BILLING_USER', 1);
+}
+
 if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 	
 	class Controller {
@@ -115,6 +127,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			add_action( "init", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
 			
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ) );
 		}
 		
 		/**
@@ -127,6 +140,12 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			}
 		}
 		
+		/**
+		 * Load style(s) for frontend
+		 */
+		public function load_frontend_styles() {
+			wp_enqueue_style( 'e20r-mc', E20R_MAILCHIMP_URL . "css/e20r-mailchimp-for-membership-plugins.css", null, E20R_MAILCHIMP_VERSION );
+		}
 		/**
 		 * Add links to the plugin row meta
 		 *
