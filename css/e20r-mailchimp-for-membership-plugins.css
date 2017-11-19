@@ -1,0 +1,82 @@
+/*
+ *
+ * Copyright (c) 2017. - Eighty / 20 Results by Wicked Strong Chicks.
+ * ALL RIGHTS RESERVED
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+.e20r-mc-divtable {
+    display: table;
+    margin: 0;
+    width: 100%;
+}
+.e20r-mc-table-header,
+.e20r-mc-table-body {
+    display: table-header-group;
+}
+.e20r-mc-table-row {
+    display: table-row;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-bottom: 1px solid #eee;
+}
+.e20r-mc-table-cell {
+    display: table-cell;
+    height: 1.5em;
+}
+.e20r-input-checkbox {
+    width: 20%;
+}
+.e20r-input-label {
+    width: 80%;
+}
+.e20r-input-label > label {
+    width: auto !important;
+    font-weight: normal !important;
+}
+.e20r-mc-table-header {
+    margin: 0 !important;
+}
+.e20r-mc-table-body .e20r-mc-table-cell {
+    padding: 10px;
+    margin: 0;
+    clear: none;
+    max-width: 100%;
+    border-bottom: 1px solid #eee;
+    float: left;
+}
+.e20r-mc-table-body .e20r-mc-table-row {
+    height: 44px;
+    width: 100%;
+    margin-bottom: 5px;
+    border-bottom: solid 1px #eee;
+}
+.e20r-mc-table-body .e20r-mc-table-row:nth-child(odd) {
+    background: rgba( 239,239,239,0.5);
+}
+.e20r-mc-table-cell {
+    font-weight: normal;
+    height: 44px;
+}
+.e20r-mc-header {
+    font-weight: 700;
+    padding-left: 10px;
+    height: 44px;
+    vertical-align: middle;
+    border-bottom: 2px solid #bbb;
+}
+.e20r-mc-table-cell label {
+    width: 100%;
+}
