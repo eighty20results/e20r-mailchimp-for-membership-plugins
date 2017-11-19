@@ -183,6 +183,39 @@ class MC_Settings {
 			$membership_options
 		);
 		
+		// Only needed/used if the WooCommerce plugin is the configured membership plugin
+		if ( 'wc' == apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null ) ) {
+		
+            $user_selection = array(
+                'option_name'        => 'wcuser',
+                'option_default'     => E20R_MAILCHIMP_NA,
+                'option_description' => __( 'Select the user email to add to the list on completion of the checkout.', Controller::plugin_slug ),
+                'options'            => array(
+                    array(
+                        'value' => E20R_MAILCHIMP_NA,
+                        'label' => __("Not applicable", Controller::plugin_slug )
+                    ),
+                    array(
+                        'value' => E20R_MAILCHIMP_CURRENT_USER,
+                        'label' => __( "Email of currently logged in user", Controller::plugin_slug ),
+                    ),
+                    array(
+                        'value' => E20R_MAILCHIMP_BILLING_USER,
+                        'label' => __( "Email of person in billing information", Controller::plugin_slug ),
+                    ),
+                ),
+            );
+            
+            add_settings_field(
+                'e20r_mc_selected_wc_user',
+                __( "Email address to use for subscription", Controller::plugin_slug ),
+                array( $this, 'select' ),
+                'e20r_mc_settings',
+                'e20r_mc_section_general',
+                $user_selection
+            );
+		}
+  
 		add_settings_field(
 			'e20r_mc_option_additional_lists',
 			__( 'User selectable for checkout/profile (opt-in)', Controller::plugin_slug ),
@@ -215,37 +248,6 @@ class MC_Settings {
 			'e20r_mc_section_general',
 			$optin_settings
 		);
-		
-		// Only needed/used if the
-		if ( 'wc' == ( $prefix = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null ) &&
-		                         true === Membership_Plugin::get_instance()->load_this_membership_plugin( 'woocommerce' ) )
-		) {
-			
-			$user_selection = array(
-				'option_name'        => 'wcuser',
-				'option_default'     => 1,
-				'option_description' => __( 'Select the user email to add to the list on completion of the checkout.', Controller::plugin_slug ),
-				'options'            => array(
-					array(
-						'value' => 0,
-						'label' => __( "Email of currently logged in user", Controller::plugin_slug ),
-					),
-					array(
-						'value' => 1,
-						'label' => __( "Email of person in billing information", Controller::plugin_slug ),
-					),
-				),
-			);
-			
-			add_settings_field(
-				'e20r_mc_selected_wc_user',
-				__( "Email address to use for subscription", Controller::plugin_slug ),
-				array( $this, 'select' ),
-				'e20r_mc_settings',
-				'e20r_mc_section_general',
-				$user_selection
-			);
-		}
 		
 		$unsub_options = array(
 			'option_name'        => 'unsubscribe',
