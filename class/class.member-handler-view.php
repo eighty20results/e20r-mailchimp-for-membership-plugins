@@ -19,6 +19,8 @@
 
 namespace E20R\MailChimp\Views;
 
+use E20R\MailChimp\Controller;
+use E20R\Utilities\Utilities;
 
 class Member_Handler_View {
 	/**
@@ -55,27 +57,99 @@ class Member_Handler_View {
 	
 	/**
 	 * Add to page: User opt-in field
+     *
+     * @return string
 	 */
-	public function add_opt_in_option() {
-		$membership_plugin_classes = apply_filters( 'e20r-mailhimp-checout-page' )
+	public function add_opt_in() {
+	 
+		$label = apply_filters( 'e20r-mailchimp-optin-label', __( "I'd rather not join the email list", Controller::plugin_slug ) );
+        $default = apply_filters( 'e20r-mailchimp-optin-default', false );
+        
+        ob_start();
 		?>
-		<table id="e20rmc-user-optin" class="top1em <?php ?>" width="100%" cellpadding="0" cellspacing="0"
-		       border="0" <?php if ( ! empty( $pmpro_review ) ) { ?>style="display: none;"<?php } ?>>
-			<thead>
-			<tr>
-				<th>
-					<?php _e( '', Controller::plugin_slug ); ?>
-				</th>
-			</tr>
-			</thead>
-			<tbody>
-			<tr class="odd">
-				<td>
-				
-				</td>
-			</tr>
-			</tbody>
-		</table>
+		<div id="e20rmc-user-optin" class="e20r-mc-divtable">
+			<div class="e20r-mc-table-header">
+                <div class="e20r-mc-table-header-row">
+                    <div class="e20r-mc-table-cell e20r-mc-header">
+                        <label for="e20r-mailchimp-double-optin"><?php esc_html_e( $label ); ?>
+                    </div>
+                </div>
+            </div>
+			<div class="e20r-mc-table-body">
+                <div class="e20r-mc-table-row">
+                    <div class="e20r-mc-table-cell">
+                        <input type="checkbox" id="e20r-mailchimp-double-optin" name="e20r-double-optin" value="0" <?php checked( false, $default ); ?>>
+                    </div>
+                </div>
+			</div>
+		</div>
 		<?php
+        return ob_get_clean();
 	}
+    
+    /**
+     * Display additional lists selection (table) or div.
+     *
+     * @param array $additional_lists_array
+     *
+     * @return string
+     */
+	public static function addl_list_choice( $additional_lists_array ) {
+        $utils = Utilities::get_instance();
+        
+        ob_start();
+	    ?>
+        <div id="e20rmc_mailing_lists" class="e20r-mc-divtable">
+            <div class="e20r-mc-table-header">
+                <div class="e20r-mc-table-row">
+                    <div class="e20r-mc-table-cell e20r-mc-header">
+                        <?php
+                        if ( count( $additional_lists_array ) > 1 ) {
+                            _e( 'Join one or more of our other mailing lists.', Controller::plugin_slug );
+                        } else {
+                            _e( 'Join our other mailing list.', Controller::plugin_slug );
+                        }
+                        ?>
+                    </div>
+                </div>
+            </div>
+            <div class="e20r-mc-table-body">
+            <?php
+            global $current_user;
+            $additional_lists_selected = $utils->get_variable( 'additional_lists', array() );
+            $saved_user_lists          = get_user_meta( $current_user->ID, "e20r_mc_additional_lists", true );
+            
+            if ( empty( $additional_lists_selected ) && isset( $_SESSION['additional_lists'] ) ) {
+                
+                $additional_lists_selected = array_map( 'sanitize_text_field', $_SESSION['additional_lists'] );
+                
+            } else if ( empty( $additional_lists_selected ) && ! empty( $saved_user_lists ) ) {
+                $additional_lists_selected = $saved_user_lists;
+            }
+            
+            $count = 1;
+            foreach ( $additional_lists_array as $key => $additional_list ) {
+                $current_list = isset( $additional_lists_selected[ ( $count - 1 ) ] ) ? $additional_lists_selected[ ( $count - 1 ) ] : null;
+                ?>
+                <div class="e20r-mc-table-row">
+                    <div class="e20r-mc-table-cell e20r-input-checkbox">
+                            <input type="checkbox" id="additional_lists_<?php esc_attr_e( $count ); ?>" class="e20r-list-checkbox"
+                                   name="additional_lists[]" style="width: 20px; position: relative; vertical-align: middle; float: left;"
+                                   value="<?php esc_attr_e( $additional_list['id'] ); ?>" <?php checked( $current_list, $additional_list['id'] ); ?> />
+                    </div>
+                    <div class="e20r-mc-table-cell e20r-input-label">
+                            <label for="additional_lists_<?php esc_attr_e( $count ); ?>" style="display: inline-block; position: relative; margin: 0; vertical-align: middle; float: left;"
+                                   class="e20r-list-entry"><?php esc_attr_e( $additional_list['name'] ); ?></label>
+                        
+                    </div>
+                </div>
+                <?php
+                    $count ++;
+                }
+                ?>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
 }
