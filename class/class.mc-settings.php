@@ -19,6 +19,7 @@
 
 namespace E20R\MailChimp;
 
+use E20R\MailChimp\Membership_Support\Membership_Plugin;
 use E20R\Utilities\Cache;
 use E20R\Utilities\Utilities;
 use E20R\Utilities\Licensing\Licensing;
@@ -56,6 +57,20 @@ class MC_Settings {
 	}
 	
 	/**
+	 * Return or instantiate the MC_Settings class
+	 *
+	 * @return MC_Settings|null
+	 */
+	public static function get_instance() {
+		
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self;
+		}
+		
+		return self::$instance;
+	}
+	
+	/**
 	 * Load JS for wp-admin on the PMPro MailChimp settings page
 	 *
 	 * @param string $hook Name of the page being loaded (stub)
@@ -73,7 +88,7 @@ class MC_Settings {
 			'e20r-mc-admin',
 			'e20rmc',
 			array(
-				'admin_url' => add_query_arg( 'action', 'e20r_mailchimp_export_csv', admin_url( 'admin-ajax.php' ) ),
+				'admin_url' => esc_url( add_query_arg( 'action', 'e20r_mailchimp_export_csv', admin_url( 'admin-ajax.php' ) ) ),
 			)
 		);
 		
@@ -200,6 +215,37 @@ class MC_Settings {
 			'e20r_mc_section_general',
 			$optin_settings
 		);
+		
+		// Only needed/used if the
+		if ( 'wc' == ( $prefix = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null ) &&
+		                         true === Membership_Plugin::get_instance()->load_this_membership_plugin( 'woocommerce' ) )
+		) {
+			
+			$user_selection = array(
+				'option_name'        => 'wcuser',
+				'option_default'     => 1,
+				'option_description' => __( 'Select the user email to add to the list on completion of the checkout.', Controller::plugin_slug ),
+				'options'            => array(
+					array(
+						'value' => 0,
+						'label' => __( "Email of currently logged in user", Controller::plugin_slug ),
+					),
+					array(
+						'value' => 1,
+						'label' => __( "Email of person in billing information", Controller::plugin_slug ),
+					),
+				),
+			);
+			
+			add_settings_field(
+				'e20r_mc_selected_wc_user',
+				__( "Email address to use for subscription", Controller::plugin_slug ),
+				array( $this, 'select' ),
+				'e20r_mc_settings',
+				'e20r_mc_section_general',
+				$user_selection
+			);
+		}
 		
 		$unsub_options = array(
 			'option_name'        => 'unsubscribe',
@@ -341,17 +387,17 @@ class MC_Settings {
 		
 		global $e20r_mc_lists;
 		
-		$utils = Utilities::get_instance();
-		$mc_api   = MailChimp_API::get_instance();
-        
-        $mc_api->set_key();
+		$utils  = Utilities::get_instance();
+		$mc_api = MailChimp_API::get_instance();
+		
+		$mc_api->set_key();
 		
 		$unsubscribe = $mc_api->get_option( 'unsubscribe' );
 		
 		//defaults
 		if ( empty( $unsubscribe ) ) {
 			$unsubscribe = 2;
-            $mc_api->save_option( $unsubscribe, 'unsubscribe' );
+			$mc_api->save_option( $unsubscribe, 'unsubscribe' );
 		}
 		
 		if ( empty( $mc_api ) ) {
@@ -490,22 +536,6 @@ class MC_Settings {
 	}
 	
 	/**
-	 * API Key setting field on options page
-	 */
-	public function option_api_key() {
-		
-		$options = get_option( 'e20r_mc_settings' );
-		
-		if ( isset( $options['api_key'] ) ) {
-			$api_key = $options['api_key'];
-		} else {
-			$api_key = "";
-		}
-		
-		printf( '<input id="e20r_mc_api_key" name="e20r_mc_settings[api_key]" class="e20r-settings-fields" type="text" value="%s" />', esc_attr( $api_key ) );
-	}
-	
-	/**
 	 * Load the settings field to select supported membership plugin to use.
 	 */
 	/*
@@ -532,6 +562,23 @@ class MC_Settings {
 		printf( "</select>" );
 	}
 	*/
+
+	/**
+	 * API Key setting field on options page
+	 */
+	public function option_api_key() {
+		
+		$options = get_option( 'e20r_mc_settings' );
+		
+		if ( isset( $options['api_key'] ) ) {
+			$api_key = $options['api_key'];
+		} else {
+			$api_key = "";
+		}
+		
+		printf( '<input id="e20r_mc_api_key" name="e20r_mc_settings[api_key]" class="e20r-settings-fields" type="text" value="%s" />', esc_attr( $api_key ) );
+	}
+	
 	/**
 	 * Number of lists to fetch per operation from Mailchimp API server
 	 */
@@ -648,15 +695,16 @@ class MC_Settings {
 			}
 		}
 	}
-    
-    /**
-     * Header section in settings for when there's no membership plugin configured for MailChimp integration
-     */
+	
+	/**
+	 * Header section in settings for when there's no membership plugin configured for MailChimp integration
+	 */
 	public function section_user_registration() {
-	   ?>
-        <p><?php _e("No membership plugin has been identified for integration. We'll simply use the standard WordPress user registration as the trigger for adding new users to a MailChimp mailing list.", Controller::plugin_slug ); ?></p>
-        <?php
-    }
+		?>
+        <p><?php _e( "No membership plugin has been identified for integration. We'll simply use the standard WordPress user registration as the trigger for adding new users to a MailChimp mailing list.", Controller::plugin_slug ); ?></p>
+		<?php
+	}
+	
 	/**
 	 * Selects the list to use as the Member's list (on MailChimp.com)
 	 *
@@ -692,6 +740,9 @@ class MC_Settings {
 		}
 	}
 	
+	/**
+	 * Message for when the plugin doesn't have the plus license
+	 */
 	public function section_unlicensed_igs() {
 		
 		$mc_url = sprintf( "https://%s.admin.mailchimp.com/lists/", MailChimp_API::get_mc_dc() );
@@ -1007,6 +1058,69 @@ class MC_Settings {
 	}
 	
 	/**
+	 * Create a list of user meta fields and return them w/data to indicate if the value(s) are serialized or not
+	 *
+	 * @return array
+	 * @access public
+	 */
+	public function get_user_meta_keys() {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( null === ( $meta_fields = Cache::get( 'e20rmc_meta_fields', 'e20r_mailchimp' ) ) ) {
+			
+			$utils->log( "Invalid cache for the user meta fields" );
+			
+			global $wpdb;
+			$sql              = "SELECT DISTINCT( meta_key ) AS meta_key FROM {$wpdb->usermeta} ORDER BY meta_key";
+			$meta_field_names = $wpdb->get_col( $sql );
+			$meta_fields      = array();
+			$is_serialized    = false;
+			
+			foreach ( $meta_field_names as $field_name ) {
+				
+				$meta_value_sql = $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s", $field_name );
+				$meta_values    = $wpdb->get_col( $meta_value_sql );
+				
+				foreach ( $meta_values as $meta_value ) {
+					$is_serialized = $is_serialized || @unserialize( $meta_value );
+				}
+				
+				$new_field                = new \stdClass();
+				$new_field->is_serialized = ( $is_serialized === false ? false : true );
+				$new_field->field_name    = $field_name;
+				
+				$meta_fields[ $field_name ] = $new_field;
+			}
+			
+			if ( ! empty( $meta_fields ) ) {
+				Cache::set( 'e20rmc_meta_fields', $meta_fields, 60 * MINUTE_IN_SECONDS, 'e20r_mailchimp' );
+			}
+		}
+		
+		return $meta_fields;
+	}
+	
+	/**
+	 * Extract the merge fields from any default or user/admin supplied filters.
+	 *
+	 * @uses e20r-mailchimp-merge-tag-settings
+	 *
+	 * @return array
+	 */
+	private function get_filter_meta_fields() {
+		
+		$ret_val  = array();
+		$filtered = apply_filters( 'e20r-mailchimp-merge-tag-settings', $ret_val, null );
+		
+		foreach ( $filtered as $field_defs ) {
+			$ret_val[ $field_defs['tag'] ] = $field_defs;
+		}
+		
+		return $ret_val;
+	}
+	
+	/**
 	 * Create Select (drop-down) input for options page
 	 *
 	 * @param array $settings
@@ -1056,8 +1170,8 @@ class MC_Settings {
 	 * @return array
 	 */
 	public function settings_validate( $input ) {
-        
-        $mc_api                   = MailChimp_API::get_instance();
+		
+		$mc_api                = MailChimp_API::get_instance();
 		$membership_controller = Member_Handler::get_instance();
 		$utils                 = Utilities::get_instance();
 		
@@ -1082,6 +1196,7 @@ class MC_Settings {
 				case 'double_opt_in':
 				case 'mc_api_fetch_list_limit':
 				case 'unsubscribe':
+				case 'wcuser':
 					$value = $new_input[ $key ] = isset( $input[ $key ] ) ? intval( $input[ $key ] ) : intval( $defaults[ $key ] );
 					break;
 				
@@ -1130,7 +1245,7 @@ class MC_Settings {
 				foreach ( $new_input["level_{$prefix}_{$level->id}_lists"] as $list_id ) {
 					
 					// The the list specific options for the current level being processes
-					$list_options = $api->get_list_conf_by_id( $list_id );
+					$list_options = $mc_api->get_list_conf_by_id( $list_id );
 					$utils->log( "Loaded list options for level {$level->id}/{$list_id}" );
 					
 					// Instantiate for new lists
@@ -1208,6 +1323,25 @@ class MC_Settings {
 		$utils->log( "Saving settings: " . print_r( $new_input, true ) );
 		
 		return $new_input;
+	}
+	
+	/**
+	 * Return the tag names from the e20r-mailchimp-merge-tag-settings filter
+	 *
+	 * @uses e20r-mailchimp-merge-tag-settings
+	 *
+	 * @return array
+	 */
+	private function get_filter_mf_tags() {
+		
+		$filtered = apply_filters( 'e20r-mailchimp-merge-tag-settings', array(), null );
+		$ret_val  = array();
+		
+		foreach ( $filtered as $field_defs ) {
+			$ret_val[] = $field_defs['tag'];
+		}
+		
+		return $ret_val;
 	}
 	
 	/**
@@ -1336,8 +1470,8 @@ class MC_Settings {
 		
 		wp_verify_nonce( 'e20rmc', "e20rmc_refresh_{$list_id}" );
 		$utils->log( "Nonce is verified" );
-        
-        $mc_api      = MailChimp_API::get_instance();
+		
+		$mc_api   = MailChimp_API::get_instance();
 		$mg_class = Merge_Fields::get_instance();
 		$ig_class = Interest_Groups::get_instance();
 		$utils    = Utilities::get_instance();
@@ -1396,101 +1530,5 @@ class MC_Settings {
 		wp_send_json_success();
 		wp_die();
 		
-	}
-	
-	/**
-	 * Create a list of user meta fields and return them w/data to indicate if the value(s) are serialized or not
-	 *
-	 * @return array
-	 * @access public
-	 */
-	public function get_user_meta_keys() {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( null === ( $meta_fields = Cache::get( 'e20rmc_meta_fields', 'e20r_mailchimp' ) ) ) {
-			
-			$utils->log( "Invalid cache for the user meta fields" );
-			
-			global $wpdb;
-			$sql              = "SELECT DISTINCT( meta_key ) AS meta_key FROM {$wpdb->usermeta} ORDER BY meta_key";
-			$meta_field_names = $wpdb->get_col( $sql );
-			$meta_fields      = array();
-			$is_serialized    = false;
-			
-			foreach ( $meta_field_names as $field_name ) {
-				
-				$meta_value_sql = $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s", $field_name );
-				$meta_values    = $wpdb->get_col( $meta_value_sql );
-				
-				foreach ( $meta_values as $meta_value ) {
-					$is_serialized = $is_serialized || @unserialize( $meta_value );
-				}
-				
-				$new_field                = new \stdClass();
-				$new_field->is_serialized = ( $is_serialized === false ? false : true );
-				$new_field->field_name    = $field_name;
-				
-				$meta_fields[ $field_name ] = $new_field;
-			}
-			
-			if ( ! empty( $meta_fields ) ) {
-				Cache::set( 'e20rmc_meta_fields', $meta_fields, 60 * MINUTE_IN_SECONDS, 'e20r_mailchimp' );
-			}
-		}
-		
-		return $meta_fields;
-	}
-	
-	/**
-	 * Return or instantiate the MC_Settings class
-	 *
-	 * @return MC_Settings|null
-	 */
-	public static function get_instance() {
-		
-		if ( is_null( self::$instance ) ) {
-			self::$instance = new self;
-		}
-		
-		return self::$instance;
-	}
-	
-	/**
-	 * Return the tag names from the e20r-mailchimp-merge-tag-settings filter
-	 *
-	 * @uses e20r-mailchimp-merge-tag-settings
-	 *
-	 * @return array
-	 */
-	private function get_filter_mf_tags() {
-		
-		$filtered = apply_filters( 'e20r-mailchimp-merge-tag-settings', array(), null );
-		$ret_val  = array();
-		
-		foreach ( $filtered as $field_defs ) {
-			$ret_val[] = $field_defs['tag'];
-		}
-		
-		return $ret_val;
-	}
-	
-	/**
-	 * Extract the merge fields from any default or user/admin supplied filters.
-	 *
-	 * @uses e20r-mailchimp-merge-tag-settings
-	 *
-	 * @return array
-	 */
-	private function get_filter_meta_fields() {
-		
-		$ret_val  = array();
-		$filtered = apply_filters( 'e20r-mailchimp-merge-tag-settings', $ret_val, null );
-		
-		foreach ( $filtered as $field_defs ) {
-			$ret_val[ $field_defs['tag'] ] = $field_defs;
-		}
-		
-		return $ret_val;
 	}
 }
