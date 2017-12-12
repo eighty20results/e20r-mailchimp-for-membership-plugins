@@ -19,6 +19,7 @@
 
 namespace E20R\MailChimp;
 
+use E20R\MailChimp\Views\Member_Handler_View;
 use E20R\Utilities\Utilities;
 use E20R\Utilities\Cache;
 use E20R\MailChimp\Membership_Support;
@@ -145,10 +146,7 @@ class Member_Handler {
 		
 		do_action( 'e20r-mailchimp-membership-plugin-load', $on_checkout_page );
 	}
-    
-	public static function get_membership_plugin_name( $mp_id ) {
-		global $e20r_mailchimp_plugins;
-    }
+	
 	/**
 	 * Load default merge field definition
 	 *
@@ -468,57 +466,6 @@ class Member_Handler {
 			return;
 		}
 		
-		?>
-        <table id="e20rmc_mailing_lists" class="top1em" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <thead>
-            <tr>
-                <th>
-					<?php
-					if ( count( $additional_lists_array ) > 1 ) {
-						_e( 'Join one or more of our other mailing lists.', Controller::plugin_slug );
-					} else {
-						_e( 'Join our other mailing list.', Controller::plugin_slug );
-					}
-					?>
-                </th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr class="odd">
-                <td>
-					<?php
-					global $current_user;
-					$additional_lists_selected = $utils->get_variable( 'additional_lists', array() );
-					$saved_user_lists          = get_user_meta( $current_user->ID, "e20r_mc_additional_lists", true );
-					
-					if ( empty( $additional_lists_selected ) && isset( $_SESSION['additional_lists'] ) ) {
-						
-						$additional_lists_selected = array_map( 'sanitize_text_field', $_SESSION['additional_lists'] );
-						
-					} else if ( empty( $additional_lists_selected ) && ! empty( $saved_user_lists ) ) {
-						$additional_lists_selected = $saved_user_lists;
-					}
-					
-					$count = 1;
-					foreach ( $additional_lists_array as $key => $additional_list ) {
-						$current_list = isset( $additional_lists_selected[ ( $count - 1 ) ] ) ? $additional_lists_selected[ ( $count - 1 ) ] : null;
-						?>
-                        <span class="e20r-additional-list-column">
-                            <input type="checkbox" id="additional_lists_<?php esc_attr_e( $count ); ?>" class="e20r-list-checkbox"
-                               name="additional_lists[]" style="width: 20px; position: relative; vertical-align: middle;"
-                               value="<?php esc_attr_e( $additional_list['id'] ); ?>" <?php checked( $current_list, $additional_list['id'] ); ?> />
-                            <label for="additional_lists_<?php esc_attr_e( $count ); ?>" style="display: inline-block; position: relative; margin: 0; vertical-align: middle;"
-                               class="e20r-list-entry"><?php esc_attr_e( $additional_list['name'] ); ?></label>
-                        </span>
-                        <br/>
-						<?php
-						$count ++;
-					}
-					?>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-		<?php
+		echo Member_Handler_View::addl_list_choice($additional_lists_array );
 	}
 }
