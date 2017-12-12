@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: E20R MailChimp Integration for Membership Plugins
+Plugin Name: E20R MailChimp Integration for Revenue Tools
 Plugin URI: https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins/
-Description: Automatically add users to your MailChimp.com list(s) when they sign up/register to get access your site. Segment users with Merge Tags and Interest Groups. Include custom user meta data in the merge tags/merge fields. Currently includes support for Paid Memberships Pro
+Description: Automatically add users to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
 Version: 1.0
 Author: Eighty/20 Results <thomas@eighty20results.com>
 Author URI: https://eighty20results.com/thomas-sjolshagen/
