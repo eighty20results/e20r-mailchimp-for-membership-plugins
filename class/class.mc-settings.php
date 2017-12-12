@@ -252,7 +252,7 @@ class MC_Settings {
 		$unsub_options = array(
 			'option_name'        => 'unsubscribe',
 			'option_default'     => 2,
-			'option_description' => __( "Recommended: 'No, change interest group'. If people subscribe from other sources than this website, you will want to choose one of the 'No' options. It will prevent contacts from being removed/unsubscribed if/when they register on this site.", Controller::plugin_slug ),
+			'option_description' => __( "Recommended: 'Change Membership Level Interest (\"Cancelled\")'. If people subscribe from other sources than this website, you may want to choose one of the other options.", Controller::plugin_slug ),
 			'options'            => array(
 				array(
 					'value' => 0,
@@ -433,7 +433,7 @@ class MC_Settings {
 			}
 		}
 		
-		$update_status = get_option( 'e20r_mailchimp_old_updated', false );
+		$update_status = intval( get_option( 'e20r_mailchimp_old_updated', false ) );
 		$lists         = $mc_api->get_option( 'members_list' );
 		$list_id       = null;
 		
@@ -461,7 +461,7 @@ class MC_Settings {
 					printf( '<br/><br/><a href="http://eepurl.com/c1glUn" target="_blank">%s</a>', __( 'Get your Free MailChimp account.', Controller::plugin_slug ) );
 					?>
                 </p>
-				<?php if ( apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) && 1 !== $update_status ) { ?>
+				<?php if ( apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) &&  1 !== $update_status ) { ?>
                     <hr/>
                     <div id="e20r_mc_update_members" class="postbox">
                         <div class="inside">
@@ -979,7 +979,7 @@ class MC_Settings {
                                         id="e20rmc-merge-field-meta_<?php esc_attr_e( $tag ); ?>"
                                         class="e20r-mailchimp-merge-field-select">
                                     <option value="-1">
-										<?php _e( "Fetch value from custom code/filter", Controller::plugin_slug ); ?>
+										<?php _e( "Loaded by custom code/filter", Controller::plugin_slug ); ?>
                                     </option>
 									<?php
 									if ( ! isset( $mf_settings[ $list_id ][ $tag ] ) ) {
@@ -1013,11 +1013,15 @@ class MC_Settings {
 						<?php
 						
 						$mf_settings = $mc_api->get_option( "level_{$prefix}_{$level->id}_merge_fields" );
+						$added = array();
 						
 						foreach ( $filtered_fields as $tag => $field_def ) {
 							
+						    $utils->log("Processing tag: {$tag}");
+							
 							if ( ! in_array( $tag, array_keys( $list_options->merge_fields ) ) ) {
-								?>
+							    $added[] = $tag;
+ 								?>
                                 <div class="e20rmc-merge-field-definition">
                             <span>
                                 <label for="e20rmc-merge-field-meta_<?php esc_attr_e( $tag ); ?>">
@@ -1050,6 +1054,10 @@ class MC_Settings {
                                 </div>
 								<?php
 							}
+						}
+						if ( empty( $added ) ) {
+							?><p><?php _e( 'No additional List Fields and Merge Tags to add...', Controller::plugin_slug ); ?></p>
+							<?php
 						}
 						?>
                     </div>
