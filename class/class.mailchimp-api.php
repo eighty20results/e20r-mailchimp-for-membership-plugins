@@ -155,6 +155,7 @@ class MailChimp_API {
 			"last_server_refresh"     => 0,
 			"groupings_updated"       => false,
 			"membership_plugin"       => null,
+            "wcuser"                  => E20R_MAILCHIMP_BILLING_USER,
 		);
 		
 		$utils->log("Loading the levels from the membership plugin");
