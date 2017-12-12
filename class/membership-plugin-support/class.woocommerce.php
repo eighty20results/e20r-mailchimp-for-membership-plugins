@@ -365,6 +365,37 @@ class WooCommerce extends Membership_Plugin {
 	}
 	
 	/**
+	 * Fetch the billing email (and user object) for the order supplied
+	 *
+	 * @param \WC_Order $order
+	 *
+	 * @return int
+	 */
+	private function get_billing_user( $order ) {
+		
+		$utils = Utilities::get_instance();
+		
+		$user_id = $order->get_customer_id();
+		
+		// Get the user's email address (billing email)
+		$email = $order->get_billing_email();
+		
+		// if there's one specified, try to get a WordPress user object for them
+		if ( ! empty( $email ) ) {
+			$user = get_user_by( 'email', $email );
+			
+			// Found the user!
+			if ( !empty( $user ) ) {
+				$user_id = $user->ID;
+			} else {
+				$utils->log("The user with email {$email} doesn't appear to have an account on this system!");
+			}
+		}
+		
+		return $user_id;
+	}
+	
+	/**
 	 * Return the list of category IDs that the items in the specified order belong to
 	 *
 	 * @param int $order_id
@@ -374,10 +405,17 @@ class WooCommerce extends Membership_Plugin {
 	private function get_category_ids( $order_id ) {
 		
 		$order        = wc_get_order( $order_id );
-		$user_id      = $order->get_user_id();
+		$user_id      = $order->get_customer_id();
 		$category_ids = array();
 		
 		$utils = Utilities::get_instance();
+		$mc_api = MailChimp_API::get_instance();
+		
+		// Find the expected user ID based on the wcuser setting (if the user exists)
+		if ( E20R_MAILCHIMP_BILLING_USER === $mc_api->get_option( 'wcuser' ) ) {
+			$utils->log("Attempting to load the user object for the billing address user");
+			$user_id = $this->get_billing_user( $order );
+		}
 		
 		$order_items = $order->get_items();
 		
@@ -502,7 +540,7 @@ class WooCommerce extends Membership_Plugin {
 		
 		$class = strtolower( get_class( $this ) );
 		
-		return apply_filters( "e20r_mailchimp_{$class}_listsubscribe_fields", $level_fields, $user, $list_id );
+		return apply_filters( "e20r-mailchimp-{$class}-user-defined-merge-tag-fields", $level_fields, $user, $list_id );
 	}
 	
 	/**
@@ -613,7 +651,7 @@ class WooCommerce extends Membership_Plugin {
 		
 		$class = strtolower( get_class( $this ) );
 		
-		return apply_filters( "e20r_mailchimp_{$class}_mergefields", $merge_field_defs, $list_id );
+		return apply_filters( "e20r-mailchimp-{$class}-merge-tag-settings", $merge_field_defs, $list_id );
 	}
 	
 	/**
