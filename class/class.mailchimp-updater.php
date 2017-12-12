@@ -42,8 +42,15 @@ class Mailchimp_Updater extends E20R_Background_Process {
 		$ig_class = Interest_Groups::get_instance();
 		
 		$prefix      = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
-		$members_lists = $mc_api->get_option( "level_{$prefix}_{$member->membership_id}_lists" );
-		$list_info    = $mc_api->get_option( "level_{$prefix}_{$member->membership_id}_interests" );
+		$members_lists = array();
+		$list_info = null;
+		
+		if ( !empty( $member->membership_id ) ) {
+			$utils->log("Found membership ID for user {$member->user_id}");
+			$members_lists = $mc_api->get_option( "level_{$prefix}_{$member->membership_id}_lists" );
+			$list_info     = $mc_api->get_option( "level_{$prefix}_{$member->membership_id}_interests" );
+		}
+		
 		$user         = get_userdata( $member->user_id );
 		// $list_id                = array_pop( $members_lists );
 		// $member_ig_category_ids = array_keys( $list_info[ $list_id ] );
@@ -101,5 +108,8 @@ class Mailchimp_Updater extends E20R_Background_Process {
 		
 		// Clean up.
 		parent::complete();
+		
+		// Show message at end of job
+		$utils->add_message( __("Complete: Background update of MailChimp.com", Controller::plugin_slug ), 'info' );
 	}
 }
