@@ -20,6 +20,7 @@
 namespace E20R\MailChimp\Views;
 
 use E20R\MailChimp\Controller;
+use E20R\MailChimp\MailChimp_API;
 use E20R\Utilities\Utilities;
 
 class Member_Handler_View {
@@ -62,8 +63,13 @@ class Member_Handler_View {
 	 */
 	public function add_opt_in() {
 	 
+	    $mc_api = MailChimp_API::get_instance();
+	    $double_optin = $mc_api->get_option( 'double_opt_in' );
+	    
 		$label = apply_filters( 'e20r-mailchimp-optin-label', __( "I'd rather not join the email list", Controller::plugin_slug ) );
-        $default = apply_filters( 'e20r-mailchimp-optin-default', false );
+  
+		// Reversed from actual setting (user is choosing to actively opt out)
+		$default = apply_filters( 'e20r-mailchimp-optin-default', ( $double_optin == 0 ) ? true : false );
         
         ob_start();
 		?>
