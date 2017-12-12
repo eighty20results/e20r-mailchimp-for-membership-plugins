@@ -39,7 +39,7 @@ for p in ${include[@]}; do
 done
 
 echo "Stripping Debug data from sources"
-find ${dst_path} -type d -name 'plugin-updates' -prune -o -type f -name '*.php' | xargs ${sed} -i '.org' -e "s/^(.*)\$utils->log\(.*\);(.*)$//g"
+find ${dst_path} -type d -name 'plugin-updates' -prune -o -type f -name '*.php' | xargs ${sed} -i '' "/.*->log\(.*\);$/d"
 
 for e in ${exclude[@]}; do
     find ${dst_path} -type d -iname ${e} -exec rm -rf {} \;
@@ -58,11 +58,10 @@ zip -r ${kit_name}.zip ${plugin_path}
 cd ${debug_path}/..
 zip -r ${debug_name}.zip ${plugin_path}-debug
 cd ${dst_path}/..
-#ssh ${server} "cd ./www/protected-content/ ; mkdir -p \"${short_name}\""
-#scp ${kit_name}.zip ${server}:./www/protected-content/${short_name}/
-#scp ${kit_name}-debug.zip ${server}:./www/protected-content/${short_name}/
-#scp ${metadata} ${server}:./www/protected-content/${short_name}/
-#ssh ${server} "cd ./www/protected-content/ ; ln -sf \"${short_name}\"/\"${short_name}\"-\"${version}\".zip \"${short_name}\".zip"
-# rm -rf ${dst_path}
-# rm -rf ${debug_path}
-
+ssh ${server} "cd ./www/protected-content/ ; mkdir -p \"${short_name}\""
+scp ${kit_name}.zip ${server}:./www/protected-content/${short_name}/
+scp ${kit_name}-debug.zip ${server}:./www/protected-content/${short_name}/
+scp ${metadata} ${server}:./www/protected-content/${short_name}/
+ssh ${server} "cd ./www/protected-content/ ; ln -sf \"${short_name}\"/\"${short_name}\"-\"${version}\".zip \"${short_name}\".zip"
+rm -rf ${dst_path}
+rm -rf ${debug_path}
