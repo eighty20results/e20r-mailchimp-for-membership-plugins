@@ -120,7 +120,7 @@ class PMPro extends Membership_Plugin {
 			add_filter( 'e20r-mailchimp-interest-category-label', array( $this, 'get_interest_cat_label'), 10 , 1);
 			add_filter( 'e20r-mailchimp-membership-new-user-level', array( $this, 'get_new_level_ids' ), 10, 3 );
 			add_filter( 'e20r-mailchimp-non-active-statuses', array( $this, 'statuses_inactive_membership' ), 10, 1 );
-			add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array( $this, 'compatibility_merge_tag_fields' ), 10, 3 );
+			add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array( $this, 'compatibility_merge_tags' ), 10, 3 );
 			
 			// FIXME: Refactor and move the functionality to correct membership support plugin & split w/Membership Handler
 			add_action( 'pmpro_checkout_after_tos_fields', array( Member_Handler::get_instance(), 'view_additional_lists' ), 10 );
@@ -402,7 +402,7 @@ class PMPro extends Membership_Plugin {
 		}
 		
 		$class = strtolower( get_class( $this ) );
-		return apply_filters( "e20r_mailchimp_{$class}_listsubscribe_fields", $level_fields, $user, $list_id );
+		return apply_filters( "e20r-mailchimp-{$class}-user-defined-merge-tag-fields", $level_fields, $user, $list_id );
 	}
 	
 	/**
