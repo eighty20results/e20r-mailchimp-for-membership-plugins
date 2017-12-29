@@ -431,8 +431,6 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		 */
 		public function unsubscribe( $list_id, $user, $merge_fields, $interests ) {
 			
-			// TODO: in unsubscribe(), change the interest group for the user to 'Cancelled' for that List's Membership Levels category, or unsubscribe them from the specified list(s).
-			
 			//make sure user has an email address
 			if ( empty( $user->user_email ) ) {
 				return false;
@@ -463,7 +461,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 						break;
 					
 					default:
-						return;
+						return false;
 				}
 				
 				
