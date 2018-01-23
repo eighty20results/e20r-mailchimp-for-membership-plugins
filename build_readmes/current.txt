@@ -1,1 +1,4 @@
-BUG: More instances of is_plugin_active() being called
+ENHANCEMENT: Set the license stub to e20r_mc
+ENHANCEMENT: Adding stub for Export_MC_User class
+ENHANCEMENT: Adding stub functions/partial classes for Signup form shorcode
+ENHANCEMENT: Update Utilities submodule to v2.0

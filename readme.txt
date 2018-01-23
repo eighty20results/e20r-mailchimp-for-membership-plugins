@@ -1,18 +1,18 @@
-=== E20R MailChimp Integration for Membership Plugins ===
+=== E20R MailChimp Integration for Revenue Tools ===
 Contributors: eighty20results
-Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, distribution list support, merge tags, interests, mailchimp groups
+Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups
 Requires at least: 4.5
 Requires PHP: 5.4
-Tested up to: 4.8.1
-Stable tag: 1.0
+Tested up to: 4.9.2
+Stable tag: 1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Sync WordPress Users and Members with MailChimp lists. Including support for Groups and Merge Tags.
+Sync WordPress based Users, Members or customers to MailChimp list with support for Groups (Interests) and Merge Tags.
 
 == Description ==
 
-Specify the subscripiton list(s) for your site's WordPress Users and Member plugin users. If a supported membership plugin is installed, you can specify additional list settings by membership level.
+Specify the subscripiton list(s) for your site's WordPress Users and Member plugin users. If a supported membership plugin is installed, you can specify additional list settings by either the membership level or the product category purchased.
 
 The plugin has a setting to require/not require MailChimp's double opt-in, as well as a setting to change interests and merge tags for members on level change. This allows you to automatically resegment your users based on membership level or custom merge tag data. This plugin does _not_ unsubscribe users from MailChimp lists _unless_ it's been explicitly configured to do so.
 
@@ -37,9 +37,11 @@ By default, the MailChimp.com servers limit the number of objects it will let an
 Select the member plugin you have installed and activated on the site. This ensures the plugin loads the correct compatibility module. See the listing below for the currently supported compatibility modules.
 
 == Email address to use for subscription ==
-NOTE: This option is only available once you've selected the WooCommerce compatibility module and saved the settings.
+This setting is only available once you've selected the WooCommerce compatibility module and saved the settings.
 
-The setting is used to select the email address to use with the MailChimp list(s). It's entirely possible for a user to be logged in to your system with one email address, but order in the WooCommerce shop on behalf of different billing address/user. This setting lets you specify whether to use the email address of the logged in user, or that of the billing address. The default is the Billing address email.
+It is used to select the email address use when subscribing to the MailChimp list(s). It is possible for a user to be logged in to your system with one email address, but then order in the WooCommerce shop on behalf of different billing address/user. This setting lets you specify whether to use the email address of the logged in user, or that of the billing address. The default is the Billing address email.
+
+Please note that if the email address specified as the Billing email doesn't link to a user account on your WordPress system, we will default to using the user account either created or logged in to when the order was paid for. It's (currently!) not possible to add anonymous orders to the MailChimp list(s).
 
 = User selectable for checkout/profile (opt-in) =
 The user can opt in to one or more additional list(s) during the checkout phase for the shop/plugin you have an active compatibility module for, if they choose. Select the lists to offer them by holding down the CTRL or Command (MacOS) key and clicking on the list name. To deselect one or more selected lists, hold down the CTRL or Command (MacOS) key and click the list to deselect.
@@ -69,5 +71,13 @@ Please visit our premium support site at https://eighty20results.com/ for more d
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 1.1 ==
+
+* ENHANCEMENT: Set the license stub to e20r_mc
+* ENHANCEMENT: Adding stub for Export_MC_User class
+* ENHANCEMENT: Adding stub functions/partial classes for Signup form shorcode
+* ENHANCEMENT: Update Utilities submodule to v2.0
+
 === v1.0 ===
 * Initial release
