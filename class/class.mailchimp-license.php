@@ -93,7 +93,7 @@ class Mailchimp_License extends License_Client {
 		$plugin_settings['e20r_mc'] = array(
 			'label'      => __( 'E20R MailChimp', Controller::plugin_slug ),
 			'key_prefix' => 'e20r_mc',
-			'stub'       => Controller::plugin_slug,
+			'stub'       => 'e20r_mc'
 		);
 		
 	
