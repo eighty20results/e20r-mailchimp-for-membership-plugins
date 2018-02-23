@@ -24,9 +24,30 @@ namespace E20R_Email_Memberships\Export;
 
 use E20R\Utilities\E20R_Background_Process;
 
-class Export_MC_User  extends E20R_Background_Process {
+class Export_MC_Users  extends E20R_Background_Process {
 	
-	public function task( $user ) {
+	protected $action = null;
+	
+	/**
+	 * Export_MC_Users constructor.
+	 */
+	public function __construct() {
+		$this->action = 'e20r_mc_export';
+		
+		parent::__construct();
+	}
+	
+	/**
+	 * @param \WP_User[] $user_list
+	 *
+	 * @return bool
+	 */
+	public function task( $user_list ) {
+		
+		foreach( $user_list as $user ) {
+			
+			// Do something with the user record
+		}
 		
 		return false;
 	}
