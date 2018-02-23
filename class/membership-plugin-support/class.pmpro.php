@@ -86,6 +86,8 @@ class PMPro extends Membership_Plugin {
 		$utils = Utilities::get_instance();
 		$utils->log("Processing the 'plugin_load' method for PMPro");
 		
+		add_action( 'e20r-mailchimp-checkout-pages', array( $this, 'add_pmpro_checkout_pages' ), 10, 1 );
+		
 		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
             
             $utils->log("Should load PMPro filters");
@@ -177,7 +179,33 @@ class PMPro extends Membership_Plugin {
 			$utils->log( "Not loading for PMPro" );
 		}
 	}
-    
+	
+	/**
+	 * Add the PMPro Checkout, Confirmation and Account page to the places where we need this functionality to exist
+	 *
+	 * @param int[] $checkout_pages
+	 *
+	 * @return int[]
+	 */
+	public function add_pmpro_checkout_pages( $checkout_pages ) {
+		
+		global $pmpro_pages;
+		
+		if (isset( $pmpro_pages['checkout'] ) ) {
+			$checkout_pages[] = $pmpro_pages['checkout'];
+		}
+		
+		if ( isset( $pmpro_pages['confirmation'])) {
+			$checkout_pages[] = $pmpro_pages['confirmation'];
+		}
+		
+		if ( isset( $pmpro_pages['account'])) {
+			$checkout_pages[] = $pmpro_pages['account'];
+		}
+		
+		return $checkout_pages;
+	}
+	
     /**
      * Load listsubscribe fields from PMPro MailChimp add-on (assumes the filter exists)
      *
