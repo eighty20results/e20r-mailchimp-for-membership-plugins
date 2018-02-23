@@ -3,7 +3,7 @@
 Plugin Name: E20R MailChimp Integration for Revenue Tools
 Plugin URI: https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins/
 Description: Automatically add users to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
-Version: 1.1
+Version: 1.2
 Author: Eighty/20 Results <thomas@eighty20results.com>
 Author URI: https://eighty20results.com/thomas-sjolshagen/
 Developer: Thomas Sjolshagen <thomas@eighty20results.com>
@@ -43,7 +43,7 @@ if ( ! defined( 'E20R_MC_TESTING' ) ) {
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_VERSION' ) ) {
-	define( 'E20R_MAILCHIMP_VERSION', '1.1' );
+	define( 'E20R_MAILCHIMP_VERSION', '1.2' );
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_DIR' ) ) {
@@ -85,7 +85,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		 */
 		private function __construct() {
 			add_filter( 'e20r-licensing-text-domain', array( $this, 'get_plugin_name' ) );
-			add_action( 'plugins_loaded', array( Mailchimp_License::get_instance(), 'load_hooks' ), 99 );
+			add_action( 'init', array( Mailchimp_License::get_instance(), 'load_hooks' ), 99 );
 		}
 		
 		/**
@@ -124,7 +124,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			add_filter( 'plugin_row_meta', array( $this, 'plugin_row_meta' ), 10, 2 );
 			
 			add_action( 'init', array( User_Handler::get_instance(), 'load_actions' ) );
-			add_action( "init", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
+			add_action( "init", array( Member_Handler::get_instance(), "load_plugin" ), -1 );
 			
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
 			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ) );
@@ -138,6 +138,22 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			if ( is_admin() ) {
 				wp_enqueue_style( 'e20r-mc-admin', E20R_MAILCHIMP_URL . 'css/e20r-mailchimp-for-membership-plugins-admin.css', array(), E20R_MAILCHIMP_VERSION );
 			}
+		}
+		
+		/**
+		 * Are we currently on the login or registration page?
+		 * (Includes support for Theme My Logins)
+		 *
+		 * @return bool
+		 */
+		public static function on_login_page() {
+			
+			global $post;
+			
+			$on_login_page = ( $GLOBALS['pagenow'] === 'wp-login.php' && ! empty( $_REQUEST['action'] ) && $_REQUEST['action'] === 'register' );
+			$on_login_page = $on_login_page || (isset( $post->post_content ) ? has_shortcode( $post->post_content, 'theme-my-login' ) : false );
+			
+			return $on_login_page;
 		}
 		
 		/**
