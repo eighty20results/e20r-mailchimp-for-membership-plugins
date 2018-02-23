@@ -3,7 +3,7 @@ Contributors: eighty20results
 Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups
 Requires at least: 4.5
 Requires PHP: 5.4
-Tested up to: 4.9.2
+Tested up to: 4.9.3
 Stable tag: 1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -71,6 +71,22 @@ Please visit our premium support site at https://eighty20results.com/ for more d
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 1.2 ==
+
+* ENHANCEMENT: Update Utilities submodule
+* ENHANCEMENT: Updated the basic framework for Export_MC_Users class
+* ENHANCEMENT: Only load new license config and and Settings page in wp-admin
+* ENHANCEMENT: Added WooCommerce handler for e20r-mailchimp-checkout-pages
+* ENHANCEMENT: Added PMPro handler for e20r-mailchimp-checkout-pages
+* ENHANCEMENT: Only need to load settings stuff if the user is logged in
+* ENHANCEMENT: Only load Member Handler functionality on certain pages, in the back-end, or when the user is logged in
+* ENHANCEMENT: Renamed e20r-mailchimp-checkout-pages filter to e20r-mailchimp-load-on-pages (more descriptive)
+* ENHANCEMENT: Only load user profile functionality if we're in the back-end, or on the TML front-end profile page(s) and logged in
+* ENHANCEMENT: Load the licensing stuff during init action
+* ENHANCEMENT: Change the priority for the Member_Hander::load_plugin() method
+* ENHANCEMENT: Add on_login_page() method for Controller() class (Includes TML support)
+* BUG FIX: Too agressive when speeding up the plugin load
 
 == 1.1 ==
 

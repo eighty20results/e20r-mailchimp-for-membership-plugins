@@ -1,4 +1,13 @@
-ENHANCEMENT: Set the license stub to e20r_mc
-ENHANCEMENT: Adding stub for Export_MC_User class
-ENHANCEMENT: Adding stub functions/partial classes for Signup form shorcode
-ENHANCEMENT: Update Utilities submodule to v2.0
+ENHANCEMENT: Update Utilities submodule
+ENHANCEMENT: Updated the basic framework for Export_MC_Users class
+ENHANCEMENT: Only load new license config and and Settings page in wp-admin
+ENHANCEMENT: Added WooCommerce handler for e20r-mailchimp-checkout-pages
+ENHANCEMENT: Added PMPro handler for e20r-mailchimp-checkout-pages
+ENHANCEMENT: Only need to load settings stuff if the user is logged in
+ENHANCEMENT: Only load Member Handler functionality on certain pages, in the back-end, or when the user is logged in
+ENHANCEMENT: Renamed e20r-mailchimp-checkout-pages filter to e20r-mailchimp-load-on-pages (more descriptive)
+ENHANCEMENT: Only load user profile functionality if we're in the back-end, or on the TML front-end profile page(s) and logged in
+ENHANCEMENT: Load the licensing stuff during init action
+ENHANCEMENT: Change the priority for the Member_Hander::load_plugin() method
+ENHANCEMENT: Add on_login_page() method for Controller() class (Includes TML support)
+BUG FIX: Too agressive when speeding up the plugin load
