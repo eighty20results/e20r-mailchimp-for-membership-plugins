@@ -37,14 +37,17 @@ class User_Handler {
 	 * Load User/Profile specific actions & filters
 	 */
 	public function load_actions() {
-        
-        add_action( 'show_user_profile', array( $this, 'add_profile_fields' ), 12, 2 );
-        add_action( 'edit_user_profile', array( $this, 'add_profile_fields' ), 12, 2 );
-        
-        add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
-        add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
-        
-        add_action( "profile_update", array( $this, "profile_update" ), 20, 2 );
+     
+	    if ( is_admin() || Controller::on_login_page() ) {
+	     
+		    add_action( 'show_user_profile', array( $this, 'add_profile_fields' ), 12, 2 );
+		    add_action( 'edit_user_profile', array( $this, 'add_profile_fields' ), 12, 2 );
+		
+		    add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
+		    add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
+		
+		    add_action( "profile_update", array( $this, "profile_update" ), 20, 2 );
+	    }
 	}
 	
 	/**
