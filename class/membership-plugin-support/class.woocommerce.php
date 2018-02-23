@@ -87,6 +87,8 @@ class WooCommerce extends Membership_Plugin {
 		$utils = Utilities::get_instance();
         $utils->log("Processing the 'plugin_load' method for WooCommerce");
 		
+		add_action( 'e20r-mailchimp-checkout-pages', array( $this, 'add_woocommerce_checkout_pages' ), 10, 1 );
+		
 		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
 			
 		    $utils->log("Should load WooCommerce filters");
@@ -170,6 +172,25 @@ class WooCommerce extends Membership_Plugin {
 			
 			$utils->log( "Not loading for WooCommerce" );
 		}
+	}
+	
+	/**
+	 * Add the WooCommerce pages we'd like to run the MailChimp functionality on
+	 * @param int[] $checkout_pages
+	 *
+	 * @return int[]
+	 */
+	public function add_woocommerce_checkout_pages( $checkout_pages ) {
+		
+		
+		if (function_exists( 'wc_get_page_id' ) ) {
+			
+			$checkout_pages[] = wc_get_page_id('checkout' );
+			$checkout_pages[] = wc_get_page_id( 'myaccount' );
+			$checkout_pages[] = wc_get_page_id( 'cart' );
+		}
+		
+		return $checkout_pages;
 	}
 	
 	/**
