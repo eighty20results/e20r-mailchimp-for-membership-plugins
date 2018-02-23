@@ -72,8 +72,11 @@ class Mailchimp_License extends License_Client {
 	 * Load action hooks & filters for Client License handler
 	 */
 	public function load_hooks() {
-		add_filter( 'e20r-license-add-new-licenses', array( $this, 'add_new_license_info', ), 10, 2 );
-		add_action( 'admin_init', array( $this, 'check_licenses' ) );
+		
+		if ( is_admin() ) {
+			add_filter( 'e20r-license-add-new-licenses', array( $this, 'add_new_license_info', ), 10, 2 );
+			add_action( 'admin_init', array( $this, 'check_licenses' ) );
+		}
 	}
 	
 	/**
