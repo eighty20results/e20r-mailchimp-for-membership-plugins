@@ -86,7 +86,7 @@ class PMPro extends Membership_Plugin {
 		$utils = Utilities::get_instance();
 		$utils->log("Processing the 'plugin_load' method for PMPro");
 		
-		add_action( 'e20r-mailchimp-checkout-pages', array( $this, 'add_pmpro_checkout_pages' ), 10, 1 );
+		add_filter( 'e20r-mailchimp-load-on-pages', array( $this, 'add_pmpro_checkout_pages' ), 10, 1 );
 		
 		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
             
@@ -188,6 +188,9 @@ class PMPro extends Membership_Plugin {
 	 * @return int[]
 	 */
 	public function add_pmpro_checkout_pages( $checkout_pages ) {
+		
+		$utils = Utilities::get_instance();
+		$utils->log("Adding PMPro pages to include");
 		
 		global $pmpro_pages;
 		
