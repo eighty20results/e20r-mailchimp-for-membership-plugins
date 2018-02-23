@@ -99,25 +99,19 @@ class Member_Handler {
 	 */
 	public function load_plugin() {
 		
-		// Load API and utilities
-		$mc_api = MailChimp_API::get_instance();
+		// Load utilities
 		$utils  = Utilities::get_instance();
 		
-		$utils->log( "Loading the base class load_plugin method");
+		$utils->log( "Loading the base class load_plugin method {$post_ID}");
+		
+		// Load API
+		$mc_api = MailChimp_API::get_instance();
 		
 		// Check that API is loaded
 		if ( empty( $mc_api ) ) {
 			
 			$utils->add_message( __( "Unable to load MailChimp API interface", Controller::plugin_slug ), 'error', 'backend' );
 			
-			return;
-		}
-		
-		$load_on_page = apply_filters( 'e20r-mailchimp-checkout-pages', array() );
-		
-		if ( !is_user_logged_in() && ! is_admin() &&! is_page( $load_on_page ) ) {
-			
-			$utils->log("Not loading Member handler hooks");
 			return;
 		}
 		
@@ -152,6 +146,7 @@ class Member_Handler {
 		
 		add_action( 'e20r-mailchimp-plugin-activation', array( $this, 'create_default_groups' ) );
 		
+		$utils->log("Trigger membership plugin operations");
 		do_action( 'e20r-mailchimp-membership-plugin-load', $on_checkout_page );
 	}
 	
