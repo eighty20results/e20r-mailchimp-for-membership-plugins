@@ -87,7 +87,7 @@ class WooCommerce extends Membership_Plugin {
 		$utils = Utilities::get_instance();
         $utils->log("Processing the 'plugin_load' method for WooCommerce");
 		
-		add_action( 'e20r-mailchimp-checkout-pages', array( $this, 'add_woocommerce_checkout_pages' ), 10, 1 );
+		add_filter( 'e20r-mailchimp-load-on-pages', array( $this, 'add_woocommerce_checkout_pages' ), 10, 1 );
 		
 		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
 			
@@ -182,8 +182,11 @@ class WooCommerce extends Membership_Plugin {
 	 */
 	public function add_woocommerce_checkout_pages( $checkout_pages ) {
 		
+		$utils = Utilities::get_instance();
 		
-		if (function_exists( 'wc_get_page_id' ) ) {
+		if ( function_exists( 'wc_get_page_id' ) ) {
+			
+			$utils->log("Adding WooCommerce pages to include in check");
 			
 			$checkout_pages[] = wc_get_page_id('checkout' );
 			$checkout_pages[] = wc_get_page_id( 'myaccount' );
