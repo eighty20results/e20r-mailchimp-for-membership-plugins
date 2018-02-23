@@ -46,14 +46,16 @@ class MC_Settings {
 	 */
 	public function load_actions() {
 		
-		add_action( 'wp_ajax_e20rmc_refresh_list_id', array( self::get_instance(), 'options_refresh' ) );
-		add_action( 'wp_ajax_e20rmc_update_members', array( self::get_instance(), 'update_existing_members' ) );
+	    if ( is_user_logged_in() ) {
+		    add_action( 'wp_ajax_e20rmc_refresh_list_id', array( self::get_instance(), 'options_refresh' ) );
+		    add_action( 'wp_ajax_e20rmc_update_members', array( self::get_instance(), 'update_existing_members' ) );
 		
-		add_action( "admin_init", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
-		add_action( 'admin_init', array( $this, 'admin_init' ) );
+		    add_action( "admin_init", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
+		    add_action( 'admin_init', array( $this, 'admin_init' ) );
 		
-		add_action( 'admin_menu', array( $this, 'admin_add_page' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) );
+		    add_action( 'admin_menu', array( $this, 'admin_add_page' ) );
+		    add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) );
+	    }
 	}
 	
 	/**
