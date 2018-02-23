@@ -113,6 +113,14 @@ class Member_Handler {
 			return;
 		}
 		
+		$load_on_page = apply_filters( 'e20r-mailchimp-checkout-pages', array() );
+		
+		if ( !is_user_logged_in() && ! is_admin() &&! is_page( $load_on_page ) ) {
+			
+			$utils->log("Not loading Member handler hooks");
+			return;
+		}
+		
 		// Configure API key
 		$mc_api->set_key();
 		$this->load_member_plugin_support();
