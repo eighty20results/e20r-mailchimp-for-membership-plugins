@@ -101,8 +101,7 @@ class Member_Handler {
 		
 		// Load utilities
 		$utils  = Utilities::get_instance();
-		
-		$utils->log( "Loading the base class load_plugin method {$post_ID}");
+		$utils->log( "Loading the base class load_plugin method");
 		
 		// Load API
 		$mc_api = MailChimp_API::get_instance();
