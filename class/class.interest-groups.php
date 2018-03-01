@@ -115,6 +115,13 @@ class Interest_Groups {
 			$list_config                      = new \stdClass();
 			$list_config->interest_categories = array();
 			
+			/**
+			 * @since 1.2.1 - BUG FIX: Would attempt to process Interest Categories when none were present.
+			 */
+			if ( empty( $categories ) ) {
+				return false;
+			}
+			
 			foreach ( $categories as $category ) {
 				$list_config->interest_categories[ $category->id ] = $category;
 				$list_config->interest_categories[ $category->id ]->name = $category->title;
