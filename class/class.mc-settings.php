@@ -630,6 +630,8 @@ class MC_Settings {
 	
 	/**
 	 * Handler for the Membership Levels section on Options page
+     *
+     * @since v1.2.1 - BUG FIX: Incorrect path name to the WP Plugins directory
 	 */
 	public function section_levels() {
 		
@@ -665,7 +667,7 @@ class MC_Settings {
 			}
 		} else {
 			//just deactivated or needs to be installed?
-			if ( file_exists( E20R_MAILCHIMP_DIR . "/../paid-memberships-pro/paid-memberships-pro.php" ) ) {
+			if ( file_exists( WP_PLUGIN_DIR . "/paid-memberships-pro/paid-memberships-pro.php" ) ) {
 				//just deactivated
 				?>
                 <p><?php
