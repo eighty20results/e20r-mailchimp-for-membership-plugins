@@ -36,6 +36,7 @@ License: GPLv2
 
 namespace E20R\MailChimp;
 
+use E20R\Utilities\GDPR_Enablement;
 use E20R\Utilities\Licensing\Mailchimp_License;
 use E20R\Utilities\Utilities;
 
@@ -121,6 +122,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		 */
 		public function plugins_loaded() {
 			
+			add_action( 'plugins_loaded', array( GDPR_Enablement::get_instance(), 'load_hooks' ), 98 );
 			add_action( 'plugins_loaded', array( MC_Settings::get_instance(), 'load_actions' ), 99 );
 			
 			$plugin = plugin_basename( __FILE__ );
@@ -133,6 +135,8 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
 			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ) );
+			
+			
 		}
 		
 		/**
@@ -507,7 +511,9 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			$ig_controller = Interest_Groups::get_instance();
 			$mf_controller = Merge_Fields::get_instance();
 			$level_ids     = array();
-   
+			
+			$gdpr_consent = (bool) $utils->get_variable( 'gdpr_consent_agreement', false );
+			
 			//make sure user has an email address
 			if ( empty( $user->user_email ) ) {
 				
@@ -528,9 +534,11 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			$opt_in = $mc_api->get_option( 'double_opt_in' );
 			
 			$email_type = apply_filters( 'e20r_mailchimp_default_mail_type', 'html' );
-			$utils->log( "Trying to subscribe {$user->ID} to list {$list_id} with double opt-in ({$opt_in}) and type {$email_type}" );
 			
-			return $mc_api->subscribe( $list_id, $user, $merge_fields, $interests, $email_type, $opt_in );
+			if ( true === $gdpr_consent ) {
+				$utils->log( "Trying to subscribe {$user->ID} to list {$list_id} with double opt-in ({$opt_in}), GDPR consent ({$gdpr_consent}) and type {$email_type}" );
+				return $mc_api->subscribe( $list_id, $user, $merge_fields, $interests, $email_type, $opt_in );
+			}
 		}
 		
 		/**
@@ -542,6 +550,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			
 			$utils            = Utilities::get_instance();
 			$additional_lists = $utils->get_variable( 'additional_lists', null );
+			$gdpr_consent = (bool) $utils->get_variable( 'gdpr_consent_agreement', false );
 			
 			if ( ! empty( $additional_lists ) ) {
 				update_user_meta( $user_id, 'e20r_mc_additional_lists', $additional_lists );
@@ -550,9 +559,13 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 				
 				foreach ( $additional_lists as $list ) {
 					//subscribe them
-					$this->subscribe( $list, $list_user, $level_id );
+					if ( true === $gdpr_consent ) {
+						$this->subscribe( $list, $list_user, $level_id );
+					}
 				}
 			}
+			
+			update_user_meta( $user_id, 'e20r_gdpr_consent_agreement', $gdpr_consent );
 		}
 		
 		/**
