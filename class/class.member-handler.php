@@ -211,26 +211,6 @@ class Member_Handler {
 	}
 	
 	/**
-	 * Preserve info when going off-site for payment w/offsite payment gateway (PayPal Express).
-	 * Saves Session variables.
-	 */
-	public function session_vars() {
-		
-		// Do we have a session we can use?
-		if ( session_id() == '' || ! isset( $_SESSION ) ) {
-			return;
-		}
-		
-		if ( isset( $_REQUEST['additional_lists'] ) ) {
-			$_SESSION['additional_lists'] = $_REQUEST['additional_lists'];
-		}
-		
-		if ( isset( $_REQUEST['e20r_user_opted_in'] ) ) {
-			$_SESSION['e20r_user_opted_in'] = $_REQUEST['e20r_user_opted_in'];
-		}
-	}
-	
-	/**
 	 * Get the e20r_mc_levels if membership plugin/option is installed
 	 */
 	public function get_levels( $prefix = 'any' ) {
@@ -252,16 +232,6 @@ class Member_Handler {
 		}
 		
 		return $e20r_mc_levels;
-	}
-	
-	/**
-	 * Remove the cache when a membership level is updated/saved/changed
-	 */
-	public function clear_levels_cache() {
-        $mc_api = MailChimp_API::get_instance();
-		$member_plugin = $mc_api->get_option( 'membership_plugin' );
-		
-		Cache::delete( "e20r_lvls_{$member_plugin}", 'e20r_mailchimp' );
 	}
 	
 	/**
@@ -397,77 +367,5 @@ class Member_Handler {
 			}
 		}
 		$utils->log( "Completed processing of add user to list" );
-	}
-	
-	/**
-	 * Add to Checkout page: Optional mailing lists a new member can add/subscribe to
-	 */
-	public function view_additional_lists() {
-  
-		$mc_api = MailChimp_API::get_instance();
-		$utils  = Utilities::get_instance();
-		
-		$api_key = $mc_api->get_option( 'api_key' );
-		
-		// Can we access the MailChimp API?
-		if ( ! empty( $api_key ) ) {
-   
-			if ( empty( $mc_api ) ) {
-				
-				$utils->add_message( __( "Unable to load MailChimp API interface", Controller::plugin_slug ), 'error', 'frontend' );
-				$utils->log("Unable to load MailChimp API class!");
-				return;
-			}
-			
-			$mc_api->set_key();
-		} else {
-			return;
-		}
-		
-		$additional_lists = $mc_api->get_option( 'additional_lists' );
-		
-		//are there additional lists?
-		if ( empty( $additional_lists ) ) {
-			$utils->log( "No additional lists found!" );
-			
-			return;
-		}
-		
-		//okay get through API
-		$lists = $mc_api->get_all_lists();
-		
-		//no lists?
-		if ( empty( $lists ) ) {
-			$utils->log( "Didn't actually find any lists at all.." );
-			
-			return;
-		}
-		
-		$utils->log( "Lists on local system: " . print_r( $lists, true ) );
-		
-		$additional_lists_array = array();
-		foreach ( $lists as $list_id => $list_config ) {
-			
-			if ( ! empty( $additional_lists ) ) {
-				
-				foreach ( $additional_lists as $additional_list ) {
-					
-					if ( $list_config['id'] == $additional_list ) {
-						$additional_lists_array[] = $list_config;
-					}
-				}
-			}
-		}
-		
-		// $this->add_opt_in_option();
-		
-		// No additional lists configured? Then return quietly
-		if ( empty( $additional_lists_array ) ) {
-			$utils->log( "Have no additional lists to worry about" );
-			
-			return;
-		}
-		
-		echo Member_Handler_View::addl_list_choice($additional_lists_array );
 	}
 }
