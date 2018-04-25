@@ -129,10 +129,7 @@ class WooCommerce extends Membership_Plugin {
 			), 10, 4 );
 			
 			// Add "additional lists" option to checkout page for WooCommerce
-			add_action( 'woocommerce_after_order_notes', array(
-				Member_Handler::get_instance(),
-				'view_additional_lists',
-			), 10 );
+			add_action( 'woocommerce_after_order_notes', array( $this, 'view_additional_lists' ), 10 );
 			
 			add_action( "edit_product_cat", array( $this, 'on_update_membership_level' ), 10, 2 );
 			
