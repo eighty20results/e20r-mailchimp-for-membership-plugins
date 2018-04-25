@@ -565,7 +565,13 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 				}
 			}
 			
-			update_user_meta( $user_id, 'e20r_gdpr_consent_agreement', $gdpr_consent );
+			update_user_meta( $user_id, 'e20r_gdpr_consent_agreement', array( current_time('timestamp') => $gdpr_consent ) );
+			
+			if ( false === $gdpr_consent ) {
+				$user = get_user_by( 'ID', $user_id );
+				$body = sprintf( __( 'User %s did not agree to the consent notice for this plugin (MailChimp for Membership Plugins). It is recommended you verify that you are not storing any data they have opted out of.', self::plugin_slug ), "{$user->display_name} ({$user->user_email})" );
+				wp_mail( get_option( 'admin_email' ), sprintf( __("MailChimp integration: New user/member (%s) refused GDPR consent", self::plugin_slug ), $user->user_email ), $body );
+			}
 		}
 		
 		/**
