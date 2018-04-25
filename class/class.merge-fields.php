@@ -531,7 +531,7 @@ class Merge_Fields {
 			/**
 			 * Always used in on the site together with the 'e20r-mailchimp-merge-tag-settings' filter.
 			 *
-			 * @filter  e20r-mailchimp-user-defined-merge-tag-fields - The merge field value/data array to submit to the MailChimp distribution list
+			 * @filter  e20r-mailchimp-user-defined-merge-tag-fields - The merge field value/data array to submit to the MailChimp distribution list for the user
 			 * @uses    e20r-mailchimp-merge-tag-settings - The field definitions
 			 *
 			 * @param array    $field_values - Array: array( 'FIELDNAME' => value, 'FIELDNAME2' => value, ... )
