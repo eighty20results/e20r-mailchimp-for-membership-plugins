@@ -32,149 +32,24 @@ class Interest_Groups {
 	private static $options;
 	
 	/**
-	 * Return the Interest ID for the "Cancelled" Membership Level
-	 *
-	 * @param string $list_id
-	 *
-	 * @return null|string
+	 * Interest_Groups constructor.
 	 */
-	public function get_cancelled_for_list( $list_id ) {
-		
-		$mc_api = MailChimp_API::get_instance();
-		$utils  = Utilities::get_instance();
-		
-		$list_config = $mc_api->get_list_conf_by_id( $list_id );
-		
-		foreach ( $list_config->interest_categories as $category ) {
-			
-			if ( false !== stripos( $category->name, __( 'Membership Levels', Controller::plugin_slug ) ) ) {
-				
-				foreach ( $category->interests as $interest_id => $name ) {
-					if ( false !== stripos( $name, __( "Cancelled", Controller::plugin_slug ) ) ) {
-						$utils->log( "Found ID for the 'Cancelled' Interest Group: {$interest_id} " );
-						
-						return $interest_id;
-					}
-				}
-			}
-		}
-		
-		return null;
+	private function __construct() {
 	}
 	
 	/**
-	 * Create a category Request Object for the specified mailchimp list ID
+	 * Return or instantiate the Interest_Groups class
 	 *
-	 * @param string $name
-	 * @param string $list_id
-	 *
-	 * @return \stdClass
+	 * @return Interest_Groups|null
 	 */
-	public function create_category( $name, $list_id ) {
+	public static function get_instance() {
 		
-		$request       = new \stdClass();
-		$request->name = $name;
-		$request->type = apply_filters( 'e20r_mailchimp_list_interest_category_type', 'checkboxes', $list_id );
-		
-		return $request;
-	}
-	
-	/**
-	 * Test whether a named category exists for the specific level ID
-	 *
-	 * @param int    $level_id
-	 * @param string $name
-	 *
-	 * @return bool|array
-	 */
-	public function has_category( $level_id, $name ) {
-		
-		$mc_api = MailChimp_API::get_instance();
-		$utils  = Utilities::get_instance();
-		$prefix = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
-		
-		$level_lists = $mc_api->get_option( "level_{$prefix}_{$level_id}_lists" );
-		
-		if ( empty( $level_lists ) ) {
+		if ( is_null( self::$instance ) ) {
 			
-			$utils->log( "No {$name} group found locally for level ({$level_id}) list " );
-			$level_lists = $mc_api->get_option( 'members_list' );
+			self::$instance = new self;
 		}
 		
-		$list_id     = array_pop( $level_lists );
-		$list_config = $mc_api->get_list_conf_by_id( $list_id );
-		
-		$utils->log("List ID is {$list_id}...");
-		
-		// Load categories from remote server
-		if ( empty( $list_config ) ) {
-			
-			$utils->log("NO list configuration for {$list_id} found...");
-			
-			$categories                       = $mc_api->get_cache( $list_id, 'interest_groups', false );
-			$list_config                      = new \stdClass();
-			$list_config->interest_categories = array();
-			
-			/**
-			 * @since 1.2.1 - BUG FIX: Would attempt to process Interest Categories when none were present.
-			 */
-			if ( empty( $categories ) ) {
-				return false;
-			}
-			
-			foreach ( $categories as $category ) {
-				$list_config->interest_categories[ $category->id ] = $category;
-				$list_config->interest_categories[ $category->id ]->name = $category->title;
-			}
-		}
-		
-		$categories = isset( $list_config->interest_categories ) ? $list_config->interest_categories : array();
-		
-		foreach ( $categories as $cat_id => $interest_cat ) {
-			
-			if ( false !== stripos( $interest_cat->name, $name ) ) {
-				
-				$utils->log("Found {$name} so loading its interests");
-				$remote_category = $mc_api->get_cache( "{$list_id}-{$cat_id}", 'interests', false );
-				
-				if ( ! empty( $remote_category ) ) {
-					return array( $cat_id => $interest_cat );
-				}
-			}
-		}
-		
-		$utils->log( "Did not find {$name}" );
-		
-		return false;
-	}
-	
-	/**
-	 * Return all membership level names as interest labels().
-	 *
-	 * @return array
-	 */
-	public function levels_as_interests() {
-		
-		$utils = Utilities::get_instance();
-		
-		$has_membership_system = apply_filters( 'e20r-mailchimp-membership-plugin-present', false );
-		$interests             = array();
-		$membership_levels     = array();
-		
-		$utils->log( "Processing levels as interests..." );
-		
-		if ( true === $has_membership_system ) {
-			$membership_levels = apply_filters( 'e20r-mailchimp-all-membership-levels', $membership_levels );
-		}
-		
-		foreach ( $membership_levels as $level_id => $level ) {
-			$interests[] = trim( $level->name );
-		}
-		
-		// Append the "cancelled" level ig
-		$interests[] = __( "Cancelled", Controller::plugin_slug );
-		
-		return $interests;
+		return self::$instance;
 	}
 	
 	/**
@@ -220,11 +95,11 @@ class Interest_Groups {
 			
 			$list_id = array_pop( $list_data );
 			
-			if ( empty($list_id)) {
-			    $utils->log("No list ID found. Skipping");
-			    continue;
-            }
-            
+			if ( empty( $list_id ) ) {
+				$utils->log( "No list ID found. Skipping" );
+				continue;
+			}
+			
 			$settings        = $mc_api->get_list_conf_by_id( $list_id );
 			$local_interests = $mc_api->get_option( "level_{$prefix}_{$l_id}_interests" );
 			
@@ -296,6 +171,303 @@ class Interest_Groups {
 	}
 	
 	/**
+	 * Return all membership level names as interest labels().
+	 *
+	 * @return array
+	 */
+	public function levels_as_interests() {
+		
+		$utils = Utilities::get_instance();
+		
+		$has_membership_system = apply_filters( 'e20r-mailchimp-membership-plugin-present', false );
+		$interests             = array();
+		$membership_levels     = array();
+		
+		$utils->log( "Processing levels as interests..." );
+		
+		if ( true === $has_membership_system ) {
+			$membership_levels = apply_filters( 'e20r-mailchimp-all-membership-levels', $membership_levels );
+		}
+		
+		foreach ( $membership_levels as $level_id => $level ) {
+			$interests[] = trim( $level->name );
+		}
+		
+		// Append the "cancelled" level ig
+		$interests[] = __( "Cancelled", Controller::plugin_slug );
+		
+		return $interests;
+	}
+	
+	/**
+	 * Test whether a named category exists for the specific level ID
+	 *
+	 * @param int    $level_id
+	 * @param string $name
+	 *
+	 * @return bool|array
+	 */
+	public function has_category( $level_id, $name ) {
+		
+		$mc_api = MailChimp_API::get_instance();
+		$utils  = Utilities::get_instance();
+		$prefix = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
+		
+		$level_lists = $mc_api->get_option( "level_{$prefix}_{$level_id}_lists" );
+		
+		if ( empty( $level_lists ) ) {
+			
+			$utils->log( "No {$name} group found locally for level ({$level_id}) list " );
+			$level_lists = $mc_api->get_option( 'members_list' );
+		}
+		
+		$list_id     = array_pop( $level_lists );
+		$list_config = $mc_api->get_list_conf_by_id( $list_id );
+		
+		$utils->log( "List ID is {$list_id}..." );
+		
+		// Load categories from remote server
+		if ( empty( $list_config ) ) {
+			
+			$utils->log( "NO list configuration for {$list_id} found..." );
+			
+			$categories                       = $mc_api->get_cache( $list_id, 'interest_groups', false );
+			$list_config                      = new \stdClass();
+			$list_config->interest_categories = array();
+			
+			/**
+			 * @since 1.2.1 - BUG FIX: Would attempt to process Interest Categories when none were present.
+			 */
+			if ( empty( $categories ) ) {
+				return false;
+			}
+			
+			foreach ( $categories as $category ) {
+				$list_config->interest_categories[ $category->id ]       = $category;
+				$list_config->interest_categories[ $category->id ]->name = $category->title;
+			}
+		}
+		
+		$categories = isset( $list_config->interest_categories ) ? $list_config->interest_categories : array();
+		
+		foreach ( $categories as $cat_id => $interest_cat ) {
+			
+			if ( false !== stripos( $interest_cat->name, $name ) ) {
+				
+				$utils->log( "Found {$name} so loading its interests" );
+				$remote_category = $mc_api->get_cache( "{$list_id}-{$cat_id}", 'interests', false );
+				
+				if ( ! empty( $remote_category ) ) {
+					return array( $cat_id => $interest_cat );
+				}
+			}
+		}
+		
+		$utils->log( "Did not find {$name}" );
+		
+		return false;
+	}
+	
+	/**
+	 * Create a category Request Object for the specified mailchimp list ID
+	 *
+	 * @param string $name
+	 * @param string $list_id
+	 *
+	 * @return \stdClass
+	 */
+	public function create_category( $name, $list_id ) {
+		
+		$request       = new \stdClass();
+		$request->name = $name;
+		$request->type = apply_filters( 'e20r_mailchimp_list_interest_category_type', 'checkboxes', $list_id );
+		
+		return $request;
+	}
+	
+	/**
+	 * Add interest category to upstream MailChimp API server
+	 *
+	 * @param string $list_id
+	 * @param object $category
+	 * @param array  $settings
+	 *
+	 * @return bool|array
+	 */
+	public function add_remote_category( $list_id, $category, $settings = array() ) {
+		
+		$mc_api = MailChimp_API::get_instance();
+		$utils  = Utilities::get_instance();
+		
+		// patch all existing interest categories to MC servers
+		
+		$url  = $mc_api->get_api_url( "/lists/{$list_id}/interest-categories" );
+		$args = $mc_api->build_request( 'POST' );
+		
+		$utils->log( "Adding interest category {$category->name} to the MailChimp servers: " . print_r( $category, true ) );
+		
+		$ic_url = $url;
+		// $args['method'] = 'POST'; // Allows us to add
+		
+		// look for categories
+		$category_type = apply_filters( 'e20r_mailchimp_list_interest_category_type', 'checkboxes', $list_id );
+		
+		$request = array(
+			'title' => $category->name,
+			'type'  => ( $category->type != $category_type ? $category_type : $category->type ),
+		);
+		
+		$args['body'] = $utils->encode( $request );
+		
+		$resp = wp_remote_request( $ic_url, $args );
+		$code = wp_remote_retrieve_response_code( $resp );
+		
+		if ( 200 > $code || 300 <= $code ) {
+			
+			$msg   = wp_remote_retrieve_response_message( $resp );
+			$error = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+			
+			$utils->log( "Error Response returned: " . print_r( $msg, true ) );
+			$utils->log( "Error Response returned: " . print_r( $error, true ) );
+			
+			if ( 'Bad Request' === $msg && 'Invalid Resource' === $error->title && false !== stripos( $error->detail, 'already exists' ) ) {
+				$utils->log( "Interest Category {$category->name} is already present for {$list_id}" );
+				
+				return true;
+			}
+			
+			$utils->log( "Error adding interest category: {$msg} for request: " . print_r( $request, true ) );
+			$utils->add_message( $msg, 'error', 'backend' );
+			
+			return false;
+			
+		} else {
+			
+			// if ( 200 == $resp_code ) {
+			
+			$cat = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+			$utils->log( "Added {$cat->title} on the MailChimp Server: {$cat->id}" );
+			
+			
+			$settings[ $cat->id ]            = new \stdClass();
+			$settings[ $cat->id ]->name      = $cat->title;
+			$settings[ $cat->id ]->type      = $cat->type;
+			$settings[ $cat->id ]->id        = $cat->id;
+			$settings[ $cat->id ]->interests = array();
+			
+			return $settings;
+			// }
+		}
+	}
+	
+	/*
+	// FIXME: May not be needed (get_remote_category() )
+	public function get_remote_category( $list_id, $category_id ) {
+		
+		$utils  = Utilities::get_instance();
+		$mc_api = MailChimp_API::get_instance();
+		
+		$limit = $mc_api->get_option( 'mc_api_fetch_list_limit' );
+		$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
+		
+		$url  = $mc_api->get_api_url( "/lists/{$list_id}/interest-categories/{$category_id}/" );
+		$args = $mc_api->build_request( 'GET', null );
+		
+		$resp = wp_remote_request( $url, $args );
+		$code = wp_remote_retrieve_response_code( $resp );
+		
+		if ( 200 > $code || 300 <= $code ) {
+			
+			$msg = wp_remote_retrieve_response_message( $resp );
+			$utils->add_message( $msg, 'error', 'backend' );
+			$utils->log( $msg );
+			
+			return false;
+		}
+		
+		$category = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+		
+		if ( ! empty( $category ) ) {
+			$int_cat            = new \stdClass();
+			$int_cat->id        = $category->id;
+			$int_cat->type      = $category->type;
+			$int_cat->name      = $category->title;
+			
+			$utils->log("Loading {$category->title} interests");
+			$int_cat->interests = $mc_api->get_cache( "{$list_id}-{$category->id}", 'interests' );
+			
+			return $int_cat;
+		}
+		
+		return false;
+	}
+	*/
+	
+	/**
+	 * Add a new interest to an Interest Category for list (list id)
+	 *
+	 * @param string $list_id
+	 * @param string $category_id
+	 * @param string $interest
+	 *
+	 * @return bool|\stdClass
+	 */
+	public function add_remote_interest_to_category( $list_id, $category_id, $interest ) {
+		
+		$interest = trim( $interest );
+		
+		$mc    = MailChimp_API::get_instance();
+		$utils = Utilities::get_instance();
+		
+		// patch all existing interest categories to MC servers
+		$url = $mc->get_api_url( "/lists/{$list_id}/interest-categories/{$category_id}/interests" );
+		
+		$utils->log( "Adding interest {$interest} to {$category_id} on the MailChimp servers: " );
+		
+		$ic_url = $url;
+		
+		$request = array(
+			'name' => $interest,
+		);
+		
+		$args = $mc->build_request( 'POST', $utils->encode( $request ) );
+		
+		$resp = wp_remote_request( $ic_url, $args );
+		$code = wp_remote_retrieve_response_code( $resp );
+		
+		if ( 200 > $code || 300 <= $code ) {
+			
+			$msg   = wp_remote_retrieve_response_message( $resp );
+			$error = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+			
+			if ( 'Bad Request' === $msg && 'Invalid Resource' === $error->title && false !== stripos( $error->detail, 'already exists' ) ) {
+				$utils->log( "MCAPI: Interest '{$interest}' is already present for category {$category_id} in list {$list_id}" );
+				
+				return true;
+			}
+			
+			$utils->log( "Error adding interest '{$interest}' to {$category_id}: {$msg} for request: " . print_r( $request, true ) );
+			$utils->add_message( $msg, 'error', 'backend' );
+			
+			return false;
+			
+		} else {
+			
+			$int = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+			
+			$utils->log( "Added interest {$int->name} on the MailChimp Server: {$int->id}" );
+			
+			$settings[ $int->id ]              = new \stdClass();
+			$settings[ $int->id ]->name        = $int->name;
+			$settings[ $int->id ]->list_id     = $int->list_id;
+			$settings[ $int->id ]->category_id = $int->category_id;
+			$settings[ $int->id ]->id          = $int->id;
+			
+			return $settings;
+		}
+	}
+	
+	/**
 	 * Configure interests for the user in MailChimp list
 	 *
 	 * @param   string     $list_id        ID of MC list
@@ -309,6 +481,9 @@ class Interest_Groups {
 	 * @type   string      $interest_id    ID of the interest for the list ($list_id)
 	 * @type   boolean     $assign_to_user Whether to assign the interest to the user for the $list_id
 	 * }
+	 *
+	 * @since  2.0 - ENHANCEMENT: Updated filter string for e20r-mailchimp-assign-interest-to-user and documented it
+	 * @since  2.0 - ENHANCEMENT: Added documentation for e20r-mailchimp-interests-to-assign-to-user filter
 	 */
 	public function populate( $list_id, $user, $level_ids = null, $cancelling = false ) {
 		
@@ -336,7 +511,10 @@ class Interest_Groups {
 			
 			foreach ( $level_ids as $level_id ) {
 				
-				$interest_option = $mc_api->get_option( "level_{$prefix}_{$level_id}_interests" );
+				/**
+				 * Load groups and interests option to assign the (new) subscriber being updated
+				 */
+				$interest_option =  $mc_api->get_option( "level_{$prefix}_{$level_id}_interests" );
 				
 				// Make sure the option exists.
 				if ( ! empty( $interest_option ) && isset( $interest_option[ $list_id ] ) ) {
@@ -350,8 +528,23 @@ class Interest_Groups {
 								if ( true === (bool) $enabled && true === $cancelling ) {
 									$enabled = false;
 								}
-								// assign the interest to this user Id(filtered, but set to true by default).
-								$interests[ $interest ] = (bool) apply_filters( 'e20r_mailchimp_api_assign_interest_to_user', $enabled, $user, $interest, $list_id, $level_id );
+								
+								/**
+								 * Do we assign the interest to this user ID (true by default).
+								 *
+								 * @filter  'e20r-mailchimp-assign-interest-to-user' - Whether to actually assign an interest to the specified user
+								 *
+								 * @param bool     $enabled
+								 * @param \WP_User $user
+								 * @param string   $interest - ID of interest to assign the user
+								 * @param string   $list_id  - ID of the list being processed
+								 * @param int      $level_id - PMPro Membership Level ID or the WooCommerce product category ID
+								 *
+								 * @example add_filter( 'e20r-mailchimp-assign-interest-to-user', '__return_false', 10, 1); - Always deny:
+								 *
+								 * @since   2.0 - ENHANCEMENT: Updated filter string for e20r-mailchimp-assign-interest-to-user and documented it
+								 */
+								$interests[ $interest ] = (bool) apply_filters( 'e20r-mailchimp-assign-interest-to-user', $enabled, $user, $interest, $list_id, $level_id );
 							}
 						} else if ( ! is_array( $interest_list ) ) {
 							$utils->log( "Warning: Interest Group is not an array and contains: " . print_r( $interest_list, true ) );
@@ -373,7 +566,56 @@ class Interest_Groups {
 			$utils->log( "Returning interest groups for list {$list_id}: " . print_r( $interests, true ) );
 		}
 		
-		return apply_filters( 'e20r_mailchimp_api_add_interests_to_user', $interests, $user, $list_id );
+		/**
+		 * Process list of interests to assign for the user before returning it to the subscription process
+		 *
+		 * @filter 'e20r-mailchimp-interests-to-assign-to-user' - The interests to assign the user for the list
+		 *
+		 * @param array    $interests      {
+		 *                                 Array of interests to assign for the user/email on mailchimp.com
+		 *
+		 *                                 @type   string  $interest_id    ID of the interest for the list ($list_id)
+		 *                                 @type   boolean $assign_to_user Whether to assign the interest to the user for the $list_id
+		 * }
+		 * @param \WP_User $user           - The user record being processed
+		 * @param string   $list_id        - The ID of the MailChimp list being processed
+		 * @param bool     $cancelling     - Is the user's membership access for this level ID being cancelled?
+		 * @param int[]    $level_ids      - Membership levels (or Product Categories) being processed for the user
+		 *
+		 * @since 2.0 - ENHANCEMENT: Added documentation for e20r-mailchimp-interests-to-assign-to-user filter
+		 */
+		return apply_filters( 'e20r-mailchimp-interests-to-assign-to-user', $interests, $user, $list_id, $cancelling, $level_ids );
+	}
+	
+	/**
+	 * Return the Interest ID for the "Cancelled" Membership Level
+	 *
+	 * @param string $list_id
+	 *
+	 * @return null|string
+	 */
+	public function get_cancelled_for_list( $list_id ) {
+		
+		$mc_api = MailChimp_API::get_instance();
+		$utils  = Utilities::get_instance();
+		
+		$list_config = $mc_api->get_list_conf_by_id( $list_id );
+		
+		foreach ( $list_config->interest_categories as $category ) {
+			
+			if ( false !== stripos( $category->name, __( 'Membership Levels', Controller::plugin_slug ) ) ) {
+				
+				foreach ( $category->interests as $interest_id => $name ) {
+					if ( false !== stripos( $name, __( "Cancelled", Controller::plugin_slug ) ) ) {
+						$utils->log( "Found ID for the 'Cancelled' Interest Group: {$interest_id} " );
+						
+						return $interest_id;
+					}
+				}
+			}
+		}
+		
+		return null;
 	}
 	
 	/**
@@ -427,48 +669,6 @@ class Interest_Groups {
 		return true;
 	}
 	
-	/*
-	// FIXME: May not be needed (get_remote_category() )
-	public function get_remote_category( $list_id, $category_id ) {
-		
-		$utils  = Utilities::get_instance();
-		$mc_api = MailChimp_API::get_instance();
-		
-		$limit = $mc_api->get_option( 'mc_api_fetch_list_limit' );
-		$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
-		
-		$url  = $mc_api->get_api_url( "/lists/{$list_id}/interest-categories/{$category_id}/" );
-		$args = $mc_api->build_request( 'GET', null );
-		
-		$resp = wp_remote_request( $url, $args );
-		$code = wp_remote_retrieve_response_code( $resp );
-		
-		if ( 200 > $code || 300 <= $code ) {
-			
-			$msg = wp_remote_retrieve_response_message( $resp );
-			$utils->add_message( $msg, 'error', 'backend' );
-			$utils->log( $msg );
-			
-			return false;
-		}
-		
-		$category = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-		
-		if ( ! empty( $category ) ) {
-			$int_cat            = new \stdClass();
-			$int_cat->id        = $category->id;
-			$int_cat->type      = $category->type;
-			$int_cat->name      = $category->title;
-			
-			$utils->log("Loading {$category->title} interests");
-			$int_cat->interests = $mc_api->get_cache( "{$list_id}-{$category->id}", 'interests' );
-			
-			return $int_cat;
-		}
-		
-		return false;
-	}
-	*/
 	/**
 	 * Return all interest categories for the specified list ID
 	 *
@@ -591,35 +791,11 @@ class Interest_Groups {
 			if ( ! empty( $interests ) ) {
 				$utils->log( "Found " . count( $interests ) . " interest(s) for {$cat_id}" );
 				// HACK: Using list_id:cat_id as the identifier for interests within an interest category
-				Cache::set( "{$list_id}-{$cat_id}", $interests , MINUTE_IN_SECONDS, 'e20r_mc_api' );
+				Cache::set( "{$list_id}-{$cat_id}", $interests, MINUTE_IN_SECONDS, 'e20r_mc_api' );
 			}
 		}
 		
 		return $interests;
-	}
-	
-	/**
-	 * Determine whether a specific interest group name is already defined on the local server
-	 *
-	 * @param string $ig_name Name of interest group to (attempt to) find
-	 * @param array  $ig_list List of interest groups to compare against
-	 *
-	 * @return bool|string      Returns the ID of the interest category if found.
-	 */
-	public function in_interest_groups( $ig_name, $ig_list ) {
-		
-		if ( empty( $ig_list ) ) {
-			return false;
-		}
-		
-		foreach ( $ig_list as $id => $ig_obj ) {
-			
-			if ( $ig_obj->name == $ig_name ) {
-				return $id;
-			}
-		}
-		
-		return false;
 	}
 	
 	/**
@@ -816,163 +992,27 @@ class Interest_Groups {
 	}
 	
 	/**
-	 * Add interest category to upstream MailChimp API server
+	 * Determine whether a specific interest group name is already defined on the local server
 	 *
-	 * @param string $list_id
-	 * @param object $category
-	 * @param array  $settings
+	 * @param string $ig_name Name of interest group to (attempt to) find
+	 * @param array  $ig_list List of interest groups to compare against
 	 *
-	 * @return bool|array
+	 * @return bool|string      Returns the ID of the interest category if found.
 	 */
-	public function add_remote_category( $list_id, $category, $settings = array() ) {
+	public function in_interest_groups( $ig_name, $ig_list ) {
 		
-		$mc_api = MailChimp_API::get_instance();
-		$utils  = Utilities::get_instance();
-		
-		// patch all existing interest categories to MC servers
-		
-		$url  = $mc_api->get_api_url( "/lists/{$list_id}/interest-categories" );
-		$args = $mc_api->build_request( 'POST' );
-		
-		$utils->log( "Adding interest category {$category->name} to the MailChimp servers: " . print_r( $category, true ) );
-		
-		$ic_url = $url;
-		// $args['method'] = 'POST'; // Allows us to add
-		
-		// look for categories
-		$category_type = apply_filters( 'e20r_mailchimp_list_interest_category_type', 'checkboxes', $list_id );
-		
-		$request = array(
-			'title' => $category->name,
-			'type'  => ( $category->type != $category_type ? $category_type : $category->type ),
-		);
-		
-		$args['body'] = $utils->encode( $request );
-		
-		$resp = wp_remote_request( $ic_url, $args );
-		$code = wp_remote_retrieve_response_code( $resp );
-		
-		if ( 200 > $code || 300 <= $code ) {
-			
-			$msg   = wp_remote_retrieve_response_message( $resp );
-			$error = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-			
-			$utils->log( "Error Response returned: " . print_r( $msg, true ) );
-			$utils->log( "Error Response returned: " . print_r( $error, true ) );
-			
-			if ( 'Bad Request' === $msg && 'Invalid Resource' === $error->title && false !== stripos( $error->detail, 'already exists' ) ) {
-				$utils->log( "Interest Category {$category->name} is already present for {$list_id}" );
-				
-				return true;
-			}
-			
-			$utils->log( "Error adding interest category: {$msg} for request: " . print_r( $request, true ) );
-			$utils->add_message( $msg, 'error', 'backend' );
-			
+		if ( empty( $ig_list ) ) {
 			return false;
-			
-		} else {
-			
-			// if ( 200 == $resp_code ) {
-			
-			$cat = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-			$utils->log( "Added {$cat->title} on the MailChimp Server: {$cat->id}" );
-			
-			
-			$settings[ $cat->id ]            = new \stdClass();
-			$settings[ $cat->id ]->name      = $cat->title;
-			$settings[ $cat->id ]->type      = $cat->type;
-			$settings[ $cat->id ]->id        = $cat->id;
-			$settings[ $cat->id ]->interests = array();
-			
-			return $settings;
-			// }
 		}
-	}
-	
-	/**
-	 * Add a new interest to an Interest Category for list (list id)
-	 *
-	 * @param string $list_id
-	 * @param string $category_id
-	 * @param string $interest
-	 *
-	 * @return bool|\stdClass
-	 */
-	public function add_remote_interest_to_category( $list_id, $category_id, $interest ) {
 		
-		$interest = trim( $interest );
-		
-		$mc    = MailChimp_API::get_instance();
-		$utils = Utilities::get_instance();
-		
-		// patch all existing interest categories to MC servers
-		$url = $mc->get_api_url( "/lists/{$list_id}/interest-categories/{$category_id}/interests" );
-		
-		$utils->log( "Adding interest {$interest} to {$category_id} on the MailChimp servers: " );
-		
-		$ic_url = $url;
-		
-		$request = array(
-			'name' => $interest,
-		);
-		
-		$args = $mc->build_request( 'POST', $utils->encode( $request ) );
-		
-		$resp = wp_remote_request( $ic_url, $args );
-		$code = wp_remote_retrieve_response_code( $resp );
-		
-		if ( 200 > $code || 300 <= $code ) {
+		foreach ( $ig_list as $id => $ig_obj ) {
 			
-			$msg   = wp_remote_retrieve_response_message( $resp );
-			$error = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-			
-			if ( 'Bad Request' === $msg && 'Invalid Resource' === $error->title && false !== stripos( $error->detail, 'already exists' ) ) {
-				$utils->log( "MCAPI: Interest '{$interest}' is already present for category {$category_id} in list {$list_id}" );
-				
-				return true;
+			if ( $ig_obj->name == $ig_name ) {
+				return $id;
 			}
-			
-			$utils->log( "Error adding interest '{$interest}' to {$category_id}: {$msg} for request: " . print_r( $request, true ) );
-			$utils->add_message( $msg, 'error', 'backend' );
-			
-			return false;
-			
-		} else {
-			
-			$int = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-			
-			$utils->log( "Added interest {$int->name} on the MailChimp Server: {$int->id}" );
-			
-			$settings[ $int->id ]              = new \stdClass();
-			$settings[ $int->id ]->name        = $int->name;
-			$settings[ $int->id ]->list_id     = $int->list_id;
-			$settings[ $int->id ]->category_id = $int->category_id;
-			$settings[ $int->id ]->id          = $int->id;
-			
-			return $settings;
-		}
-	}
-	
-	/**
-	 * Interest_Groups constructor.
-	 */
-	private function __construct() {
-	}
-	
-	/**
-	 * Return or instantiate the Interest_Groups class
-	 *
-	 * @return Interest_Groups|null
-	 */
-	public static function get_instance() {
-		
-		if ( is_null( self::$instance ) ) {
-			
-			self::$instance = new self;
 		}
 		
-		return self::$instance;
+		return false;
 	}
 }
 
