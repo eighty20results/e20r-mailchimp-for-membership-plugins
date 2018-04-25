@@ -25,6 +25,7 @@ use E20R\MailChimp\Member_Handler;
 use E20R\MailChimp\Controller;
 use E20R\MailChimp\Merge_Fields;
 use E20R\Utilities\Utilities;
+use E20R\Utilities\Cache;
 
 class PMPro extends Membership_Plugin {
 	
@@ -124,14 +125,9 @@ class PMPro extends Membership_Plugin {
 			add_filter( 'e20r-mailchimp-non-active-statuses', array( $this, 'statuses_inactive_membership' ), 10, 1 );
 			add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array( $this, 'compatibility_merge_tags' ), 10, 3 );
 			
-			// FIXME: Refactor and move the functionality to correct membership support plugin & split w/Membership Handler
-			add_action( 'pmpro_checkout_after_tos_fields', array( Member_Handler::get_instance(), 'view_additional_lists' ), 10 );
-			
-			// FIXME: Refactor and move the functionality to correct membership support plugin & split w/Membership Handler
-			add_action( 'pmpro_save_membership_level', array( Member_Handler::get_instance(), 'clear_levels_cache' ), 10 );
-			
-			// FIXME: Refactor and move the functionality to correct membership support plugin & split w/Membership Handler
-			add_action( 'pmpro_paypalexpress_session_vars', array( Member_Handler::get_instance(), 'session_vars' ), 10 );
+			add_action( 'pmpro_paypalexpress_session_vars', array( $this, 'session_vars' ), 10 );
+			add_action( 'pmpro_save_membership_level', array( $this, 'clear_levels_cache' ), 10 );
+			add_action( 'pmpro_checkout_after_tos_fields', array( $this, 'view_additional_lists' ), 10 );
 			
 			/** Fixed: on_update_membership_level is refactored and handled by membership support class */
 			add_action( 'pmpro_save_membership_level',
@@ -180,6 +176,35 @@ class PMPro extends Membership_Plugin {
 		}
 	}
 	
+	/**
+	 * Remove the cache when a membership level is updated/saved/changed
+	 */
+	public function clear_levels_cache() {
+		$mc_api = MailChimp_API::get_instance();
+		$member_plugin = $mc_api->get_option( 'membership_plugin' );
+		
+		Cache::delete( "e20r_lvls_{$member_plugin}", 'e20r_mailchimp' );
+	}
+	
+	/**
+	 * Preserve info when going off-site for payment w/offsite payment gateway (PayPal Express).
+	 * Saves Session variables.
+	 */
+	public function session_vars() {
+		
+		// Do we have a session we can use?
+		if ( session_id() == '' || ! isset( $_SESSION ) ) {
+			return;
+		}
+		
+		if ( isset( $_REQUEST['additional_lists'] ) ) {
+			$_SESSION['additional_lists'] = $_REQUEST['additional_lists'];
+		}
+		
+		if ( isset( $_REQUEST['e20r_user_opted_in'] ) ) {
+			$_SESSION['e20r_user_opted_in'] = $_REQUEST['e20r_user_opted_in'];
+		}
+	}
 	/**
 	 * Add the PMPro Checkout, Confirmation and Account page to the places where we need this functionality to exist
 	 *
