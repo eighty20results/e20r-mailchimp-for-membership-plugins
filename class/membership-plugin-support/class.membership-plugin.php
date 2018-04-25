@@ -20,6 +20,9 @@
 namespace E20R\MailChimp\Membership_Support;
 
 use E20R\MailChimp\MailChimp_API;
+use E20R\MailChimp\Controller;
+use E20R\MailChimp\Views\Member_Handler_View;
+
 use E20R\Utilities\Utilities;
 
 /**
@@ -74,6 +77,78 @@ abstract class Membership_Plugin {
 		
 		$utils->log("Selected plugin is {$membership_plugin}");
 		return true;
+	}
+	
+	/**
+	 * Add to Checkout page: Optional mailing lists a new member can add/subscribe to
+	 */
+	public function view_additional_lists() {
+		
+		$mc_api = MailChimp_API::get_instance();
+		$utils  = Utilities::get_instance();
+		
+		$api_key = $mc_api->get_option( 'api_key' );
+		
+		// Can we access the MailChimp API?
+		if ( ! empty( $api_key ) ) {
+			
+			if ( empty( $mc_api ) ) {
+				
+				$utils->add_message( __( "Unable to load MailChimp API interface", Controller::plugin_slug ), 'error', 'frontend' );
+				$utils->log("Unable to load MailChimp API class!");
+				return;
+			}
+			
+			$mc_api->set_key();
+		} else {
+			return;
+		}
+		
+		$additional_lists = $mc_api->get_option( 'additional_lists' );
+		
+		//are there additional lists?
+		if ( empty( $additional_lists ) ) {
+			$utils->log( "No additional lists found!" );
+			
+			return;
+		}
+		
+		//okay get through API
+		$lists = $mc_api->get_all_lists();
+		
+		//no lists?
+		if ( empty( $lists ) ) {
+			$utils->log( "Didn't actually find any lists at all.." );
+			
+			return;
+		}
+		
+		$utils->log( "Lists on local system: " . print_r( $lists, true ) );
+		
+		$additional_lists_array = array();
+		foreach ( $lists as $list_id => $list_config ) {
+			
+			if ( ! empty( $additional_lists ) ) {
+				
+				foreach ( $additional_lists as $additional_list ) {
+					
+					if ( $list_config['id'] == $additional_list ) {
+						$additional_lists_array[] = $list_config;
+					}
+				}
+			}
+		}
+		
+		// $this->add_opt_in_option();
+		
+		// No additional lists configured? Then return quietly
+		if ( empty( $additional_lists_array ) ) {
+			$utils->log( "Have no additional lists to worry about" );
+			
+			return;
+		}
+		
+		echo Member_Handler_View::addl_list_choice($additional_lists_array );
 	}
 	
 	abstract public function init_default_groups();
