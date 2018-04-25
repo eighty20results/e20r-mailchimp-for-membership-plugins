@@ -57,105 +57,133 @@ class Member_Handler_View {
 	}
 	
 	/**
+	 * Display additional lists selection (table) or div.
+	 *
+	 * @param array $additional_lists_array
+	 *
+	 * @return string
+	 */
+	public static function addl_list_choice( $additional_lists_array ) {
+		$utils = Utilities::get_instance();
+		
+		ob_start();
+		?>
+        <div id="e20rmc_mailing_lists" class="e20r-mc-divtable">
+            <div class="e20r-mc-table-header">
+                <div class="e20r-mc-table-row">
+                    <div class="e20r-mc-table-cell e20r-mc-header">
+						<?php
+						if ( count( $additional_lists_array ) > 1 ) {
+							_e( 'Join one or more of our other mailing lists.', Controller::plugin_slug );
+						} else {
+							_e( 'Join our other mailing list.', Controller::plugin_slug );
+						}
+						?>
+                    </div>
+                </div>
+            </div>
+            <div class="e20r-mc-table-body">
+				<?php
+				global $current_user;
+				$additional_lists_selected = $utils->get_variable( 'additional_lists', array() );
+				
+				if ( is_user_logged_in() ) {
+					$gdpr_consent = get_user_meta( $current_user->ID, 'e20r_gdpr_consent_agreement', true );
+					$gdpr_consent_agreement = (bool) ( is_array($gdpr_consent) ? array_pop( $gdpr_consent ) : false );
+				} else {
+					$gdpr_consent_agreement = (bool) $utils->get_variable( 'gdpr_consent_agreement', false );
+				}
+				
+				$utils->log("GDPR agreement value: " . ( true === $gdpr_consent_agreement ? "True" : 'False' ) );
+				
+				$saved_user_lists = get_user_meta( $current_user->ID, "e20r_mc_additional_lists", true );
+				
+				if ( empty( $additional_lists_selected ) && isset( $_SESSION['additional_lists'] ) ) {
+					
+					$additional_lists_selected = array_map( 'sanitize_text_field', $_SESSION['additional_lists'] );
+					
+				} else if ( empty( $additional_lists_selected ) && ! empty( $saved_user_lists ) ) {
+					$additional_lists_selected = $saved_user_lists;
+				}
+				
+				$count = 1;
+				foreach ( $additional_lists_array as $key => $additional_list ) {
+					$current_list = isset( $additional_lists_selected[ ( $count - 1 ) ] ) ? $additional_lists_selected[ ( $count - 1 ) ] : null;
+					?>
+                    <div class="e20r-mc-table-row">
+                        <div class="e20r-mc-table-cell e20r-input-checkbox">
+                            <input type="checkbox" id="additional_lists_<?php esc_attr_e( $count ); ?>"
+                                   class="e20r-list-checkbox"
+                                   name="additional_lists[]"
+                                   style="width: 20px; position: relative; vertical-align: middle; float: left;"
+                                   value="<?php esc_attr_e( $additional_list['id'] ); ?>" <?php checked( $current_list, $additional_list['id'] ); ?> />
+                        </div>
+                        <div class="e20r-mc-table-cell e20r-input-label">
+                            <label for="additional_lists_<?php esc_attr_e( $count ); ?>"
+                                   style="display: inline-block; position: relative; margin: 0; vertical-align: middle; float: left;"
+                                   class="e20r-list-entry"><?php esc_attr_e( $additional_list['name'] ); ?></label>
+
+                        </div>
+                    </div>
+					<?php
+					$count ++;
+				}
+				?>
+                <div class="e20r-mc-table-row">
+                </div>
+            </div>
+            <hr />
+            <div class="e20r-mc-gdpr-consent">
+                <div class="e20r-mc-table-cell e20r-input-checkbox">
+                    <input type="checkbox" id="e20r-gdpr_consent_agreement" class="e20r-list-checkbox"
+                       name="gdpr_consent_agreement"
+                       style="width: 20px; position: relative; vertical-align: middle; float: left;"
+                       value="<?php esc_attr_e( $gdpr_consent_agreement ); ?>" <?php checked( $gdpr_consent_agreement, true ); ?> />
+                </div>
+                 <div class="e20r-mc-table-cell e20r-input-label">
+                    <label for="gdpr_consent_agreement"><?php _e( 'By checking the checkbox, you agree to receive email messages from us and you agree with allowing us to store some of your identifiable data, per our and our partner Mailchimp.com\'s data privacy policies. If you do not select this checkbox, you will not be included in any of our MailChimp.com hosted email lists', Controller::plugin_slug ); ?></label>
+                 </div>
+            </div>
+        </div>
+		<?php
+		return ob_get_clean();
+	}
+	
+	/**
 	 * Add to page: User opt-in field
-     *
-     * @return string
+	 *
+	 * @return string
 	 */
 	public function add_opt_in() {
-	 
-	    $mc_api = MailChimp_API::get_instance();
-	    $double_optin = $mc_api->get_option( 'double_opt_in' );
-	    
+		
+		$mc_api       = MailChimp_API::get_instance();
+		$double_optin = $mc_api->get_option( 'double_opt_in' );
+		
 		$label = apply_filters( 'e20r-mailchimp-optin-label', __( "I'd rather not join the email list", Controller::plugin_slug ) );
-  
+		
 		// Reversed from actual setting (user is choosing to actively opt out)
 		$default = apply_filters( 'e20r-mailchimp-optin-default', ( $double_optin == 0 ) ? true : false );
-        
-        ob_start();
+		
+		ob_start();
 		?>
-		<div id="e20rmc-user-optin" class="e20r-mc-divtable">
-			<div class="e20r-mc-table-header">
+        <div id="e20rmc-user-optin" class="e20r-mc-divtable">
+            <div class="e20r-mc-table-header">
                 <div class="e20r-mc-table-header-row">
                     <div class="e20r-mc-table-cell e20r-mc-header">
                         <label for="e20r-mailchimp-double-optin"><?php esc_html_e( $label ); ?>
                     </div>
                 </div>
             </div>
-			<div class="e20r-mc-table-body">
+            <div class="e20r-mc-table-body">
                 <div class="e20r-mc-table-row">
                     <div class="e20r-mc-table-cell">
-                        <input type="checkbox" id="e20r-mailchimp-double-optin" name="e20r-double-optin" value="0" <?php checked( false, $default ); ?>>
+                        <input type="checkbox" id="e20r-mailchimp-double-optin" name="e20r-double-optin"
+                               value="0" <?php checked( false, $default ); ?>>
                     </div>
                 </div>
-			</div>
-		</div>
-		<?php
-        return ob_get_clean();
-	}
-    
-    /**
-     * Display additional lists selection (table) or div.
-     *
-     * @param array $additional_lists_array
-     *
-     * @return string
-     */
-	public static function addl_list_choice( $additional_lists_array ) {
-        $utils = Utilities::get_instance();
-        
-        ob_start();
-	    ?>
-        <div id="e20rmc_mailing_lists" class="e20r-mc-divtable">
-            <div class="e20r-mc-table-header">
-                <div class="e20r-mc-table-row">
-                    <div class="e20r-mc-table-cell e20r-mc-header">
-                        <?php
-                        if ( count( $additional_lists_array ) > 1 ) {
-                            _e( 'Join one or more of our other mailing lists.', Controller::plugin_slug );
-                        } else {
-                            _e( 'Join our other mailing list.', Controller::plugin_slug );
-                        }
-                        ?>
-                    </div>
-                </div>
-            </div>
-            <div class="e20r-mc-table-body">
-            <?php
-            global $current_user;
-            $additional_lists_selected = $utils->get_variable( 'additional_lists', array() );
-            $saved_user_lists          = get_user_meta( $current_user->ID, "e20r_mc_additional_lists", true );
-            
-            if ( empty( $additional_lists_selected ) && isset( $_SESSION['additional_lists'] ) ) {
-                
-                $additional_lists_selected = array_map( 'sanitize_text_field', $_SESSION['additional_lists'] );
-                
-            } else if ( empty( $additional_lists_selected ) && ! empty( $saved_user_lists ) ) {
-                $additional_lists_selected = $saved_user_lists;
-            }
-            
-            $count = 1;
-            foreach ( $additional_lists_array as $key => $additional_list ) {
-                $current_list = isset( $additional_lists_selected[ ( $count - 1 ) ] ) ? $additional_lists_selected[ ( $count - 1 ) ] : null;
-                ?>
-                <div class="e20r-mc-table-row">
-                    <div class="e20r-mc-table-cell e20r-input-checkbox">
-                            <input type="checkbox" id="additional_lists_<?php esc_attr_e( $count ); ?>" class="e20r-list-checkbox"
-                                   name="additional_lists[]" style="width: 20px; position: relative; vertical-align: middle; float: left;"
-                                   value="<?php esc_attr_e( $additional_list['id'] ); ?>" <?php checked( $current_list, $additional_list['id'] ); ?> />
-                    </div>
-                    <div class="e20r-mc-table-cell e20r-input-label">
-                            <label for="additional_lists_<?php esc_attr_e( $count ); ?>" style="display: inline-block; position: relative; margin: 0; vertical-align: middle; float: left;"
-                                   class="e20r-list-entry"><?php esc_attr_e( $additional_list['name'] ); ?></label>
-                        
-                    </div>
-                </div>
-                <?php
-                    $count ++;
-                }
-                ?>
             </div>
         </div>
-        <?php
-        return ob_get_clean();
-    }
+		<?php
+		return ob_get_clean();
+	}
 }
