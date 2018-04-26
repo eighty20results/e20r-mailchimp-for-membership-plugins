@@ -3,9 +3,9 @@
 Plugin Name: E20R MailChimp Integration for Revenue Tools
 Plugin URI: https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins/
 Description: Automatically add users to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
-Version: 1.4.1
+Version: 2.0
 WC requires at least: 3.3
-WC tested up to: 3.3.3
+WC tested up to: 3.3.5
 Requires at least: 4.9
 Tested up to: 4.9.3
 Author: Eighty/20 Results <thomas@eighty20results.com>
@@ -49,7 +49,7 @@ if ( ! defined( 'E20R_MC_TESTING' ) ) {
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_VERSION' ) ) {
-	define( 'E20R_MAILCHIMP_VERSION', '1.4.1' );
+	define( 'E20R_MAILCHIMP_VERSION', '2.0' );
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_DIR' ) ) {
@@ -135,8 +135,6 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
 			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ) );
-			
-			
 		}
 		
 		/**
@@ -590,42 +588,45 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			
 			$parts     = explode( '\\', $class_name );
 			$c_name    = strtolower( preg_replace( '/_/', '-', $parts[ ( count( $parts ) - 1 ) ] ) );
-			$base_path = plugin_dir_path( __FILE__ ) . 'classes/';
+			$base_paths = apply_filters( 'e20r-mailchimp-autoloader-paths', array( plugin_dir_path( __FILE__ ) . 'classes/' ) );
 			
 			if ( file_exists( plugin_dir_path( __FILE__ ) . 'class/' ) ) {
-				$base_path = plugin_dir_path( __FILE__ ) . 'class/';
+				$base_paths = apply_filters( 'e20r-mailchimp-autoloader-paths', array( plugin_dir_path( __FILE__ ) . 'class/' ) );
 			}
 			
 			$filename = "class.{$c_name}.php";
-			$iterator = new \RecursiveDirectoryIterator( $base_path, \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveIteratorIterator::SELF_FIRST | \RecursiveIteratorIterator::CATCH_GET_CHILD | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS );
 			
-			/**
-			 * Loate class member files, recursively
-			 */
-			$filter = new \RecursiveCallbackFilterIterator( $iterator, function ( $current, $key, $iterator ) use ( $filename ) {
+			foreach( $base_paths as $base_path ) {
+				$iterator = new \RecursiveDirectoryIterator( $base_path, \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveIteratorIterator::SELF_FIRST | \RecursiveIteratorIterator::CATCH_GET_CHILD | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS );
 				
-				$file_name = $current->getFilename();
+				/**
+				 * Load class member files, recursively
+				 */
+				$filter = new \RecursiveCallbackFilterIterator( $iterator, function ( $current, $key, $iterator ) use ( $filename ) {
+					
+					$file_name = $current->getFilename();
+					
+					// Skip hidden files and directories.
+					if ( $file_name[0] == '.' || $file_name == '..' ) {
+						return false;
+					}
+					
+					if ( $current->isDir() ) {
+						// Only recurse into intended subdirectories.
+						return $file_name() === $filename;
+					} else {
+						// Only consume files of interest.
+						return strpos( $file_name, $filename ) === 0;
+					}
+				} );
 				
-				// Skip hidden files and directories.
-				if ( $file_name[0] == '.' || $file_name == '..' ) {
-					return false;
-				}
-				
-				if ( $current->isDir() ) {
-					// Only recurse into intended subdirectories.
-					return $file_name() === $filename;
-				} else {
-					// Only consume files of interest.
-					return strpos( $file_name, $filename ) === 0;
-				}
-			} );
-			
-			foreach ( new \ RecursiveIteratorIterator( $iterator ) as $f_filename => $f_file ) {
-				
-				$class_path = $f_file->getPath() . "/" . $f_file->getFilename();
-				
-				if ( $f_file->isFile() && false !== strpos( $class_path, $filename ) ) {
-					require_once( $class_path );
+				foreach ( new \ RecursiveIteratorIterator( $iterator ) as $f_filename => $f_file ) {
+					
+					$class_path = $f_file->getPath() . "/" . $f_file->getFilename();
+					
+					if ( $f_file->isFile() && false !== strpos( $class_path, $filename ) ) {
+						require_once( $class_path );
+					}
 				}
 			}
 		}
