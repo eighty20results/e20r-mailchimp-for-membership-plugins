@@ -1,0 +1,905 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Project-Id-Version: E20R MailChimp Interest Groups for Paid Memberships Pro "
+"and WooCommerce\n"
+"POT-Creation-Date: 2018-04-28 16:54+0200\n"
+"PO-Revision-Date: 2018-04-28 16:54+0200\n"
+"Last-Translator: Thomas Sjolshagen <thomas@eighty20results.com>\n"
+"Language-Team: Thomas Sjolshagen <thomas@eighty20results.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.8.12\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-WPHeader: class.e20r-mailchimp-for-membership-plugins.php\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
+"_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.js\n"
+
+#: class.e20r-mailchimp-for-membership-plugins.php:187
+msgid "View Documentation"
+msgstr ""
+
+#: class.e20r-mailchimp-for-membership-plugins.php:188
+msgid "Docs"
+msgstr ""
+
+#: class.e20r-mailchimp-for-membership-plugins.php:193
+msgid "Visit Customer Support Forum"
+msgstr ""
+
+#: class.e20r-mailchimp-for-membership-plugins.php:194
+msgid "Support"
+msgstr ""
+
+#: class.e20r-mailchimp-for-membership-plugins.php:218
+msgid "Settings"
+msgstr ""
+
+#: class.e20r-mailchimp-for-membership-plugins.php:492
+msgid ""
+"Error during unsubscribe operation. Please report this error to the "
+"administrator"
+msgstr ""
+
+#: class.e20r-mailchimp-for-membership-plugins.php:570
+#, php-format
+msgid ""
+"User %s did not agree to the consent notice for this plugin (MailChimp for "
+"Membership Plugins). It is recommended you verify that you are not storing "
+"any data they have opted out of."
+msgstr ""
+
+#: class.e20r-mailchimp-for-membership-plugins.php:571
+#, php-format
+msgid "MailChimp integration: New user/member (%s) refused GDPR consent"
+msgstr ""
+
+#: class/class.interest-groups.php:197 class/class.interest-groups.php:609
+msgid "Cancelled"
+msgstr ""
+
+#: class/class.interest-groups.php:606
+#: class/membership-plugin-support/class.pmpro.php:384
+msgid "Membership Levels"
+msgstr ""
+
+#: class/class.mailchimp-api.php:432
+msgid ""
+"Please configure your MailChimp.com settings (API key, etc) on the <a href="
+"\"\" target=\"_blank\">E20R MailChimp Settings</a> page"
+msgstr ""
+
+#: class/class.mailchimp-api.php:469 class/class.mailchimp-api.php:534
+msgid ""
+"Sorry, but MailChimp was unable to verify your API key. MailChimp gave this "
+"response"
+msgstr ""
+
+#: class/class.mailchimp-api.php:471 class/class.mailchimp-api.php:536
+msgid "Please try entering your API key again."
+msgstr ""
+
+#: class/class.mailchimp-api.php:483 class/class.mailchimp-api.php:548
+#, php-format
+msgid ""
+"Error while communicating with the Mailchimp servers: <p><em>%s</em></p>"
+msgstr ""
+
+#: class/class.mailchimp-api.php:564
+msgid "No Mailing lists found in your MailChimp account!"
+msgstr ""
+
+#: class/class.mailchimp-api.php:628
+msgid "No list specified for MailChimp subscribe operation"
+msgstr ""
+
+#: class/class.mailchimp-api.php:632
+msgid "No user specified for MailChimp subscribe operation"
+msgstr ""
+
+#: class/class.mailchimp-api.php:758
+#, php-format
+msgid "Unsubscribe Error: %s"
+msgstr ""
+
+#: class/class.mailchimp-api.php:806
+msgid "Need to specify the list ID to receive member info"
+msgstr ""
+
+#: class/class.mailchimp-api.php:872
+#, php-format
+msgid "Unable to update %s: %s"
+msgstr ""
+
+#: class/class.mailchimp-api.php:920
+msgid "Error while updating email address for user!"
+msgstr ""
+
+#: class/class.mailchimp-api.php:1048
+msgid ""
+"Unable to extract the required category or list identifier for the MailChimp "
+"API server"
+msgstr ""
+
+#: class/class.mailchimp-license.php:63
+#, php-format
+msgid ""
+"The license for %s will renew soon. As this is an automatic payment, you "
+"will not have to do anything. To modify %syour license%s, you will need to "
+"go to %syour account page%s"
+msgstr ""
+
+#: class/class.mailchimp-license.php:66
+#, php-format
+msgid ""
+"Your %s license has expired. To continue to get updates and support for this "
+"plugin, you will need to %srenew and install your license%s."
+msgstr ""
+
+#: class/class.mailchimp-license.php:97 class/class.mc-settings.php:94
+#: class/class.mc-settings.php:95
+msgid "E20R MailChimp"
+msgstr ""
+
+#: class/class.mc-settings.php:126
+msgid "General Settings"
+msgstr ""
+
+#: class/class.mc-settings.php:133
+msgid "MailChimp API Key"
+msgstr ""
+
+#: class/class.mc-settings.php:141
+msgid "Objects fetched per API call (number)"
+msgstr ""
+
+#: class/class.mc-settings.php:150
+msgid ""
+"Select the membership/shopping cart service you're using together with this "
+"plugin."
+msgstr ""
+
+#: class/class.mc-settings.php:154
+msgid "Not selected"
+msgstr ""
+
+#: class/class.mc-settings.php:158
+#: class/membership-plugin-support/class.pmpro.php:581
+msgid "Paid Memberships Pro"
+msgstr ""
+
+#: class/class.mc-settings.php:162
+msgid "WooCommerce"
+msgstr ""
+
+#: class/class.mc-settings.php:170
+msgid "Membership Plugin to use"
+msgstr ""
+
+#: class/class.mc-settings.php:183
+msgid "Select the user email to add to the list on completion of the checkout."
+msgstr ""
+
+#: class/class.mc-settings.php:187
+msgid "Not applicable"
+msgstr ""
+
+#: class/class.mc-settings.php:191
+msgid "Email of currently logged in user"
+msgstr ""
+
+#: class/class.mc-settings.php:195
+msgid "Email of person in billing information"
+msgstr ""
+
+#: class/class.mc-settings.php:202
+msgid "Email address to use for subscription"
+msgstr ""
+
+#: class/class.mc-settings.php:212
+msgid "User selectable for checkout/profile (opt-in)"
+msgstr ""
+
+#: class/class.mc-settings.php:225
+msgid "No"
+msgstr ""
+
+#: class/class.mc-settings.php:229
+msgid "Yes"
+msgstr ""
+
+#: class/class.mc-settings.php:236
+msgid "Require Double Opt-in?"
+msgstr ""
+
+#: class/class.mc-settings.php:246
+msgid ""
+"Recommended: 'Change Membership Level Interest (\"Cancelled\")'. If people "
+"subscribe from other sources than this website, you may want to choose one "
+"of the other options."
+msgstr ""
+
+#: class/class.mc-settings.php:250
+msgid "Do nothing"
+msgstr ""
+
+#: class/class.mc-settings.php:254
+msgid "Change Membership Level Interest (\"Cancelled\")"
+msgstr ""
+
+#: class/class.mc-settings.php:258
+msgid "Clear Interest group settings (old membership levels)"
+msgstr ""
+
+#: class/class.mc-settings.php:262
+msgid "Clear all Interest group settings (all lists)"
+msgstr ""
+
+#: class/class.mc-settings.php:269
+msgid "Unsubscribe on Level Change?"
+msgstr ""
+
+#: class/class.mc-settings.php:281
+msgid "Membership List"
+msgstr ""
+
+#: class/class.mc-settings.php:288
+msgid "Add new members to"
+msgstr ""
+
+#: class/class.mc-settings.php:299
+msgid "User Registration"
+msgstr ""
+
+#: class/class.mc-settings.php:306
+msgid "Add new user to"
+msgstr ""
+
+#: class/class.mc-settings.php:328
+msgid "Configure Interest Categories"
+msgstr ""
+
+#: class/class.mc-settings.php:359 class/class.mc-settings.php:1001
+#: class/class.member-handler.php:112 class/class.user-handler.php:114
+#: class/class.user-handler.php:165
+#: class/membership-plugin-support/class.membership-plugin.php:97
+msgid "Unable to load MailChimp API interface"
+msgstr ""
+
+#: class/class.mc-settings.php:404
+msgid ""
+"Get free upgrades, simplify your setup and ensure by purchasing the 'Plus' "
+"license from our website"
+msgstr ""
+
+#: class/class.mc-settings.php:409
+msgid "MailChimp Integration Options and Settings"
+msgstr ""
+
+#: class/class.mc-settings.php:414
+msgid ""
+"Automatically add users to your MailChimp.com list(s) when they sign up/"
+"register to access your site."
+msgstr ""
+
+#: class/class.mc-settings.php:416
+#, php-format
+msgid ""
+"If you have a %s membership plugin installed, you can subscribe your members "
+"to a mailchimp MailChimp list and configure interest groups and merge fields "
+"based on the membership level"
+msgstr ""
+
+#: class/class.mc-settings.php:419
+msgid "supported "
+msgstr ""
+
+#: class/class.mc-settings.php:422
+msgid ""
+"or specify \"Opt-in Lists\" that members can select when they register with "
+"your web site."
+msgstr ""
+
+#: class/class.mc-settings.php:423
+msgid "Get your Free MailChimp account."
+msgstr ""
+
+#: class/class.mc-settings.php:430
+msgid "Update Interest Groups and Merge Tags for existing members"
+msgstr ""
+
+#: class/class.mc-settings.php:433
+msgid ""
+"This plugin can create and synchronize membership level specific MailChimp "
+"List Group and Merge Tag information when a user joins or cancels their "
+"membership to your site."
+msgstr ""
+
+#: class/class.mc-settings.php:435
+msgid ""
+"It will happen automatically when a new member joins, or an existing member "
+"changes their membership level."
+msgstr ""
+
+#: class/class.mc-settings.php:437
+#, php-format
+msgid ""
+"%sTo update existing members, you need to run an update of their accounts%s. "
+"The background update will be applied to active members who are still "
+"subscribed to mailchimp.com mailing list you have configured for the "
+"membership level. This means that we will not add active members who do not "
+"have \"subscribed\" as their status on mailchimp.com for the Membership "
+"Level specific mailichimp list you configured."
+msgstr ""
+
+#: class/class.mc-settings.php:440
+#, php-format
+msgid "<a href=\"%s\" target=\"_blank\">%s</a>."
+msgstr ""
+
+#: class/class.mc-settings.php:442
+msgid ""
+"Read the documentation: How to update your member's MailChimp.com settings "
+"automatically"
+msgstr ""
+
+#: class/class.mc-settings.php:454
+#, php-format
+msgid ""
+"%1$sPurchase or renew your %3$svalid support and update license (buy and "
+"install now)%4$s to enable the automated background update for pre-existing "
+"active members%2$s"
+msgstr ""
+
+#: class/class.mc-settings.php:470
+msgid "Save Settings"
+msgstr ""
+
+#: class/class.mc-settings.php:512
+#, php-format
+msgid ""
+"%sNOTE%s: Try increasing this number if you expect to see lists or groups "
+"from the server, but they're missing on this page"
+msgstr ""
+
+#: class/class.mc-settings.php:543
+msgid "No lists found."
+msgstr ""
+
+#: class/class.mc-settings.php:565
+#, php-format
+msgid "The %s plugin is installed, active and selected."
+msgstr ""
+
+#: class/class.mc-settings.php:571
+#, php-format
+msgid ""
+"Once you have %s, you will be able to assign MailChimp lists to them here."
+msgstr ""
+
+#: class/class.mc-settings.php:575
+msgid "created some levels in Paid Memberships Pro"
+msgstr ""
+
+#: class/class.mc-settings.php:582
+msgid ""
+"For each level, choose the interest group(s) that a new user should be added "
+"to when they register as a member."
+msgstr ""
+
+#: class/class.mc-settings.php:593
+msgid "Activate Paid Memberships Pro"
+msgstr ""
+
+#: class/class.mc-settings.php:594 class/class.mc-settings.php:615
+msgid ""
+"to add membership functionality to your site and finer control over your "
+"MailChimp lists."
+msgstr ""
+
+#: class/class.mc-settings.php:614
+msgid "Install Paid Memberships Pro"
+msgstr ""
+
+#: class/class.mc-settings.php:627
+msgid ""
+"No membership plugin has been identified for integration. We'll simply use "
+"the standard WordPress user registration as the trigger for adding new users "
+"to a MailChimp mailing list."
+msgstr ""
+
+#: class/class.mc-settings.php:662
+msgid "No lists found on MailChimp server"
+msgstr ""
+
+#: class/class.mc-settings.php:674
+msgid "Easy configuration of MailChimp Groups, Interests and Merge Tags"
+msgstr ""
+
+#: class/class.mc-settings.php:676
+msgid ""
+"To simplify assigning interest groups and merge tag data, we have created a "
+"graphical (point and click) section for this options/settings page."
+msgstr ""
+
+#: class/class.mc-settings.php:678
+msgid ""
+"The \"Point and Click\" configuration feature is available when you have an "
+"active Support and Updates license installed."
+msgstr ""
+
+#: class/class.mc-settings.php:681
+#, php-format
+msgid ""
+"%1$sPurchase or renew your %3$sSupport and Updates license%4$s to enable "
+"\"Point and click\" configuration for Merge Tags and Interest Groups!%2$s"
+msgstr ""
+
+#: class/class.mc-settings.php:686
+#, php-format
+msgid ""
+"Read the documentation about %show to assign interest groups to subscribers, "
+"using a Wordpress filter%s. (Requires programming experience)"
+msgstr ""
+
+#: class/class.mc-settings.php:689
+#, php-format
+msgid ""
+"You manage (add/remove/change) your Interest Group definitions in your "
+"account on the %s"
+msgstr ""
+
+#: class/class.mc-settings.php:690
+msgid "MailChimp Server"
+msgstr ""
+
+#: class/class.mc-settings.php:695
+msgid ""
+"To update your groups and interests, select the MailChimp list, then the "
+"\"Manage Subscribers\" menu, and select the \"Groups\" sub-menu"
+msgstr ""
+
+#: class/class.mc-settings.php:697
+msgid "Configure Merge Tags"
+msgstr ""
+
+#: class/class.mc-settings.php:699
+#, php-format
+msgid ""
+"You can define mailchimp mailing list specific merge tags, and include the "
+"member's data for those tags, using the %1$se20r-mailchimp-merge-tag-settings"
+"%2$s and %1$se20r-mailchimp-user-defined-merge-tag-fields%2$s filter "
+"combination."
+msgstr ""
+
+#: class/class.mc-settings.php:701
+#, php-format
+msgid ""
+"If any of your merge fields should should include membership specific data "
+"for the user, it is likely the corresponding data is stored as something "
+"other than User Meta Data (i.e. not stored in the %1$swp_usermeta%2$s "
+"database table). In these cases, you will %3$shave%4$s to use the %1$se20r-"
+"mailchimp-user-defined-merge-tag-fields%2$s filter to populate the merge "
+"fields for the new member."
+msgstr ""
+
+#: class/class.mc-settings.php:702
+#, php-format
+msgid ""
+"With your Support and Updates license, you may %srequest custom code%s to "
+"populate up to 3 custom merge tags for your users."
+msgstr ""
+
+#: class/class.mc-settings.php:979
+msgid "Unable to refresh unknown list"
+msgstr ""
+
+#: class/class.mc-settings.php:1023
+#: class/membership-plugin-support/class.pmpro.php:355
+#: class/membership-plugin-support/class.woocommerce.php:319
+#, php-format
+msgid "Unable to refresh MailChimp Interest Group information for %s"
+msgstr ""
+
+#: class/class.mc-settings.php:1034
+#: class/membership-plugin-support/class.pmpro.php:364
+#: class/membership-plugin-support/class.woocommerce.php:328
+#, php-format
+msgid "Unable to refresh MailChimp Merge Field information for %s"
+msgstr ""
+
+#: class/class.member-handler-view.php:77
+msgid "Join one or more of our other mailing lists."
+msgstr ""
+
+#: class/class.member-handler-view.php:79
+msgid "Join our other mailing list."
+msgstr ""
+
+#: class/class.member-handler-view.php:144
+msgid ""
+"By checking the checkbox, you agree to receive email messages from us and "
+"you agree with allowing us to store some of your identifiable data, per our "
+"and our partner Mailchimp.com's data privacy policies. If you do not select "
+"this checkbox, you will not be included in any of our MailChimp.com hosted "
+"email lists"
+msgstr ""
+
+#: class/class.member-handler-view.php:162
+msgid "I'd rather not join the email list"
+msgstr ""
+
+#: class/class.merge-fields.php:143
+#, php-format
+msgid "Membership tag (%s) exceeds 10 characters. Will truncate it."
+msgstr ""
+
+#: class/class.user-handler.php:197
+msgid "Additional Mailing Lists"
+msgstr ""
+
+#: class/class.user-handler.php:202
+msgid "Mailing Lists"
+msgstr ""
+
+#: class/membership-plugin-support/class.woocommerce.php:486
+msgid "Product Category"
+msgstr ""
+
+#: class/membership-plugin-support/class.woocommerce.php:740
+msgid "WooCommerce Shopping Cart"
+msgstr ""
+
+#: class/utilities/class.e20r-background-process.php:602
+msgid "PHP setting 'max_execution_time' is too low!"
+msgstr ""
+
+#: class/utilities/class.e20r-background-process.php:719
+#, php-format
+msgid "Every %d Minutes"
+msgstr ""
+
+#: class/utilities/class.gdpr-enablement.php:83
+msgid "No extra data collected"
+msgstr ""
+
+#: class/utilities/class.gdpr-enablement.php:92
+msgid "No E20R developed plugins installed"
+msgstr ""
+
+#: class/utilities/class.gdpr-enablement.php:106
+msgid "3rd party services"
+msgstr ""
+
+#: class/utilities/class.gdpr-enablement.php:107
+msgid ""
+"The following 3rd party sites may receive information about the user/member "
+"as part of the registration process:"
+msgstr ""
+
+#: class/utilities/class.gdpr-enablement.php:123
+msgid "Eighty / 20 Results by Wicked Strong Chicks, LLC"
+msgstr ""
+
+#: class/utilities/class.gdpr-enablement.php:174
+#: class/utilities/class.gdpr-enablement.php:191
+msgid "E20R Plugin Data"
+msgstr ""
+
+#: class/utilities/class.license-client.php:91
+#, php-format
+msgid "Paste the purchased %s key here"
+msgstr ""
+
+#: class/utilities/class.licensing.php:210
+msgid "Error transmitting to the remote licensing server"
+msgstr ""
+
+#: class/utilities/class.licensing.php:264
+#, php-format
+msgid "For %s: %s"
+msgstr ""
+
+#: class/utilities/class.licensing.php:417
+#, php-format
+msgid "Sorry, no valid license found for: %s"
+msgstr ""
+
+#: class/utilities/class.licensing.php:454
+#, php-format
+msgid "Unable to save license settings for %s"
+msgstr ""
+
+#: class/utilities/class.licensing.php:481
+#, php-format
+msgid "Your update license has expired for the %s add-on!"
+msgstr ""
+
+#: class/utilities/class.licensing.php:526
+#, php-format
+msgid "E20R Licensing: %s"
+msgstr ""
+
+#: class/utilities/class.licensing.php:545
+msgid "Maximum stack depth exceeded"
+msgstr ""
+
+#: class/utilities/class.licensing.php:548
+msgid "Underflow or the modes mismatch"
+msgstr ""
+
+#: class/utilities/class.licensing.php:551
+msgid "Unexpected control character found"
+msgstr ""
+
+#: class/utilities/class.licensing.php:554
+msgid "Syntax error, malformed JSON"
+msgstr ""
+
+#: class/utilities/class.licensing.php:557
+msgid "Malformed UTF-8 characters, possibly incorrectly encoded"
+msgstr ""
+
+#: class/utilities/class.licensing.php:560
+#, php-format
+msgid "No error, supposedly? %s"
+msgstr ""
+
+#: class/utilities/class.licensing.php:729
+#: class/utilities/class.licensing.php:730
+msgid "E20R Licenses"
+msgstr ""
+
+#: class/utilities/class.licensing.php:821
+msgid "Configure Licenses"
+msgstr ""
+
+#: class/utilities/class.licensing.php:878
+msgid "Paste the purchased key here"
+msgstr ""
+
+#: class/utilities/class.licensing.php:905
+#, php-format
+msgid "Add %s license"
+msgstr ""
+
+#: class/utilities/class.licensing.php:945
+msgid ""
+"This add-on is distributed under version 2 of the GNU Public License "
+"(GPLv2). One of the things the GPLv2 license grants is the right to use this "
+"software on your site, free of charge."
+msgstr ""
+
+#: class/utilities/class.licensing.php:948
+msgid "Purchase Licenses/Add-ons &raquo;"
+msgstr ""
+
+#: class/utilities/class.licensing.php:952
+msgid "Name"
+msgstr ""
+
+#: class/utilities/class.licensing.php:953
+msgid "Key"
+msgstr ""
+
+#: class/utilities/class.licensing.php:954
+msgid "Email"
+msgstr ""
+
+#: class/utilities/class.licensing.php:955
+msgid "Deactivate"
+msgstr ""
+
+#: class/utilities/class.licensing.php:1009
+msgid "Email used to buy license"
+msgstr ""
+
+#: class/utilities/class.licensing.php:1039
+msgid "You are not permitted to perform this action."
+msgstr ""
+
+#: class/utilities/class.licensing.php:1077
+#, php-format
+msgid ""
+"Your <em>%s</em> license is either not configured, invalid or has expired."
+msgstr ""
+
+#: class/utilities/class.licensing.php:1078
+#, php-format
+msgid ""
+"Visit your Eighty / 20 Results <a href=\"%s\" target=\"_blank\">Support "
+"Account</a> page to confirm that your account is active and to locate your "
+"license key."
+msgstr ""
+
+#: class/utilities/class.licensing.php:1087
+msgid "Thank you!"
+msgstr ""
+
+#: class/utilities/class.licensing.php:1088
+#, php-format
+msgid "A valid %s license key is being used on this site."
+msgstr ""
+
+#: plugin-updates/github-checker.php:119
+msgid "There is no changelog available."
+msgstr ""
+
+#: plugin-updates/plugin-update-checker.php:763
+msgid "Check for updates"
+msgstr ""
+
+#: plugin-updates/plugin-update-checker.php:807
+msgid "This plugin is up to date."
+msgstr ""
+
+#: plugin-updates/plugin-update-checker.php:809
+msgid "A new version of this plugin is available."
+msgstr ""
+
+#: plugin-updates/plugin-update-checker.php:811
+#, php-format
+msgid "Unknown update checker status \"%s\""
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/WP_CLI/CommandWithTerms.php:211
+msgid "Invalid Taxonomy"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/WP_CLI/CommandWithUpgrade.php:408
+msgid " Try again"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/WP_CLI/CommandWithUpgrade.php:413
+msgid "API error. Try Again."
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/core.php:485
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/core.php:530
+#, php-format
+msgctxt "Default network name"
+msgid "%s Sites"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/core.php:658
+msgid "Wildcard DNS may not be configured correctly."
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/cron.php:327
+#, php-format
+msgid "%s year"
+msgid_plural "%s years"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/cron.php:328
+#, php-format
+msgid "%s month"
+msgid_plural "%s months"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/cron.php:329
+#, php-format
+msgid "%s week"
+msgid_plural "%s weeks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/cron.php:330
+#, php-format
+msgid "%s day"
+msgid_plural "%s days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/cron.php:331
+#, php-format
+msgid "%s hour"
+msgid_plural "%s hours"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/cron.php:332
+#, php-format
+msgid "%s minute"
+msgid_plural "%s minutes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/cron.php:333
+#, php-format
+msgid "%s second"
+msgid_plural "%s seconds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/export.php:256
+#, php-format
+msgid "Invalid start ID: %d"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/media.php:58
+msgid "image"
+msgid_plural "images"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/media.php:66
+msgid "the image"
+msgid_plural "all images"
+msgstr[0] ""
+msgstr[1] ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/site.php:99
+msgid "Uncategorized"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/commands/site.php:102
+msgctxt "Default category slug"
+msgid "Uncategorized"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/export/class-wp-export-query.php:327
+#, php-format
+msgid "Term is missing a parent: %s (%d)"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/export/writers.php:35
+#: plugin-updates/vendor/wp-cli/wp-cli/php/export/writers.php:39
+msgid "Export Error"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/export/writers.php:95
+#: plugin-updates/vendor/wp-cli/wp-cli/php/export/writers.php:159
+#, php-format
+msgid "WP Export: error opening %s for writing."
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/export/writers.php:112
+#: plugin-updates/vendor/wp-cli/wp-cli/php/export/writers.php:147
+msgid "WP Export: error writing to export file."
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/utils-wp.php:122
+msgid "Inactive Widgets"
+msgstr ""
+
+#: plugin-updates/vendor/wp-cli/wp-cli/php/utils-wp.php:125
+msgid ""
+"Drag widgets here to remove them from the sidebar but keep their settings."
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "E20R MailChimp Interest Groups for Paid Memberships Pro and WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid ""
+"https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-"
+"plugins/"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid ""
+"Automatically add users to your MailChimp.com list(s) when they purchase, "
+"sign up, or register to get access your site/products. Segment users with "
+"Merge Tags and/or Mailchimp Interest Groups. Include custom user meta data "
+"in the merge tags/merge fields. Supports <a href=\"https://wordpress.org/"
+"plugins/paid-memberships-pro/\">Paid Memberships Pro</a> and <a href="
+"\"https://wordpress.org/plugins/woocommerce/\">WooCommerce</a>"
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Eighty/20 Results <thomas@eighty20results.com>"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "https://eighty20results.com/thomas-sjolshagen/"
+msgstr ""
