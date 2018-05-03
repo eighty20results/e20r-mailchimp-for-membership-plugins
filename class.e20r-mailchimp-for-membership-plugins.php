@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: E20R MailChimp Integration for Revenue Tools
+Plugin Name: E20R MailChimp Interest Groups for Paid Memberships Pro and WooCommerce
 Plugin URI: https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins/
-Description: Automatically add users to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
-Version: 2.0
+Description: Automatically add users to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and/or Mailchimp Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
+Version: 2.2
 WC requires at least: 3.3
 WC tested up to: 3.3.5
 Requires at least: 4.9
@@ -16,7 +16,7 @@ Text Domain: e20r-mailchimp-for-membership-plugins
 Domain Path: /languages
 License: GPLv2
 
-* Copyright (c) 2017 - Eighty / 20 Results by Wicked Strong Chicks.
+* Copyright (c) 2017-2018 - Eighty / 20 Results by Wicked Strong Chicks.
 * ALL RIGHTS RESERVED
 *
 * This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ if ( ! defined( 'E20R_MC_TESTING' ) ) {
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_VERSION' ) ) {
-	define( 'E20R_MAILCHIMP_VERSION', '2.0' );
+	define( 'E20R_MAILCHIMP_VERSION', '2.2' );
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_DIR' ) ) {
@@ -60,16 +60,16 @@ if ( ! defined( 'E20R_MAILCHIMP_URL' ) ) {
 	define( 'E20R_MAILCHIMP_URL', plugin_dir_url( __FILE__ ) );
 }
 
-if ( !defined( 'E20R_MAILCHIMP_NA' ) ) {
-	define( 'E20R_MAILCHIMP_NA', -1 );
+if ( ! defined( 'E20R_MAILCHIMP_NA' ) ) {
+	define( 'E20R_MAILCHIMP_NA', - 1 );
 }
 
-if ( !defined( 'E20R_MAILCHIMP_CURRENT_USER' ) ) {
-	define( 'E20R_MAILCHIMP_CURRENT_USER', 0);
+if ( ! defined( 'E20R_MAILCHIMP_CURRENT_USER' ) ) {
+	define( 'E20R_MAILCHIMP_CURRENT_USER', 0 );
 }
 
-if ( !defined( 'E20R_MAILCHIMP_BILLING_USER' ) ) {
-	define( 'E20R_MAILCHIMP_BILLING_USER', 1);
+if ( ! defined( 'E20R_MAILCHIMP_BILLING_USER' ) ) {
+	define( 'E20R_MAILCHIMP_BILLING_USER', 1 );
 }
 
 if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
@@ -131,10 +131,10 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			add_filter( 'plugin_row_meta', array( $this, 'plugin_row_meta' ), 10, 2 );
 			
 			add_action( 'init', array( User_Handler::get_instance(), 'load_actions' ) );
-			add_action( "init", array( Member_Handler::get_instance(), "load_plugin" ), -1 );
+			add_action( "init", array( Member_Handler::get_instance(), "load_plugin" ), - 1 );
 			
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
-			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ), 999 );
 		}
 		
 		/**
@@ -158,17 +158,27 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			global $post;
 			
 			$on_login_page = ( $GLOBALS['pagenow'] === 'wp-login.php' && ! empty( $_REQUEST['action'] ) && $_REQUEST['action'] === 'register' );
-			$on_login_page = $on_login_page || (isset( $post->post_content ) ? has_shortcode( $post->post_content, 'theme-my-login' ) : false );
+			$on_login_page = $on_login_page || ( isset( $post->post_content ) ? has_shortcode( $post->post_content, 'theme-my-login' ) : false );
 			
 			return $on_login_page;
 		}
 		
 		/**
 		 * Load style(s) for frontend
+		 *
+		 * @since 2.2 - ENHANCEMENT: Account for PMPro styles
 		 */
 		public function load_frontend_styles() {
-			wp_enqueue_style( 'e20r-mc', E20R_MAILCHIMP_URL . "css/e20r-mailchimp-for-membership-plugins.css", null, E20R_MAILCHIMP_VERSION );
+			
+			if ( wp_style_is( 'pmpro_frontend', 'enqueued' ) ) {
+				$deps = array( 'pmpro_frontend' );
+			} else {
+				$deps = null;
+			}
+			
+			wp_enqueue_style( 'e20r-mc', E20R_MAILCHIMP_URL . "css/e20r-mailchimp-for-membership-plugins.css", $deps, E20R_MAILCHIMP_VERSION );
 		}
+		
 		/**
 		 * Add links to the plugin row meta
 		 *
@@ -251,200 +261,6 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		}
 		
 		/**
-		 * Unsubscribe a user based on their membership level.
-		 *
-		 * @param int $user_id  (int) - User Id
-		 * @param int $level_id (int) - Membership Level Id
-		 */
-		/*
-		public function unsubscribe_from_lists( $user_id, $level_id = null ) {
-			
-			$utils = Utilities::get_instance();
-			$mc    = MailChimp_API::get_instance();
-			$unsub = $mc->get_option( 'unsubscribe' );
-			
-			$utils->log( "Unsubscribe logic during membership change/cancelleation" );
-			
-			// $options           = get_option( "e20r_mc_settings" );
-			$all_lists            = get_option( "e20r_mc_lists" );
-			$prefix               = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
-			$unsubscribe_lists    = array();
-			$level_lists          = array();
-			$active_user_levels   = array();
-			$current_levels_lists = array();
-			
-			$current_level_ids = apply_filters( 'e20r-mailchimp-user-membership-levels', array(), $user_id );
-			
-			if ( ! empty( $current_level_ids ) ) {
-				foreach ( $current_level_ids as $level ) {
-					$active_user_levels[] = $level->id;
-				}
-			}
-			
-			// We won't unsubscribe if the option isn't set
-			if ( empty( $unsub ) ) {
-				
-				$utils->log( "No need to unsubscribe {$user_id} with 'level' ID: {$level_id}" );
-				
-				return;
-			}
-			
-			// Unsubscribing from all lists, or just the ones associated with a membership level?
-			switch ( $unsub ) {
-				
-				case 'all':
-					$unsubscribe_lists = wp_list_pluck( $all_lists, "id" );
-					break;
-				
-				case 1:
-				case 2:
-					$utils->log( "Processing for unsubscribe or set interest group to Cancelled" );
-					
-					$unsubscribing_from          = $this->get_levels_to_unsubscribe_from( $user_id );
-					$multiple_products_purchased = array_count_values( $unsubscribing_from );
-					
-					$utils->log( "Found " . count( $unsubscribing_from ) . " to possibly cancel subscriptions for: " . print_r( $unsubscribing_from, true ) );
-					
-					foreach ( $multiple_products_purchased as $old_level_id => $level_count ) {
-						
-						$utils->log( "Have {$level_count} products/orders for {$old_level_id}" );
-						
-						if ( 1 >= $level_count ) {
-							
-							$lists = $mc->get_option( "level_{$prefix}_{$old_level_id}_lists" );
-							$utils->log( "Checking lists for {$old_level_id}: " . print_r( $lists, true ) );
-							
-							if ( ! empty( $lists ) ) {
-								$unsubscribe_lists = array_merge( $unsubscribe_lists, $lists );
-							}
-						}
-					}
-					
-					$unsubscribe_lists = array_unique( $unsubscribe_lists );
-					break;
-				
-			}
-			
-			$utils->log( "Have " . count( $unsubscribe_lists ) . " list we should process during unsubscribe." );
-			
-			// Should we unsubscribe from lists (or are we only setting the interest group(s)?)
-			if ( empty( $unsubscribe_lists ) ) {
-				$utils->log( "No lists to unsubscribe from! Unsub option is: {$unsub}" );
-				
-				return;
-			}
-			
-			$utils->log( "Have " . count( $active_user_levels ) . " active levels for {$user_id}" );
-			
-			if ( ! empty( $active_user_levels ) ) {
-				
-				foreach ( $active_user_levels as $user_level_id ) {
-					
-					$active_level_lists = $mc->get_option( "level_{$prefix}_{$user_level_id}_lists" );
-					
-					if ( ! empty( $active_level_lists ) ) {
-						$current_levels_lists = array_merge( $current_levels_lists, $active_level_lists );
-					}
-				}
-			} else {
-				$utils->log( "No active user levels... " );
-			}
-			
-			//Don't unsubscribe users for the new level(s), or any additional list they're elected to subscribe to
-			$user_additional_lists = get_user_meta( $user_id, 'e20r_mc_additional_lists', true );
-			
-			if ( ! is_array( $user_additional_lists ) ) {
-				
-				$user_additional_lists = array();
-			}
-			
-			if ( ! empty( $level_id ) ) {
-				
-				$tmp_list = $mc->get_option( "level_{$prefix}_{$level_id}_lists" );
-				
-				if ( is_array( $tmp_list ) ) {
-					$level_lists = $tmp_list;
-				}
-				
-			} else if ( true === apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) &&
-			            null === $level_id ) {
-				
-				$tmp_list = $mc->get_option( 'members_list' );
-				if ( is_array( $tmp_list ) ) {
-					$level_lists = $tmp_list;
-				}
-			}
-			
-			$dont_unsubscribe_from = array_merge( $user_additional_lists, $level_lists );
-			$list_user             = get_userdata( $user_id );
-			
-			//unsubscribe
-			foreach ( $unsubscribe_lists as $list_id ) {
-				
-				if ( in_array( $unsub, array( 'all', '1' ) ) ) {
-					
-					if ( ! in_array( $list_id, $dont_unsubscribe_from ) ) {
-						$utils->log( "Unsubscribing {$list_user->ID} from {$list_id}" );
-						$mc->unsubscribe( $list_id, $list_user );
-					}
-					
-				} else if ( 2 == $unsub ) {
-					
-					$utils->log( "Processing 'Cancelled' Interest Group(s) for {$list_id}" );
-					
-					if ( ! in_array( $list_id, $dont_unsubscribe_from ) ) {
-						
-						$utils->log( "Setting the Cancelled interest group. Not actually removing Mailchimp user {$list_user->user_email} from {$list_id} " );
-						
-						if ( false === $mc->subscribe( $list_id, $list_user, array(), array()) ) {
-							$utils->log( "Unable to set 'cancelled' for {$list_user->ID} in list {$list_id}" );
-						}
-						$utils->log( "Updated the settings for {$list_user->ID}" );
-					}
-				}
-				
-			}
-		}
-		*/
-		/**
-		 * Return the levels to unsubscribe (possible) mailing list(s) from
-		 *
-		 * @param int $user_id
-		 *
-		 * @return null|array
-		 */
-		/*
-		public function get_levels_to_unsubscribe_from( $user_id ) {
-			
-			$levels_to_unsubscribe_from = null;
-			$current_user_levels        = array();
-			$level_ids                  = array();
-			
-			// Is a membership plugin installed and active?
-			$has_membership_system = apply_filters( 'e20r-mailchimp-membership-plugin-present', false );
-			
-			// Only makes sense if we're cohabitating with a membership plugin
-			if ( true === $has_membership_system ) {
-				
-				//Get their last level, last entry or second to last if they are changing levels
-				global $wpdb;
-				
-				$current_user_levels = apply_filters( 'e20r-mailchimp-user-membership-levels', $current_user_levels, $user_id );
-				
-				foreach ( $current_user_levels as $user_level ) {
-					$level_ids[] = $user_level->id;
-				}
-				
-				$statuses = apply_filters( 'e20r-mailchimp-non-active-statuses', array() );
-				
-				// Fetch user's list of levels to drop the subscription from for other membership plugin options
-				$levels_to_unsubscribe_from = apply_filters( 'e20r-mailchimp-user-old-membership-levels', $levels_to_unsubscribe_from, $user_id, $level_ids, $statuses );
-			}
-			
-			return $levels_to_unsubscribe_from;
-		}
-		*/
-		/**
 		 * Unsubscribe a user from a specific list
 		 *
 		 * @param string   $list_id - the List ID
@@ -459,8 +275,8 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 				return false;
 			}
 			
-			$mc_api   = MailChimp_API::get_instance();
-			$utils = Utilities::get_instance();
+			$mc_api = MailChimp_API::get_instance();
+			$utils  = Utilities::get_instance();
 			
 			$unsub_setting = $mc_api->get_option( 'unsubscribe' );
 			
@@ -505,12 +321,10 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		public function subscribe( $list_id, $user, $level_id ) {
 			
 			$utils         = Utilities::get_instance();
-            $mc_api           = MailChimp_API::get_instance();
+			$mc_api        = MailChimp_API::get_instance();
 			$ig_controller = Interest_Groups::get_instance();
 			$mf_controller = Merge_Fields::get_instance();
 			$level_ids     = array();
-			
-			$gdpr_consent = (bool) $utils->get_variable( 'gdpr_consent_agreement', false );
 			
 			//make sure user has an email address
 			if ( empty( $user->user_email ) ) {
@@ -519,8 +333,8 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 				
 				return false;
 			}
-            
-            $utils->log("Subscribe operation for {$user->user_email} for Level ID: {$level_id}");
+			
+			$utils->log( "Subscribe operation for {$user->user_email} for Level ID: {$level_id}" );
 			
 			if ( ! is_null( $level_id ) ) {
 				$level_ids = array( $level_id );
@@ -531,12 +345,16 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			
 			$opt_in = $mc_api->get_option( 'double_opt_in' );
 			
-			$email_type = apply_filters( 'e20r_mailchimp_default_mail_type', 'html' );
+			$email_type  = apply_filters( 'e20r_mailchimp_default_mail_type', 'html' );
+			$has_consent = apply_filters( 'e20r-mailchimp-user-consent-provided', true );
 			
-			if ( true === $gdpr_consent ) {
-				$utils->log( "Trying to subscribe {$user->ID} to list {$list_id} with double opt-in ({$opt_in}), GDPR consent ({$gdpr_consent}) and type {$email_type}" );
+			if ( true === $has_consent ) {
+				$utils->log( "Trying to subscribe {$user->ID} to list {$list_id} with double opt-in ({$opt_in}), GDPR consent ({$has_consent}) and type {$email_type}" );
+				
 				return $mc_api->subscribe( $list_id, $user, $merge_fields, $interests, $email_type, $opt_in );
 			}
+			
+			do_action( 'e20r-mailchimp-process-consent', $has_consent, $user->ID );
 		}
 		
 		/**
@@ -548,7 +366,8 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			
 			$utils            = Utilities::get_instance();
 			$additional_lists = $utils->get_variable( 'additional_lists', null );
-			$gdpr_consent = (bool) $utils->get_variable( 'gdpr_consent_agreement', false );
+			
+			$has_consent = apply_filters( 'e20r-mailchimp-user-consent-provided', true );
 			
 			if ( ! empty( $additional_lists ) ) {
 				update_user_meta( $user_id, 'e20r_mc_additional_lists', $additional_lists );
@@ -557,19 +376,13 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 				
 				foreach ( $additional_lists as $list ) {
 					//subscribe them
-					if ( true === $gdpr_consent ) {
+					if ( true === $has_consent ) {
 						$this->subscribe( $list, $list_user, $level_id );
 					}
 				}
 			}
 			
-			update_user_meta( $user_id, 'e20r_gdpr_consent_agreement', array( current_time('timestamp') => $gdpr_consent ) );
-			
-			if ( false === $gdpr_consent ) {
-				$user = get_user_by( 'ID', $user_id );
-				$body = sprintf( __( 'User %s did not agree to the consent notice for this plugin (MailChimp for Membership Plugins). It is recommended you verify that you are not storing any data they have opted out of.', self::plugin_slug ), "{$user->display_name} ({$user->user_email})" );
-				wp_mail( get_option( 'admin_email' ), sprintf( __("MailChimp integration: New user/member (%s) refused GDPR consent", self::plugin_slug ), $user->user_email ), $body );
-			}
+			do_action( 'e20r-mailchimp-process-consent', $has_consent, $user_id );
 		}
 		
 		/**
@@ -586,8 +399,8 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 				return;
 			}
 			
-			$parts     = explode( '\\', $class_name );
-			$c_name    = strtolower( preg_replace( '/_/', '-', $parts[ ( count( $parts ) - 1 ) ] ) );
+			$parts      = explode( '\\', $class_name );
+			$c_name     = strtolower( preg_replace( '/_/', '-', $parts[ ( count( $parts ) - 1 ) ] ) );
 			$base_paths = apply_filters( 'e20r-mailchimp-autoloader-paths', array( plugin_dir_path( __FILE__ ) . 'classes/' ) );
 			
 			if ( file_exists( plugin_dir_path( __FILE__ ) . 'class/' ) ) {
@@ -596,7 +409,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			
 			$filename = "class.{$c_name}.php";
 			
-			foreach( $base_paths as $base_path ) {
+			foreach ( $base_paths as $base_path ) {
 				$iterator = new \RecursiveDirectoryIterator( $base_path, \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveIteratorIterator::SELF_FIRST | \RecursiveIteratorIterator::CATCH_GET_CHILD | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS );
 				
 				/**
