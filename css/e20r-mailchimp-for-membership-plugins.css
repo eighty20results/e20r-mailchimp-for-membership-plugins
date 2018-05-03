@@ -80,3 +80,29 @@
 .e20r-mc-table-cell label {
     width: 100%;
 }
+.e20r-input-radio {
+    width: 25%;
+    max-width: 100px;
+    min-width: 50px;
+}
+.e20r-radio-inline {
+    position: relative;
+    display: inline-block !important;
+    padding-left: 20px;
+    margin-bottom: 0;
+    font-weight: 400 !important;
+    vertical-align: middle;
+    cursor: pointer;
+}
+label.e20r-radio-inline {
+    display: inline-block !important;
+    max-width: 100%;
+    width: initial;
+    margin-bottom: 5px !important;
+    font-weight: normal !important;
+}
+.e20r-radio-inline input[type=radio] {
+    position: absolute;
+    margin-top: 4px\9;
+    margin-left: -20px;
+}
