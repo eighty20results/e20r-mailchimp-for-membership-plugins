@@ -1,1 +1,10 @@
-BUG FIX: Syntax error in Utilities module
+ENHANCEMENT: Removed extra and unused code for licensed features
+ENHANCEMENT: Added .pot file for translations
+ENHANCEMENT: Add support for loading and saving settings from a supported external module
+ENHANCEMENT: Loading GDPR settings and forms from Plus module
+ENHANCEMENT: Added formatting for GDPR opt-in form
+ENHANCEMENT: Add custom registration checks (for GDPR assistance)
+ENHANCEMENT: Generic registration checks (PMPro) handler documentation
+ENHANCEMENT: Generic registration checks (WooCommerce) handler
+ENHANCEMENT: More GDPR updates
+BUG FIX: Required argument for consent check filter not included

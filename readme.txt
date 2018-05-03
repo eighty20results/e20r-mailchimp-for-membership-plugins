@@ -1,10 +1,10 @@
-=== E20R MailChimp Integration for Revenue Tools ===
+=== E20R MailChimp Interest Groups for Paid Memberships Pro and WooCommerce ===
 Contributors: eighty20results
-Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups
+Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups, mailchimp interest groups
 Requires at least: 4.5
 Requires PHP: 5.4
-Tested up to: 4.9.3
-Stable tag: 1.4.1
+Tested up to: 4.9.4
+Stable tag: 2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,11 +12,11 @@ Sync WordPress based Users, Members or customers to MailChimp list with support 
 
 == Description ==
 
-Specify the subscripiton list(s) for your site's WordPress Users and Member plugin users. If a supported membership plugin is installed, you can specify additional list settings by either the membership level or the product category purchased.
+Specify the subscription list(s) for your site's WordPress Users and Member plugin users. If a supported membership plugin is installed, you can specify additional list settings by either the membership level or the product category purchased.
 
 The plugin has a setting to require/not require MailChimp's double opt-in, as well as a setting to change interests and merge tags for members on level change. This allows you to automatically resegment your users based on membership level or custom merge tag data. This plugin does _not_ unsubscribe users from MailChimp lists _unless_ it's been explicitly configured to do so.
 
-We do not recommend using multiple lists for different membership levels. Instead, this plugin uses a single list for all members with segmnentation managed through Groups/ Interests, and merge tag values.
+We do not recommend using multiple lists for different membership levels. Instead, this plugin uses a single list for all members with segmentation managed through Groups/ Interests, and merge tag values.
 
 == Installation ==
 This plugin works with and without a member plugin installed.
@@ -71,6 +71,42 @@ Please visit our premium support site at https://eighty20results.com/ for more d
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 2.2 ==
+
+* ENHANCEMENT: Removed extra and unused code for licensed features
+* ENHANCEMENT: Added .pot file for translations
+* ENHANCEMENT: Add support for loading and saving settings from a supported external module
+* ENHANCEMENT: Loading GDPR settings and forms from Plus module
+* ENHANCEMENT: Added formatting for GDPR opt-in form
+* ENHANCEMENT: Add custom registration checks (for GDPR assistance)
+* ENHANCEMENT: Generic registration checks (PMPro) handler documentation
+* ENHANCEMENT: Generic registration checks (WooCommerce) handler
+* ENHANCEMENT: More GDPR updates
+* BUG FIX: Required argument for consent check filter not included
+
+== 2.0 ==
+
+* ENHANCEMENT: Added WooCommerce compatibility metadata
+* ENHANCEMENT: Add latent support for GDPR features in WordPress core
+* ENHANCEMENT: Refactored view_additional_lists() method
+* ENHANCEMENT: Refactored clear_levels_cache() method
+* ENHANCEMENT: Refactored session_vars() method
+* ENHANCEMENT: Moved session_vars() method to PMPro specific class
+* ENHANCEMENT: Moved clear_levels_cache() method to PMPro specific class
+* ENHANCEMENT: Moved view_additional_lists() method to parent Membership_Plugin class
+* ENHANCEMENT: Refactored view_additional_lists() to Membership_Plugin class
+* ENHANCEMENT: Added GDPR related consent opt-in checkbox to Member_Handler_View::addl_list_choice() view
+* ENHANCEMENT: Warn admin if user didn't consent to Data Policy
+* ENHANCEMENT: Updated filter string for e20r-mailchimp-assign-interest-to-user and documented it
+* ENHANCEMENT: Added documentation for e20r-mailchimp-interests-to-assign-to-user filter
+* ENHANCEMENT: Refactored the Interest_Groups class
+* ENHANCEMENT: Updated filter documentation for e20r-mailchimp-user-defined-merge-tag-fields
+* ENHANCEMENT: Updated copyright notice
+* ENHANCEMENT: Removed stale/old code
+* ENHANCEMENT: Refactored code
+* ENHANCEMENT: Expand autoloader
+* BUG FIX: Didn't handle licensed vs non-licensed features correctly
 
 == 1.4.1 ==
 
