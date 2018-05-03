@@ -346,7 +346,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			$opt_in = $mc_api->get_option( 'double_opt_in' );
 			
 			$email_type  = apply_filters( 'e20r_mailchimp_default_mail_type', 'html' );
-			$has_consent = apply_filters( 'e20r-mailchimp-user-consent-provided', true );
+			$has_consent = apply_filters( 'e20r-mailchimp-user-consent-provided', true, $user->ID );
 			
 			if ( true === $has_consent ) {
 				$utils->log( "Trying to subscribe {$user->ID} to list {$list_id} with double opt-in ({$opt_in}), GDPR consent ({$has_consent}) and type {$email_type}" );
@@ -367,7 +367,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 			$utils            = Utilities::get_instance();
 			$additional_lists = $utils->get_variable( 'additional_lists', null );
 			
-			$has_consent = apply_filters( 'e20r-mailchimp-user-consent-provided', true );
+			$has_consent = apply_filters( 'e20r-mailchimp-user-consent-provided', true, $user_id );
 			
 			if ( ! empty( $additional_lists ) ) {
 				update_user_meta( $user_id, 'e20r_mc_additional_lists', $additional_lists );
