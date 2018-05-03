@@ -128,6 +128,7 @@ class PMPro extends Membership_Plugin {
 			add_action( 'pmpro_paypalexpress_session_vars', array( $this, 'session_vars' ), 10 );
 			add_action( 'pmpro_save_membership_level', array( $this, 'clear_levels_cache' ), 10 );
 			add_action( 'pmpro_checkout_after_tos_fields', array( $this, 'view_additional_lists' ), 10 );
+			add_filter( 'pmpro_registration_checks', array( $this, 'registration_checks' ), 10, 1);
 			
 			/** Fixed: on_update_membership_level is refactored and handled by membership support class */
 			add_action( 'pmpro_save_membership_level',
@@ -176,6 +177,12 @@ class PMPro extends Membership_Plugin {
 		}
 	}
 	
+	public function registration_checks( $continue ) {
+		
+		$continue = apply_filters( 'e20r-check-required-fields', $continue );
+		
+		return $continue;
+	}
 	/**
 	 * Remove the cache when a membership level is updated/saved/changed
 	 */
