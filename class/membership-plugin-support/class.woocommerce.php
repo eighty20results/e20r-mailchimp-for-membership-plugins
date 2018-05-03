@@ -133,6 +133,9 @@ class WooCommerce extends Membership_Plugin {
 			
 			add_action( "edit_product_cat", array( $this, 'on_update_membership_level' ), 10, 2 );
 			
+			// Used to verify custom fields (from modules or this plugin)
+			add_action( 'woocommerce_checkout_process', array( $this, 'verify_custom_fields' ), 10, 0 );
+			
 			// For WooCommerce product categories (add new entry to the interest group)
 			add_action( 'create_product_cat', array( $this, 'added_new_product_category' ), 10, 2 );
 			
@@ -168,6 +171,22 @@ class WooCommerce extends Membership_Plugin {
 		} else {
 			
 			$utils->log( "Not loading for WooCommerce" );
+		}
+	}
+	
+	/**
+	 * Verify custom field(info)
+	 */
+	public function verify_custom_fields() {
+		
+		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			
+			$continue = apply_filters( 'e20r-check-required-fields', true, 'woocommerce' );
+			
+			if ( false === $continue ) {
+				$notice_text = apply_filters( 'e20r-mailchimp-custom-field-error-message', null );
+				wc_add_notice( $notice_text, 'error' );
+			}
 		}
 	}
 	
