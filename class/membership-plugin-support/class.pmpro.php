@@ -177,9 +177,16 @@ class PMPro extends Membership_Plugin {
 		}
 	}
 	
+	/**
+	 * Generic registration checks (PMPro) handler
+	 *
+	 * @param bool $continue
+	 *
+	 * @return bool
+	 */
 	public function registration_checks( $continue ) {
 		
-		$continue = apply_filters( 'e20r-check-required-fields', $continue );
+		$continue = apply_filters( 'e20r-check-required-fields', $continue, 'pmpro' );
 		
 		return $continue;
 	}
