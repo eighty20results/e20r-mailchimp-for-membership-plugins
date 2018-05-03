@@ -316,7 +316,7 @@ class MC_Settings {
 			
 			$utils->log("Loading licensed settings");
 			
-		    do_action( 'e20r-mailchimp-licensed-register-settings' );
+		    do_action( 'e20r-mailchimp-licensed-register-settings', 'e20r_mc_settings', 'e20r_mc_licensed' );
 		    
 		} else if ( false === $is_licensed || false === $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ) {
 			
@@ -826,6 +826,9 @@ class MC_Settings {
 					
 					$value = array_unique( $value );
 					break;
+					
+                default:
+                    $value = apply_filters( 'e20r-mailchimp-membership-plugin-save-default-settings-handler', $value, $key, $prefix, $defaults  );
 			}
 			
 			// Assign processed value to $new_input array.
