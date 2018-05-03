@@ -87,15 +87,6 @@ class Member_Handler_View {
 				global $current_user;
 				$additional_lists_selected = $utils->get_variable( 'additional_lists', array() );
 				
-				if ( is_user_logged_in() ) {
-					$gdpr_consent = get_user_meta( $current_user->ID, 'e20r_gdpr_consent_agreement', true );
-					$gdpr_consent_agreement = (bool) ( is_array($gdpr_consent) ? array_pop( $gdpr_consent ) : false );
-				} else {
-					$gdpr_consent_agreement = (bool) $utils->get_variable( 'gdpr_consent_agreement', false );
-				}
-				
-				$utils->log("GDPR agreement value: " . ( true === $gdpr_consent_agreement ? "True" : 'False' ) );
-				
 				$saved_user_lists = get_user_meta( $current_user->ID, "e20r_mc_additional_lists", true );
 				
 				if ( empty( $additional_lists_selected ) && isset( $_SESSION['additional_lists'] ) ) {
@@ -132,20 +123,11 @@ class Member_Handler_View {
                 <div class="e20r-mc-table-row">
                 </div>
             </div>
-            <hr />
-            <div class="e20r-mc-gdpr-consent">
-                <div class="e20r-mc-table-cell e20r-input-checkbox">
-                    <input type="checkbox" id="e20r-gdpr_consent_agreement" class="e20r-list-checkbox"
-                       name="gdpr_consent_agreement"
-                       style="width: 20px; position: relative; vertical-align: middle; float: left;"
-                       value="<?php esc_attr_e( $gdpr_consent_agreement ); ?>" <?php checked( $gdpr_consent_agreement, true ); ?> />
-                </div>
-                 <div class="e20r-mc-table-cell e20r-input-label">
-                    <label for="gdpr_consent_agreement"><?php _e( 'By checking the checkbox, you agree to receive email messages from us and you agree with allowing us to store some of your identifiable data, per our and our partner Mailchimp.com\'s data privacy policies. If you do not select this checkbox, you will not be included in any of our MailChimp.com hosted email lists', Controller::plugin_slug ); ?></label>
-                 </div>
-            </div>
         </div>
 		<?php
+        
+        do_action( 'e20r-mailchimp-additional-checkout-info' );
+        
 		return ob_get_clean();
 	}
 	
