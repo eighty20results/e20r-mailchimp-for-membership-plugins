@@ -123,11 +123,7 @@ class Member_Handler_View {
                 <div class="e20r-mc-table-row">
                 </div>
             </div>
-        </div>
-		<?php
-        
-        do_action( 'e20r-mailchimp-additional-checkout-info' );
-        
+        </div><?php
 		return ob_get_clean();
 	}
 	
