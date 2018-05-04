@@ -151,6 +151,14 @@ abstract class Membership_Plugin {
 		echo Member_Handler_View::addl_list_choice($additional_lists_array );
 	}
 	
+	/**
+	 * Add any extra views / fields on the checkout page (if applicable)
+	 */
+	public function add_custom_views() {
+		
+		do_action( 'e20r-mailchimp-additional-checkout-info' );
+	}
+	
 	abstract public function init_default_groups();
 	
 	/**
