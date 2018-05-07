@@ -4,7 +4,7 @@ Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing
 Requires at least: 4.5
 Requires PHP: 5.4
 Tested up to: 4.9.4
-Stable tag: 2.2
+Stable tag: 2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,13 @@ Please visit our premium support site at https://eighty20results.com/ for more d
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 2.3 ==
+
+* BUG FIX: Extra (GDPR) opt-in required the 'alternate list opt-in' to be configured (should not be required)
+* ENHANCEMENT: Global add_custom_views() handler for any supported membership/commerce plugin
+* ENHANCEMENT: Add custom view handler for PMPro (at bottom of checkout page)
+* ENHANCEMENT: Add custom view handler for WooCommerce (on checkout page)
 
 == 2.2 ==
 

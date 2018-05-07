@@ -1,10 +1,4 @@
-ENHANCEMENT: Removed extra and unused code for licensed features
-ENHANCEMENT: Added .pot file for translations
-ENHANCEMENT: Add support for loading and saving settings from a supported external module
-ENHANCEMENT: Loading GDPR settings and forms from Plus module
-ENHANCEMENT: Added formatting for GDPR opt-in form
-ENHANCEMENT: Add custom registration checks (for GDPR assistance)
-ENHANCEMENT: Generic registration checks (PMPro) handler documentation
-ENHANCEMENT: Generic registration checks (WooCommerce) handler
-ENHANCEMENT: More GDPR updates
-BUG FIX: Required argument for consent check filter not included
+BUG FIX: Extra (GDPR) opt-in required the "alternate list opt-in" to be configured (should not be required)
+ENHANCEMENT: Global add_custom_views() handler for any supported membership/commerce plugin
+ENHANCEMENT: Add custom view handler for PMPro (at bottom of checkout page)
+ENHANCEMENT: Add custom view handler for WooCommerce (on checkout page)
