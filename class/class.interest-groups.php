@@ -193,6 +193,16 @@ class Interest_Groups {
 			$interests[] = trim( $level->name );
 		}
 		
+		/**
+		 * Array of interests defined for the "Membership names" group
+		 *
+		 * @filter e20r-mailchimp-member-interest-names
+		 *
+		 * @param string[] $interests
+		 * @return string[]
+		 */
+		$interests = apply_filters( 'e20r-mailchimp-member-interest-names', $interests );
+		
 		// Append the "cancelled" level ig
 		$interests[] = __( "Cancelled", Controller::plugin_slug );
 		
@@ -280,7 +290,7 @@ class Interest_Groups {
 		
 		$request       = new \stdClass();
 		$request->name = $name;
-		$request->type = apply_filters( 'e20r_mailchimp_list_interest_category_type', 'checkboxes', $list_id );
+		$request->type = apply_filters( 'e20r-mailchimp-list-interest-category-type', 'checkboxes', $list_id );
 		
 		return $request;
 	}
@@ -310,7 +320,7 @@ class Interest_Groups {
 		// $args['method'] = 'POST'; // Allows us to add
 		
 		// look for categories
-		$category_type = apply_filters( 'e20r_mailchimp_list_interest_category_type', 'checkboxes', $list_id );
+		$category_type = apply_filters( 'e20r-mailchimp-list-interest-category-type', 'checkboxes', $list_id );
 		
 		$request = array(
 			'title' => $category->name,
@@ -900,7 +910,7 @@ class Interest_Groups {
 			}
 		}
 		// look for categories
-		$category_type = apply_filters( 'e20r_mailchimp_list_interest_category_type', 'checkboxes', $list_id );
+		$category_type = apply_filters( 'e20r-mailchimp-list-interest-category-type', 'checkboxes', $list_id );
 		
 		// process & convert any MCAPI-v2-style interest groups (groupings) aka interest categories.
 		if ( ! empty( $v2_category_def ) ) {
