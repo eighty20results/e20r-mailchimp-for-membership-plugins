@@ -3,8 +3,8 @@ Contributors: eighty20results
 Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups, mailchimp interest groups
 Requires at least: 4.5
 Requires PHP: 5.4
-Tested up to: 4.9.4
-Stable tag: 2.3
+Tested up to: 4.9.6
+Stable tag: 2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,15 +55,29 @@ By default, this setting will change the Interests for the user in the "Membersh
 = Add new members to =
 The MailChimp list you wish to add the new member / user to (segmented by Interests and/or Merge Tags).
 
+== Filters & Hooks ==
+
+1. e20r-mailchimp-member-interest-names - Array of interests defined for the "Membership names" group. Accepts one argument: string[]
+1. e20r-mailchimp-interest-category-label - Group name for Membership Level interests. Accepts 1 argument: string $label_name
+1. e20r-mailchimp-list-interest-category-type - Type of interest (default: checkbox). Accepts 2 arguments: string  $interest_form_input_type (checkbox, see MailChimp.com API documentation for options), string $list_id (the list it applies to).
+1. e20r-mailchimp-assign-interest-to-user - Do we assign the interest to the user being processed (default: true). Accepts 5 arguments: boolean $enabled, WP_User $user, string $interest, string $list_id, int $level_id)
+1. e20r-mailchimp-interests-to-assign-to-user - The interest IDs to assign to the user. Accepts 5 arguments: string[] $interest_ids, WP_User $user, string $list_id, bool $cancelling, int[] $level_ids
+1. e20r-mailchimp-member-merge-field-defs - Definitions for Merge Tags/Fields to assign the user. Accepts 2 arguments: array() $merge_field_definitions, string $list_id
+1. e20r-mailchimp-member-merge-field-values - Values for the defined Merge Tags/Fields being assigned for the user. Accepts 4 arguments: array $values, WP_User $user, string $list_id, int $level_id
+1. e20r-mailchimp-merge-tag-settings - The merge field value/data array to submit to the MailChimp distribution list. Accepts 3 arguments: array $merge_fields, string $list_id, int $level_id
+1. e20r-mailchimp-user-defined-merge-tag-fields - The merge tag field definitions. Accepts 3 arguments: array $merge_fields, string $list_id, int $level_id
+
+More filters and hooks can be found in the sources for the plugin on [github.com](https://github.com/eighty20results.com/repositories/e20r-mailchimp-for-membership-plugins)
+
 == Frequently Asked Questions ==
 
 = I found a bug in the plugin. =
 
-Please post it in the issues section of GitHub and we'll fix it as soon as we can. Thanks for helping. https://github.com/eighty20results/e20r-mailchimp-for-membership-plugins/issues
+Please post it in the issues section of GitHub and we'll fix it as soon as we can. Thanks for helping. [Add issues](https://github.com/eighty20results/e20r-mailchimp-for-membership-plugins/issues)
 
 = I need help installing, configuring, or customizing the plugin. =
 
-Please visit our premium support site at https://eighty20results.com/ for more documentation and our support forums.
+Please visit our premium [support](https://eighty20results.com/) for more documentation and to access our forums.
 
 == Screenshots ==
 
@@ -71,6 +85,12 @@ Please visit our premium support site at https://eighty20results.com/ for more d
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 2.4 ==
+
+* ENHANCEMENT: Filter added for Interests (by name): e20r-mailchimp-member-interest-names
+* ENHANCEMENT: Renamed e20r_mailchimp_list_interest_category_type to e20r-mailchimp-list-interest-category-type
+* ENHANCEMENT: Removed stale (unused) code
 
 == 2.3 ==
 

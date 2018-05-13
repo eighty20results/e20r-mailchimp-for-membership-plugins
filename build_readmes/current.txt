@@ -1,4 +1,3 @@
-BUG FIX: Extra (GDPR) opt-in required the "alternate list opt-in" to be configured (should not be required)
-ENHANCEMENT: Global add_custom_views() handler for any supported membership/commerce plugin
-ENHANCEMENT: Add custom view handler for PMPro (at bottom of checkout page)
-ENHANCEMENT: Add custom view handler for WooCommerce (on checkout page)
+ENHANCEMENT: Filter added for Interests (by name): e20r-mailchimp-member-interest-names
+ENHANCEMENT: Renamed e20r_mailchimp_list_interest_category_type to e20r-mailchimp-list-interest-category-type
+ENHANCEMENT: Removed stale (unused) code
