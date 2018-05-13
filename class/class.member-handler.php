@@ -40,10 +40,6 @@ class Member_Handler {
 	 * Member_Handler constructor.
 	 */
 	private function __construct() {
-		
-		// if ( is_null( self::$instance ) ) {
-		//	self::$instance = $this;
-		// }
 	}
 	
 	/**
