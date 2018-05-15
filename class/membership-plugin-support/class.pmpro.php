@@ -396,7 +396,7 @@ class PMPro extends Membership_Plugin {
 	public function get_interest_cat_label( $label ) {
 		
 		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
-			$label = __( 'Membership Levels', Controller::plugin_slug );
+			$label = __( 'PMPro Membership Levels', Controller::plugin_slug );
 		}
 		
 		return $label;
