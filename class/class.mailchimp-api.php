@@ -1207,7 +1207,7 @@ class MailChimp_API {
 	 *
 	 * @return  bool
 	 */
-	private function update_server_settings( $list_id ) {
+	public function update_server_settings( $list_id ) {
 		
 		$retVal         = true;
 		$interestGroups = Interest_Groups::get_instance();
