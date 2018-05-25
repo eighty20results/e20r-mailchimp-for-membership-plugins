@@ -1020,6 +1020,19 @@ class MC_Settings {
 		$utils->log( "Creating interest group the specified membership level (ID: {$level_id} )?" );
 		$ig_class->create_categories_for_membership( $level_id );
 		
+        $utils->log("Attempting to load custom groups/tags/etc");
+		
+		// Try updating the Merge Fields & Interest Groups on the MailChimp Server.
+		if ( false === $mc_api->update_server_settings( $list_id ) ) {
+		    
+		    $msg = __("Unable to update Groups and Merge Tags on the MailChimp.com server!", Controller::plugin_slug );
+		    $utils->add_message( $msg, 'error', 'backend' );
+		    $utils->log("Error: {$msg}");
+		    
+		    wp_send_json_error( $msg );
+		    wp_die();
+		}
+		
 		// Force update of upstream interest groups
 		if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', true ) ) ) {
 			
