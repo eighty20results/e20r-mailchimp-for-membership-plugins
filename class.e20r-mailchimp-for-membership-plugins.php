@@ -288,7 +288,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 						
 						$utils->log( "Actually removing the user {$user->ID} from the {$list_id} list" );
 						
-						return $mc_api->unsubscribe( $list_id, $user, $merge_fields, $interests );
+						return $mc_api->delete( $list_id, $user, $merge_fields, $interests );
 						break;
 					
 					case 2:
@@ -468,7 +468,7 @@ function test_e20rmc_listsubscribe_fields( $fields, $user = null, $list_id = nul
 		
 		$new_fields = array(
 			"FNAME"     => 'Thomas',
-			"LNAME"     => 'Sjolshagen',
+			"LNAME"     => 'PMPro',
 			'GROUPINGS' => array(
 				array(
 					'name'   => "Category",
