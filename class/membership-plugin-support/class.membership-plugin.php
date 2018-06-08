@@ -293,4 +293,13 @@ abstract class Membership_Plugin {
 	 */
 	abstract public function membership_level_ids_for_user( $level_ids, $user_id );
 	
+	/**
+	 * Return any level/category history for the user
+	 *
+	 * @param int[] $level_ids
+	 * @param int $user_id
+	 *
+	 * @return int[]
+	 */
+	abstract public function get_level_history_for_user( $level_ids, $user_id );
 }
