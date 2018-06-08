@@ -245,7 +245,7 @@ class MailChimp_API {
 		
 		if ( $old_user->user_email != $new_user->user_email ) {
 			
-			$retval = $this->unsubscribe( $list_id, $old_user );
+			$retval = $this->delete( $list_id, $old_user );
 			
 			// Don't use double opt-in since the user is already subscribed.
 			$retval = $retval && $this->subscribe( $list_id, $new_user, $email_type, false );
@@ -301,8 +301,9 @@ class MailChimp_API {
 	 * @return bool - True/False depending on whether the operation is successful.
 	 *
 	 * @since 1.0.0
+	 * @since 2.5 - ENHANCEMENT: Added 'Mailchimp_API::delete()' method and deprecated Mailchimp_API::unsubscribe()
 	 */
-	public function unsubscribe( $list_id = '', \WP_User $users = null, $merge_fields = null, $interests = null ) {
+	public function delete( $list_id = '', \WP_User $users = null, $merge_fields = null, $interests = null ) {
 		
 		$utils         = Utilities::get_instance();
 		$unsub_setting = $this->get_option( 'unsubscribe' );
@@ -516,10 +517,10 @@ class MailChimp_API {
 	 *
 	 * @param string        $list_id      -- MC specific list ID
 	 * @param \WP_User|null $user         - The WP_User object
-	 * @param array         $merge_fields - Merge fields (see Mailchimp API docs).
-	 * @param array         $interests    - The Interests to add the user to/remove them from
-	 * @param string        $email_type   - The type of message to send (text or html)
-	 * @param bool          $dbl_opt_in   - Whether the list should use double opt-in or not
+	 * @param array|null    $merge_fields - Merge fields (see Mailchimp API docs).
+	 * @param array|null    $interests    - The Interests to add the user to/remove them from
+	 * @param string|null   $email_type   - The type of message to send (text or html)
+	 * @param bool|null     $dbl_opt_in   - Whether the list should use double opt-in or not
 	 *
 	 * @return bool -- True if successful, false otherwise.
 	 *
@@ -553,7 +554,7 @@ class MailChimp_API {
 			return false;
 		}
 		
-		$client_ip = method_exists($utils, 'get_client_ip' ) ? $utils->get_client_ip() : null;
+		$client_ip = method_exists( $utils, 'get_client_ip' ) ? $utils->get_client_ip() : null;
 		
 		//build request
 		$request = array(
@@ -577,11 +578,11 @@ class MailChimp_API {
 		/**
 		 * ENHANCEMENT: Recording the opt-in upstream (on MailChimp.com) - Assuming "no consent given"
 		 */
-		$user_opted_in = (bool) $utils->get_variable( 'e20r-consent', false );
+		$user_opted_in    = (bool) $utils->get_variable( 'e20r-consent', false );
 		$opt_in_timestamp = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) );
 		
 		if ( true === $user_opted_in ) {
-		    $utils->log("User opted in so log {$client_ip} at {$opt_in_timestamp} to their record on MailChimp.com.");
+			$utils->log( "User opted in so log {$client_ip} at {$opt_in_timestamp} to their record on MailChimp.com." );
 			$request['ip_opt']        = $client_ip;
 			$request['timestamp_opt'] = $opt_in_timestamp;
 		}
@@ -622,6 +623,24 @@ class MailChimp_API {
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Compatibility layer
+	 *
+	 * @param string          $list_id
+	 * @param \WP_User[]|null $users
+	 * @param array|null      $merge_fields
+	 * @param array|null      $interests
+	 *
+	 * @return bool
+	 * @since v2.5 - DEPRECATED: Mailchimp_API::unsubscribe() since v2.5
+	 */
+	public function unsubscribe( $list_id = '', $users = null, $merge_fields = null, $interests = null ) {
+		
+		_deprecated_function( __FUNCTION__, '2.5', 'Mailchimp_API::delete()' );
+		
+		return $this->delete( $list_id, $users, $merge_fields, $interests );
 	}
 	
 	/**
