@@ -690,7 +690,9 @@ class PMPro extends Membership_Plugin {
 		
 		$utils = Utilities::get_instance();
 		
-		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
+		if ( false === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			return $user_level_ids;
+		}
 			
 			$levels = pmpro_getMembershipLevelsForUser( $user_id );
 			
@@ -699,8 +701,33 @@ class PMPro extends Membership_Plugin {
 			}
 			
 			$utils->log( "Loaded " . count( $user_level_ids ) . " current PMPro levels for {$user_id}" );
-		}
 		
 		return $user_level_ids;
+	}
+	
+	/**
+	 * Return the PMPro Membership Level(s) this user has ever been assigned
+	 *
+	 * @param int[] $level_ids
+	 * @param int   $user_id
+	 *
+	 * @return int[]
+	 */
+	public function get_level_history_for_user( $level_ids, $user_id ) {
+		
+		if ( false === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			return $level_ids;
+		}
+		
+		global $wpdb;
+		
+		$sql = $wpdb->prepare(
+			'SELECT DISTINCT membership_id FROM {$wpdb->pmpro_memberships_users} WHERE user_id = %d',
+			$user_id
+		);
+		
+		$found_level_ids = $wpdb->get_col( $sql );
+		
+		return !empty( $found_level_ids) ? array_merge( $level_ids, $found_level_ids ) : $level_ids;
 	}
 }
