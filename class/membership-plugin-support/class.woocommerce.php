@@ -53,18 +53,18 @@ class WooCommerce extends Membership_Plugin {
 		
 		if ( is_null( self::$instance ) ) {
 			self::$instance = new self;
-            self::$instance->load_hooks();
+			self::$instance->load_hooks();
 		}
 		
 		return self::$instance;
 	}
 	
 	public function load_hooks() {
-        
-        $utils = Utilities::get_instance();
-        $utils->log("Processing the 'load_hooks' method for the PMPro plugin");
-        
-        add_filter(
+		
+		$utils = Utilities::get_instance();
+		$utils->log( "Processing the 'load_hooks' method for the PMPro plugin" );
+		
+		add_filter(
 			'e20r-mailchimp-supported-membership-plugin-list',
 			array( $this, 'add_supported_plugin' ),
 			10,
@@ -85,94 +85,98 @@ class WooCommerce extends Membership_Plugin {
 	public function plugin_load( $on_checkout_page ) {
 		
 		$utils = Utilities::get_instance();
-        $utils->log("Processing the 'plugin_load' method for WooCommerce");
+		$utils->log( "Processing the 'plugin_load' method for WooCommerce" );
 		
 		add_filter( 'e20r-mailchimp-load-on-pages', array( $this, 'add_woocommerce_checkout_pages' ), 10, 1 );
 		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			
-		    $utils->log("Should load WooCommerce filters");
-		    
-			add_action( 'e20r-mailchimp-init-default-groups', array( $this, 'init_default_groups' ), 10, 0 );
-			
-			add_filter( 'e20r-mailchimp-membership-plugin-present', array( $this, 'has_membership_plugin' ), 10, 1 );
-			add_filter( 'e20r-mailchimp-membership-plugin-prefix', array( $this, 'set_prefix' ), 10, 1 );
-			
-			add_filter( 'e20r-mailchimp-all-membership-levels', array( $this, 'all_membership_level_defs' ), 10, 2 );
-			add_filter( 'e20r-mailchimp-member-merge-field-values', array( $this, 'set_mf_values_for_member' ), 10, 4 );
-			add_filter( 'e20r-mailchimp-member-merge-field-defs', array( $this, 'set_mf_definition' ), 10, 3 );
-			add_filter( 'e20r-mailchimp-membership-list-all-members', array(
-				$this,
-				'list_members_for_update',
-			), 10, 1 );
-			add_filter(
-				'e20r-mailchimp-get-user-membership-level',
-				array( $this, 'primary_membership_level' ),
-				10,
-				2
-			);
-			add_filter(
-				'e20r-mailchimp-user-membership-levels',
-				array( $this, 'membership_level_ids_for_user' ),
-				10,
-				2
-			);
-			add_filter( 'e20r-mailchimp-get-membership-level-definition',
-				array( $this, 'get_level_definition', ),
-				10,
-				2
-			);
-			
-			add_filter( 'e20r-mailchimp-user-old-membership-levels', array(
-				$this,
-				'recent_membership_levels_for_user',
-			), 10, 4 );
-			
-			// Add "additional lists" option to checkout page for WooCommerce
-			add_action( 'woocommerce_after_order_notes', array( $this, 'view_additional_lists' ), 10 );
-			add_action( 'woocommerce_after_order_notes', array( $this, 'add_custom_views' ), 99 );
-			
-			add_action( "edit_product_cat", array( $this, 'on_update_membership_level' ), 10, 2 );
-			
-			// Used to verify custom fields (from modules or this plugin)
-			add_action( 'woocommerce_checkout_process', array( $this, 'verify_custom_fields' ), 10, 0 );
-			
-			// For WooCommerce product categories (add new entry to the interest group)
-			add_action( 'create_product_cat', array( $this, 'added_new_product_category' ), 10, 2 );
-			
-			// For standard order(s)
-			add_action( 'woocommerce_order_status_completed', array( $this, 'order_completed' ), 10, 1 );
-			
-			// For Subscription(s)
-			add_action('woocommerce_subscription_status_active', array( $this, "subscription_added") , 10, 1);
-			add_action('woocommerce_subscription_status_on-hold_to_active', array( $this, "subscription_added") , 10, 1);
-			
-			// For standard order(s)
-			add_action( "woocommerce_order_status_refunded", array( $this, 'order_cancelled' ), 10, 1 );
-			add_action( "woocommerce_order_status_failed", array( $this, 'order_cancelled' ), 10, 1 );
-			add_action( "woocommerce_order_status_on_hold", array( $this, 'order_cancelled' ), 10, 1 );
-			add_action( "woocommerce_order_status_cancelled", array( $this, 'order_cancelled' ), 10, 1 );
-			
-			// For Subscription(s)
-			add_action("woocommerce_subscription_status_cancelled", array( $this, "subscription_cancelled") , 10, 1);
-			add_action("woocommerce_subscription_status_trash", array( $this, "subscription_cancelled") , 10, 1);
-			add_action("woocommerce_subscription_status_expired", array( $this, "subscription_cancelled") , 10, 1);
-			add_action("woocommerce_subscription_status_on-hold", array( $this, "subscription_cancelled") , 10, 1);
-			add_action("woocommerce_scheduled_subscription_end_of_prepaid_term", array( $this, "subscription_cancelled") , 10, 1);
-			
-			add_filter( 'e20r-mailchimp-non-active-statuses', array( $this, 'statuses_inactive_membership' ), 10, 1 );
-			add_filter( 'e20r-mailchimp-interest-category-label', array( $this, 'get_interest_cat_label' ), 10, 1 );
-			add_filter(
-				'e20r-mailchimp-membership-new-user-level',
-				array( $this, 'get_most_recent_product_cats', ),
-				10,
-				3
-			);
-			
-		} else {
-			
-			$utils->log( "Not loading for WooCommerce" );
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return;
 		}
+		
+		$utils->log( "Should load WooCommerce filters" );
+		
+		add_action( 'e20r-mailchimp-init-default-groups', array( $this, 'init_default_groups' ), 10, 0 );
+		
+		add_filter( 'e20r-mailchimp-membership-plugin-present', array( $this, 'has_membership_plugin' ), 10, 1 );
+		add_filter( 'e20r-mailchimp-membership-plugin-prefix', array( $this, 'set_prefix' ), 10, 1 );
+		
+		add_filter( 'e20r-mailchimp-all-membership-levels', array( $this, 'all_membership_level_defs' ), 10, 2 );
+		add_filter( 'e20r-mailchimp-member-merge-field-values', array( $this, 'set_mf_values_for_member' ), 10, 4 );
+		add_filter( 'e20r-mailchimp-member-merge-field-defs', array( $this, 'set_mf_definition' ), 10, 3 );
+		add_filter( 'e20r-mailchimp-membership-list-all-members', array(
+			$this,
+			'list_members_for_update',
+		), 10, 1 );
+		add_filter(
+			'e20r-mailchimp-get-user-membership-level',
+			array( $this, 'primary_membership_level' ),
+			10,
+			2
+		);
+		add_filter(
+			'e20r-mailchimp-user-membership-levels',
+			array( $this, 'membership_level_ids_for_user' ),
+			10,
+			2
+		);
+		add_filter( 'e20r-mailchimp-get-membership-level-definition',
+			array( $this, 'get_level_definition', ),
+			10,
+			2
+		);
+		
+		add_filter( 'e20r-mailchimp-user-old-membership-levels', array(
+			$this,
+			'recent_membership_levels_for_user',
+		), 10, 4 );
+		
+		// Add "additional lists" option to checkout page for WooCommerce
+		add_action( 'woocommerce_after_order_notes', array( $this, 'view_additional_lists' ), 10 );
+		add_action( 'woocommerce_after_order_notes', array( $this, 'add_custom_views' ), 99 );
+		
+		add_action( "edit_product_cat", array( $this, 'on_update_membership_level' ), 10, 2 );
+		
+		// Used to verify custom fields (from modules or this plugin)
+		add_action( 'woocommerce_checkout_process', array( $this, 'verify_custom_fields' ), 10, 0 );
+		
+		// For WooCommerce product categories (add new entry to the interest group)
+		add_action( 'create_product_cat', array( $this, 'added_new_product_category' ), 10, 2 );
+		
+		// For standard order(s)
+		add_action( 'woocommerce_order_status_completed', array( $this, 'order_completed' ), 10, 1 );
+		
+		// For Subscription(s)
+		add_action( 'woocommerce_subscription_status_active', array( $this, "subscription_added" ), 10, 1 );
+		add_action( 'woocommerce_subscription_status_on-hold_to_active', array(
+			$this,
+			"subscription_added",
+		), 10, 1 );
+		
+		// For standard order(s)
+		add_action( "woocommerce_order_status_refunded", array( $this, 'order_cancelled' ), 10, 1 );
+		add_action( "woocommerce_order_status_failed", array( $this, 'order_cancelled' ), 10, 1 );
+		add_action( "woocommerce_order_status_on_hold", array( $this, 'order_cancelled' ), 10, 1 );
+		add_action( "woocommerce_order_status_cancelled", array( $this, 'order_cancelled' ), 10, 1 );
+		
+		// For Subscription(s)
+		add_action( "woocommerce_subscription_status_cancelled", array( $this, "subscription_cancelled" ), 10, 1 );
+		add_action( "woocommerce_subscription_status_trash", array( $this, "subscription_cancelled" ), 10, 1 );
+		add_action( "woocommerce_subscription_status_expired", array( $this, "subscription_cancelled" ), 10, 1 );
+		add_action( "woocommerce_subscription_status_on-hold", array( $this, "subscription_cancelled" ), 10, 1 );
+		add_action( "woocommerce_scheduled_subscription_end_of_prepaid_term", array(
+			$this,
+			"subscription_cancelled",
+		), 10, 1 );
+		
+		add_filter( 'e20r-mailchimp-non-active-statuses', array( $this, 'statuses_inactive_membership' ), 10, 1 );
+		add_filter( 'e20r-mailchimp-interest-category-label', array( $this, 'get_interest_cat_label' ), 10, 1 );
+		add_filter(
+			'e20r-mailchimp-membership-new-user-level',
+			array( $this, 'get_most_recent_product_cats', ),
+			10,
+			3
+		);
+		
 	}
 	
 	/**
@@ -180,19 +184,21 @@ class WooCommerce extends Membership_Plugin {
 	 */
 	public function verify_custom_fields() {
 		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			
-			$continue = apply_filters( 'e20r-check-required-fields', true, 'woocommerce' );
-			
-			if ( false === $continue ) {
-				$notice_text = apply_filters( 'e20r-mailchimp-custom-field-error-message', null );
-				wc_add_notice( $notice_text, 'error' );
-			}
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return;
+		}
+		
+		$continue = apply_filters( 'e20r-check-required-fields', true, 'woocommerce' );
+		
+		if ( false === $continue ) {
+			$notice_text = apply_filters( 'e20r-mailchimp-custom-field-error-message', null );
+			wc_add_notice( $notice_text, 'error' );
 		}
 	}
 	
 	/**
 	 * Add the WooCommerce pages we'd like to run the MailChimp functionality on
+	 *
 	 * @param int[] $checkout_pages
 	 *
 	 * @return int[]
@@ -203,36 +209,14 @@ class WooCommerce extends Membership_Plugin {
 		
 		if ( function_exists( 'wc_get_page_id' ) ) {
 			
-			$utils->log("Adding WooCommerce pages to include in check");
+			$utils->log( "Adding WooCommerce pages to include in check" );
 			
-			$checkout_pages[] = wc_get_page_id('checkout' );
+			$checkout_pages[] = wc_get_page_id( 'checkout' );
 			$checkout_pages[] = wc_get_page_id( 'myaccount' );
 			$checkout_pages[] = wc_get_page_id( 'cart' );
 		}
 		
 		return $checkout_pages;
-	}
-	
-	/**
-	 * Return the Membership statuses that signify an inactive 'membership'
-	 *
-	 * @param $statuses
-	 *
-	 * @return array
-	 */
-	public function statuses_inactive_membership( $statuses ) {
-		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			
-			$wc_statuses = wc_get_order_statuses();
-			
-			// Everything except 'completed' counts as the inactive status(es)
-			unset( $wc_statuses['wc-completed'] );
-			
-			$statuses = array_keys( $wc_statuses );
-		}
-		
-		return $statuses;
 	}
 	
 	/**
@@ -247,50 +231,124 @@ class WooCommerce extends Membership_Plugin {
 	 */
 	public function get_most_recent_product_cats( $category_ids, $user, $order_obj = null ) {
 		
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $category_ids;
+		}
+		
 		$utils = Utilities::get_instance();
 		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+		$category_ids = array();
+		
+		$customer_orders = get_posts( array(
+				'numberposts' => - 1,
+				'meta_key'    => '_customer_user',
+				'meta_value'  => $user->ID,
+				'post_type'   => wc_get_order_types(),
+				'post_status' => array( 'wc-completed' ),
+				'date_query'  => array(
+					/* 'column' => 'date_modified', */
+					'after'  => date( 'Y-m-d', strtotime( '-1 days' ) ),
+					'before' => date( 'Y-m-d', strtotime( 'today' ) ),
+				),
+				'order'       => 'DESC',
+				'order_by'    => 'ID',
+			)
+		);
+		
+		$utils->log( "Found a total of " . count( $customer_orders ) . " WooCommerce orders for {$user->user_email}" );
+		
+		//Grab the most recent Order object.
+		if ( ! empty( $customer_orders ) ) {
 			
-			$category_ids = array();
+			$utils->log( "Processing " . count( $customer_orders ) . " orders for customer" );
 			
-			$customer_orders = get_posts( array(
-					'numberposts' => - 1,
-					'meta_key'    => '_customer_user',
-					'meta_value'  => $user->ID,
-					'post_type'   => wc_get_order_types(),
-					'post_status' => array( 'wc-completed' ),
-					'date_query'  => array(
-						/* 'column' => 'date_modified', */
-						'after'  => date( 'Y-m-d', strtotime( '-1 days' ) ),
-						'before' => date( 'Y-m-d', strtotime( 'today' ) ),
-					),
-					'order'       => 'DESC',
-					'order_by'    => 'ID',
-				)
-			);
-			
-			$utils->log( "Found a total of " . count( $customer_orders ) . " WooCommerce orders for {$user->user_email}" );
-			
-			//Grab the most recent Order object.
-			if ( ! empty( $customer_orders ) ) {
+			foreach ( $customer_orders as $order_record ) {
 				
-				$utils->log( "Processing " . count( $customer_orders ) . " orders for customer" );
+				$utils->log( "Grabbing new category IDs for {$order_record->ID}" );
 				
-				foreach ( $customer_orders as $order_record ) {
-					
-					$utils->log( "Grabbing new category IDs for {$order_record->ID}" );
-					
-					list( $user_id, $cat_ids ) = $this->get_category_ids( $order_record->ID );
-					$category_ids = array_merge( $category_ids, $cat_ids );
-				}
-				
-				// $category_ids = array_unique( $category_ids );
+				list( $user_id, $cat_ids ) = $this->get_category_ids( $order_record->ID );
+				$category_ids = array_merge( $category_ids, $cat_ids );
 			}
+			
+			// $category_ids = array_unique( $category_ids );
 		}
 		
 		$utils->log( "Returning " . count( $category_ids ) . " WooCommerce product categories for {$user->user_email}" );
 		
 		return $category_ids;
+	}
+	
+	/**
+	 * Return the list of category IDs that the items in the specified order belong to
+	 *
+	 * @param int $order_id
+	 *
+	 * @return array( int, int[] )
+	 */
+	private function get_category_ids( $order_id ) {
+		
+		$order        = wc_get_order( $order_id );
+		$user_id      = $order->get_customer_id();
+		$category_ids = array();
+		
+		$utils  = Utilities::get_instance();
+		$mc_api = MailChimp_API::get_instance();
+		
+		// Find the expected user ID based on the wcuser setting (if the user exists)
+		if ( E20R_MAILCHIMP_BILLING_USER === $mc_api->get_option( 'wcuser' ) ) {
+			$utils->log( "Attempting to load the user object for the billing address user" );
+			$user_id = $this->get_billing_user( $order );
+		}
+		
+		$order_items = $order->get_items();
+		
+		// There is an order and it's by a local user
+		if ( ! empty( $user_id ) && 0 < count( $order_items ) ) {
+			
+			foreach ( $order_items as $order_item ) {
+				
+				$product_id = $order_item['product_id'];
+				
+				if ( 0 < $product_id ) {
+					
+					$product      = new \WC_Product( $product_id );
+					$category_ids = $product->get_category_ids();
+				}
+			}
+		}
+		
+		return array( $user_id, $category_ids );
+	}
+	
+	/**
+	 * Fetch the billing email (and user object) for the order supplied
+	 *
+	 * @param \WC_Order $order
+	 *
+	 * @return int
+	 */
+	private function get_billing_user( $order ) {
+		
+		$utils = Utilities::get_instance();
+		
+		$user_id = $order->get_customer_id();
+		
+		// Get the user's email address (billing email)
+		$email = $order->get_billing_email();
+		
+		// if there's one specified, try to get a WordPress user object for them
+		if ( ! empty( $email ) ) {
+			$user = get_user_by( 'email', $email );
+			
+			// Found the user!
+			if ( ! empty( $user ) ) {
+				$user_id = $user->ID;
+			} else {
+				$utils->log( "The user with email {$email} doesn't appear to have an account on this system!" );
+			}
+		}
+		
+		return $user_id;
 	}
 	
 	/**
@@ -303,56 +361,148 @@ class WooCommerce extends Membership_Plugin {
 		$utils->log( "Possibly loading groups to MailChimp for WooCommerce" );
 		
 		// Only execute if we're configured for the PMPro option
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return;
+		}
+		
+		$utils->log( "Loading product groups for WooCommerce" );
+		
+		$ig_class = Interest_Groups::get_instance();
+		$mc_api   = MailChimp_API::get_instance();
+		
+		$levels         = $this->all_membership_level_defs( array() );
+		$category_label = apply_filters( 'e20r-mailchimp-interest-category-label', null );
+		
+		foreach ( $levels as $level ) {
 			
-			$utils->log( "Loading product groups for WooCommerce" );
-			
-			$ig_class = Interest_Groups::get_instance();
-			$mg_class = Merge_Fields::get_instance();
-            $mc_api      = MailChimp_API::get_instance();
-			
-			$levels         = $this->all_membership_level_defs( array() );
-			$category_label = apply_filters( 'e20r-mailchimp-interest-category-label', null );
-			
-			foreach ( $levels as $level ) {
+			if ( false === $ig_class->has_category( $level->id, $category_label ) ) {
 				
-				if ( false === $ig_class->has_category( $level->id, $category_label ) ) {
+				$utils->log( "Have to add {$category_label}: {$level->id}/{$level->name}" );
+				$ig_class->create_categories_for_membership( $level->id );
+			}
+			
+			$level_lists = $mc_api->get_option( "level_wc_{$level->id}_lists" );
+			
+			if ( empty( $level_lists ) ) {
+				$utils->log( "Warning: No level lists found in level_wc_{$level->id}_lists settings!" );
+				$level_lists = $mc_api->get_option( 'members_list' );
+			}
+			
+			foreach ( $level_lists as $list_id ) {
+				
+				$utils->log( "List config for {$list_id} found" );
+				
+				// Force update from upstream interest groups
+				if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', false ) ) ) {
 					
-					$utils->log( "Have to add {$category_label}: {$level->id}/{$level->name}" );
-					$ig_class->create_categories_for_membership( $level->id );
+					$msg = sprintf( __( "Unable to refresh MailChimp Interest Group information for %s", Controller::plugin_slug ), $level->name );
+					$utils->add_message( $msg, 'error', 'backend' );
+					
+					$utils->log( "Error: Unable to update interest group information for list {$list_id} from API server" );
 				}
 				
-				$level_lists = $mc_api->get_option( "level_wc_{$level->id}_lists" );
-				
-				if ( empty( $level_lists ) ) {
-					$utils->log( "Warning: No level lists found in level_wc_{$level->id}_lists settings!" );
-					$level_lists = $mc_api->get_option( 'members_list' );
+				// Force refresh of upstream merge fields
+				if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mc_api->get_cache( $list_id, 'merge_fields', false ) ) ) {
+					
+					$msg = sprintf( __( "Unable to refresh MailChimp Merge Field information for %s", Controller::plugin_slug ), $level->name );
+					$utils->add_message( $msg, 'error', 'backend' );
+					
+					$utils->log( "Error: Unable to update merge field information for list {$list_id} from API server" );
 				}
+			}
+		}
+	}
+	
+	/**
+	 * Load all WooCommerce Membership Level definitions from the DB (return empty)
+	 *
+	 * @param array  $levels
+	 * @param string $prefix
+	 *
+	 * @return array
+	 */
+	public function all_membership_level_defs( $levels, $prefix = 'wc' ) {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) && 'wc' === $prefix ) {
+			return $levels;
+		}
+		
+		$utils->log( "Processing WooCommerce 'membership levels'" );
+		
+		$taxonomy     = 'product_cat';
+		$orderby      = 'name';
+		$show_count   = true;      // 1 for yes, 0 for no
+		$pad_counts   = false;      // 1 for yes, 0 for no
+		$hierarchical = true;      // 1 for yes, 0 for no
+		$title        = '';
+		$empty        = false;
+		
+		$args = array(
+			'taxonomy'     => $taxonomy,
+			'orderby'      => $orderby,
+			'show_count'   => $show_count,
+			'pad_counts'   => $pad_counts,
+			'hierarchical' => $hierarchical,
+			'title_li'     => $title,
+			'hide_empty'   => $empty,
+		);
+		
+		$all_categories = get_categories( $args );
+		$woo_levels     = array();
+		$utils->log( "Found " . count( $all_categories ) . " categories for {$taxonomy}" );
+		
+		foreach ( $all_categories as $cat ) {
+			
+			if ( $cat->category_parent == 0 ) {
 				
-				foreach ( $level_lists as $list_id ) {
+				// Add parent category to list of Woo "Levels"
+				$wt_level       = new \stdClass();
+				$wt_level->id   = $cat->term_id;
+				$wt_level->name = $cat->name;
+				
+				$woo_levels[] = $wt_level;
+				
+				// Check for sub-categories
+				$args2 = array(
+					'taxonomy'     => $taxonomy,
+					'child_of'     => 0,
+					'parent'       => $cat->term_id,
+					'orderby'      => $orderby,
+					'show_count'   => $show_count,
+					'pad_counts'   => $pad_counts,
+					'hierarchical' => $hierarchical,
+					'title_li'     => $title,
+					'hide_empty'   => $empty,
+				);
+				
+				$sub_cats = get_categories( $args2 );
+				
+				if ( ! empty( $sub_cats ) ) {
 					
-					$utils->log( "List config for {$list_id} found" );
-					
-					// Force update from upstream interest groups
-					if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', false ) ) ) {
+					foreach ( $sub_cats as $sub_category ) {
 						
-						$msg = sprintf( __( "Unable to refresh MailChimp Interest Group information for %s", Controller::plugin_slug ), $level->name );
-						$utils->add_message( $msg, 'error', 'backend' );
+						$wlevel       = new \stdClass();
+						$wlevel->id   = $sub_category->term_id;
+						$wlevel->name = $sub_category->name;
 						
-						$utils->log( "Error: Unable to update interest group information for list {$list_id} from API server" );
-					}
-					
-					// Force refresh of upstream merge fields
-					if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mc_api->get_cache( $list_id, 'merge_fields', false ) ) ) {
-						
-						$msg = sprintf( __( "Unable to refresh MailChimp Merge Field information for %s", Controller::plugin_slug ), $level->name );
-						$utils->add_message( $msg, 'error', 'backend' );
-						
-						$utils->log( "Error: Unable to update merge field information for list {$list_id} from API server" );
+						$woo_levels[] = $wlevel;
 					}
 				}
 			}
 		}
+		
+		if ( ! empty( $woo_levels ) && ! empty( $levels ) ) {
+			$levels = array_merge( $levels, $woo_levels );
+		} else if ( empty( $levels ) && ! empty( $woo_levels ) ) {
+			$levels = $woo_levels;
+		}
+		
+		
+		$utils->log( "Returning " . count( $levels ) . " 'levels' as WooCommerce product groups" );
+		
+		return $levels;
 	}
 	
 	/**
@@ -406,79 +556,6 @@ class WooCommerce extends Membership_Plugin {
 	}
 	
 	/**
-	 * Fetch the billing email (and user object) for the order supplied
-	 *
-	 * @param \WC_Order $order
-	 *
-	 * @return int
-	 */
-	private function get_billing_user( $order ) {
-		
-		$utils = Utilities::get_instance();
-		
-		$user_id = $order->get_customer_id();
-		
-		// Get the user's email address (billing email)
-		$email = $order->get_billing_email();
-		
-		// if there's one specified, try to get a WordPress user object for them
-		if ( ! empty( $email ) ) {
-			$user = get_user_by( 'email', $email );
-			
-			// Found the user!
-			if ( !empty( $user ) ) {
-				$user_id = $user->ID;
-			} else {
-				$utils->log("The user with email {$email} doesn't appear to have an account on this system!");
-			}
-		}
-		
-		return $user_id;
-	}
-	
-	/**
-	 * Return the list of category IDs that the items in the specified order belong to
-	 *
-	 * @param int $order_id
-	 *
-	 * @return array( int, int[] )
-	 */
-	private function get_category_ids( $order_id ) {
-		
-		$order        = wc_get_order( $order_id );
-		$user_id      = $order->get_customer_id();
-		$category_ids = array();
-		
-		$utils = Utilities::get_instance();
-		$mc_api = MailChimp_API::get_instance();
-		
-		// Find the expected user ID based on the wcuser setting (if the user exists)
-		if ( E20R_MAILCHIMP_BILLING_USER === $mc_api->get_option( 'wcuser' ) ) {
-			$utils->log("Attempting to load the user object for the billing address user");
-			$user_id = $this->get_billing_user( $order );
-		}
-		
-		$order_items = $order->get_items();
-		
-		// There is an order and it's by a local user
-		if ( ! empty( $user_id ) && 0 < count( $order_items ) ) {
-			
-			foreach ( $order_items as $order_item ) {
-				
-				$product_id = $order_item['product_id'];
-				
-				if ( 0 < $product_id ) {
-					
-					$product      = new \WC_Product( $product_id );
-					$category_ids = $product->get_category_ids();
-				}
-			}
-		}
-		
-		return array( $user_id, $category_ids );
-	}
-	
-	/**
 	 * Add a new interest group to MailChimp for the recently added product category
 	 *
 	 * @param int $term_id
@@ -502,11 +579,11 @@ class WooCommerce extends Membership_Plugin {
 	 */
 	public function get_interest_cat_label( $label ) {
 		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			$label = __( 'WooCommerce Product Category', Controller::plugin_slug );
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $label;
 		}
 		
-		return $label;
+		return __( 'WooCommerce Product Category', Controller::plugin_slug );
 	}
 	
 	/**
@@ -544,11 +621,11 @@ class WooCommerce extends Membership_Plugin {
 	 */
 	public function is_on_checkout_page( $on_checkout_page ) {
 		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			$on_checkout_page = is_checkout();
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $on_checkout_page;
 		}
 		
-		return $on_checkout_page;
+		return is_checkout();
 	}
 	
 	/**
@@ -564,17 +641,18 @@ class WooCommerce extends Membership_Plugin {
 		
 		$utils = Utilities::get_instance();
 		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			
-			$utils->log( "Attempting to populate info for WooCommerce customer...: " . print_r( $level_fields, true ) );
-			
-			if ( isset( $level_fields['FNAME'] ) ) {
-				$level_fields['FNAME'] = $utils->get_variable( 'billing_first_name', null );
-			}
-			
-			if ( isset( $level_fields['LNAME'] ) ) {
-				$level_fields['LNAME'] = $utils->get_variable( 'billing_last_name', null );
-			}
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $level_fields;
+		}
+		
+		$utils->log( "Attempting to populate info for WooCommerce customer...: " . print_r( $level_fields, true ) );
+		
+		if ( isset( $level_fields['FNAME'] ) ) {
+			$level_fields['FNAME'] = $utils->get_variable( 'billing_first_name', null );
+		}
+		
+		if ( isset( $level_fields['LNAME'] ) ) {
+			$level_fields['LNAME'] = $utils->get_variable( 'billing_last_name', null );
 		}
 		
 		$utils->log( "After configuration for WooCommerce: " . print_r( $level_fields, true ) );
@@ -582,6 +660,221 @@ class WooCommerce extends Membership_Plugin {
 		$class = strtolower( get_class( $this ) );
 		
 		return apply_filters( "e20r-mailchimp-{$class}-user-defined-merge-tag-fields", $level_fields, $user, $list_id );
+	}
+	
+	/**
+	 * Load list of User IDs, membership IDs and the current status of that membership ID for the user ID (WooCommerce)
+	 *
+	 * @param array $member_list
+	 *
+	 * @return array
+	 */
+	public function list_members_for_update( $member_list ) {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $member_list;
+		}
+		
+		$member_list = array();
+		$order_args  = array(
+			'numberposts' => - 1,
+			'post_type'   => wc_get_order_types(),
+			'post_status' => 'wc-completed',
+		);
+		
+		$order_list = get_posts( $order_args );
+		
+		foreach ( $order_list as $p_order ) {
+			
+			list( $user_id, $category_ids ) = $this->get_category_ids( $p_order->ID );
+			
+			if ( ! empty( $user_id ) ) {
+				
+				$info          = new \stdClass();
+				$info->user_id = $user_id;
+				$info->status  = 'active';
+				
+				$utils->log( "Found " . count( $category_ids ) . " categories for {$info->user_id}" );
+				
+				foreach ( $category_ids as $cat_id ) {
+					
+					// Add once for each category ID found
+					$info->membership_id = $cat_id;
+					$member_list[]       = $info;
+				}
+			}
+		}
+		
+		
+		return $member_list;
+	}
+	
+	/**
+	 * Add field definitions for WooCommerce specific merge tags
+	 *
+	 * @param $merge_field_defs
+	 * @param $list_id
+	 *
+	 * @return array
+	 */
+	public function set_mf_definition( $merge_field_defs, $list_id ) {
+		
+		$class = strtolower( get_class( $this ) );
+		
+		return apply_filters( "e20r-mailchimp-{$class}-merge-tag-settings", $merge_field_defs, $list_id );
+	}
+	
+	/**
+	 * Return the Membership Level definition (WooCommerce)
+	 *
+	 * @param \stdClass $level_info
+	 * @param int       $term_id
+	 *
+	 * @return \stdClass
+	 */
+	public function get_level_definition( $level_info, $term_id ) {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $level_info;
+		}
+		
+		$utils->log( "Using WooCommerce plugin for 'Membership' info" );
+		$utils->log( "Have an ID (which is a taxonomy ID in our case): {$term_id} " );
+		
+		$taxonomy = $this->get_product_category( $term_id );
+		
+		if ( ! empty( $taxonomy ) ) {
+			
+			$level_info       = new \stdClass();
+			$level_info->id   = $term_id;
+			$level_info->name = $taxonomy->name;
+			
+		} else {
+			$utils->log( "Error attempting to fetch {$term_id}!!!" );
+		}
+		
+		return $level_info;
+	}
+	
+	/**
+	 * Locate the Product Category data for the specified Taxonomy/Category ID
+	 *
+	 * @param $term_id
+	 *
+	 * @return \WP_Term
+	 */
+	private function get_product_category( $term_id ) {
+		
+		return get_term_by( 'id', $term_id, 'product_cat' );
+	}
+	
+	/**
+	 * Add WooCommerce to the list of supported plugin options
+	 *
+	 * @param array $plugin_list
+	 *
+	 * @return array
+	 */
+	public function add_supported_plugin( $plugin_list ) {
+		
+		if ( ! is_array( $plugin_list ) ) {
+			$plugin_list = array();
+		}
+		
+		// Add WooCommerce if not already included
+		if ( ! in_array( 'woocommerce', array_keys( $plugin_list ) ) ) {
+			$plugin_list['woocommerce'] = array(
+				'label' => __( "WooCommerce Shopping Cart", Controller::plugin_slug ),
+			);
+		}
+		
+		return $plugin_list;
+	}
+	
+	/**
+	 * Identify whether WooCommerce is loaded and active
+	 *
+	 * @param bool $is_active
+	 *
+	 * @return bool
+	 */
+	public function has_membership_plugin( $is_active ) {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $is_active;
+		}
+		
+		$utils->log( "We're checking that WooCommerce is loaded and active" );
+		$is_active = function_exists( 'wc_get_order' );
+		$utils->log( "WooCommerce is active? " . ( $is_active ? 'Yes' : 'No' ) );
+		
+		return $is_active;
+	}
+	
+	/**
+	 * Return the WooCommerce Level info for the main/primary membership
+	 *
+	 * @param \stdClass $level
+	 * @param int       $user_id
+	 *
+	 * @return null|\stdClass
+	 */
+	public function primary_membership_level( $level, $user_id ) {
+		
+		return $level;
+	}
+	
+	/**
+	 * Returns the assigned/active membership level IDs for the specified user
+	 *
+	 * @param int[] $user_level_ids
+	 * @param int   $user_id
+	 *
+	 * @return mixed
+	 */
+	public function membership_level_ids_for_user( $user_level_ids, $user_id ) {
+		
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $user_level_ids;
+		}
+		
+		$utils    = Utilities::get_instance();
+		$user     = get_user_by( 'ID', $user_id );
+		$statuses = $this->statuses_inactive_membership( array() );
+		
+		$user_level_ids = $this->recent_membership_levels_for_user( array(), $user->ID, $user_level_ids, $statuses );
+		
+		$utils->log( "Found " . count( $user_level_ids ) . " recently updated product categories for {$user_id}" );
+		
+		return $user_level_ids;
+	}
+	
+	/**
+	 * Return the Membership statuses that signify an inactive 'membership'
+	 *
+	 * @param $statuses
+	 *
+	 * @return array
+	 */
+	public function statuses_inactive_membership( $statuses ) {
+		
+		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			
+			$wc_statuses = wc_get_order_statuses();
+			
+			// Everything except 'completed' counts as the inactive status(es)
+			unset( $wc_statuses['wc-completed'] );
+			
+			$statuses = array_keys( $wc_statuses );
+		}
+		
+		return $statuses;
 	}
 	
 	/**
@@ -634,282 +927,78 @@ class WooCommerce extends Membership_Plugin {
 	}
 	
 	/**
-	 * Load list of User IDs, membership IDs and the current status of that membership ID for the user ID (WooCommerce)
+	 * Return the PMPro Membership Level(s) this user has ever been assigned
 	 *
-	 * @param array $member_list
-	 *
-	 * @return array
-	 */
-	public function list_members_for_update( $member_list ) {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			
-			$member_list = array();
-			$order_args  = array(
-				'numberposts' => - 1,
-				'post_type'   => wc_get_order_types(),
-				'post_status' => 'wc-completed',
-			);
-			
-			$order_list = get_posts( $order_args );
-			
-			foreach ( $order_list as $p_order ) {
-				
-				list( $user_id, $category_ids ) = $this->get_category_ids( $p_order->ID );
-				
-				if ( ! empty( $user_id ) ) {
-					
-					$info          = new \stdClass();
-					$info->user_id = $user_id;
-					$info->status  = 'active';
-					
-					$utils->log( "Found " . count( $category_ids ) . " categories for {$info->user_id}" );
-					
-					foreach ( $category_ids as $cat_id ) {
-						
-						// Add once for each category ID found
-						$info->membership_id = $cat_id;
-						$member_list[]       = $info;
-					}
-				}
-			}
-		}
-		
-		return $member_list;
-	}
-	
-	/**
-	 * Add field definitions for WooCommerce specific merge tags
-	 *
-	 * @param $merge_field_defs
-	 * @param $list_id
-	 *
-	 * @return array
-	 */
-	public function set_mf_definition( $merge_field_defs, $list_id ) {
-		
-		$class = strtolower( get_class( $this ) );
-		
-		return apply_filters( "e20r-mailchimp-{$class}-merge-tag-settings", $merge_field_defs, $list_id );
-	}
-	
-	/**
-	 * Locate the Product Category data for the specified Taxonomy/Category ID
-	 *
-	 * @param $term_id
-	 *
-	 * @return \WP_Term
-	 */
-	private function get_product_category( $term_id ) {
-		
-		return get_term_by( 'id', $term_id, 'product_cat' );
-	}
-	
-	/**
-	 * Return the Membership Level definition (WooCommerce)
-	 *
-	 * @param \stdClass $level_info
-	 * @param int       $term_id
-	 *
-	 * @return \stdClass
-	 */
-	public function get_level_definition( $level_info, $term_id ) {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			
-			$utils->log( "Using WooCommerce plugin for 'Membership' info" );
-			$utils->log( "Have an ID (which is a taxonomy ID in our case): {$term_id} " );
-			
-			$taxonomy = $this->get_product_category( $term_id );
-			
-			if ( ! empty( $taxonomy ) ) {
-				
-				$level_info       = new \stdClass();
-				$level_info->id   = $term_id;
-				$level_info->name = $taxonomy->name;
-				
-			} else {
-				$utils->log( "Error attempting to fetch {$term_id}!!!" );
-			}
-		}
-		
-		return $level_info;
-	}
-	
-	
-	/**
-	 * Add WooCommerce to the list of supported plugin options
-	 *
-	 * @param array $plugin_list
-	 *
-	 * @return array
-	 */
-	public function add_supported_plugin( $plugin_list ) {
-		
-		if ( ! is_array( $plugin_list ) ) {
-			$plugin_list = array();
-		}
-		
-		// Add WooCommerce if not already included
-		if ( ! in_array( 'woocommerce', array_keys( $plugin_list ) ) ) {
-			$plugin_list['woocommerce'] = array(
-				'label' => __( "WooCommerce Shopping Cart", Controller::plugin_slug ),
-			);
-		}
-		
-		return $plugin_list;
-	}
-	
-	/**
-	 * Identify whether WooCommerce is loaded and active
-	 *
-	 * @param bool $is_active
-	 *
-	 * @return bool
-	 */
-	public function has_membership_plugin( $is_active ) {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			$utils->log("We're checking that WooCommerce is loaded and active");
-			$is_active = function_exists('wc_get_order' );
-			$utils->log("WooCommerce is active? " .  ( $is_active ? 'Yes' : 'No' ) );
-		}
-		
-		
-		return $is_active;
-	}
-	
-	/**
-	 * Load all WooCommerce Membership Level definitions from the DB (return empty)
-	 *
-	 * @param array $levels
-     * @param string $prefix
-	 *
-	 * @return array
-	 */
-	public function all_membership_level_defs( $levels, $prefix = 'wc' ) {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) && 'wc' === $prefix ) {
-			
-			$utils->log( "Processing WooCommerce 'membership levels'" );
-			
-			$taxonomy     = 'product_cat';
-			$orderby      = 'name';
-			$show_count   = true;      // 1 for yes, 0 for no
-			$pad_counts   = false;      // 1 for yes, 0 for no
-			$hierarchical = true;      // 1 for yes, 0 for no
-			$title        = '';
-			$empty        = false;
-			
-			$args = array(
-				'taxonomy'     => $taxonomy,
-				'orderby'      => $orderby,
-				'show_count'   => $show_count,
-				'pad_counts'   => $pad_counts,
-				'hierarchical' => $hierarchical,
-				'title_li'     => $title,
-				'hide_empty'   => $empty,
-			);
-			
-			$all_categories = get_categories( $args );
-			$woo_levels     = array();
-			$utils->log( "Found " . count($all_categories) . " categories for {$taxonomy}");
-			
-			foreach ( $all_categories as $cat ) {
-				
-				if ( $cat->category_parent == 0 ) {
-					
-					// Add parent category to list of Woo "Levels"
-					$wt_level       = new \stdClass();
-					$wt_level->id   = $cat->term_id;
-					$wt_level->name = $cat->name;
-					
-					$woo_levels[] = $wt_level;
-					
-					// Check for sub-categories
-					$args2 = array(
-						'taxonomy'     => $taxonomy,
-						'child_of'     => 0,
-						'parent'       => $cat->term_id,
-						'orderby'      => $orderby,
-						'show_count'   => $show_count,
-						'pad_counts'   => $pad_counts,
-						'hierarchical' => $hierarchical,
-						'title_li'     => $title,
-						'hide_empty'   => $empty,
-					);
-					
-					$sub_cats = get_categories( $args2 );
-					
-					if ( ! empty( $sub_cats ) ) {
-						
-						foreach ( $sub_cats as $sub_category ) {
-							
-							$wlevel       = new \stdClass();
-							$wlevel->id   = $sub_category->term_id;
-							$wlevel->name = $sub_category->name;
-							
-							$woo_levels[] = $wlevel;
-						}
-					}
-				}
-			}
-			
-			if ( ! empty( $woo_levels ) && ! empty( $levels ) ) {
-				$levels = array_merge( $levels, $woo_levels );
-			} else if ( empty( $levels ) && ! empty( $woo_levels ) ) {
-				$levels = $woo_levels;
-			}
-			
-		}
-		
-		$utils->log( "Returning " . count( $levels ) . " 'levels' as WooCommerce product groups" );
-		
-		return $levels;
-	}
-	
-	/**
-	 * Return the WooCommerce Level info for the main/primary membership
-	 *
-	 * @param \stdClass $level
-	 * @param int       $user_id
-	 *
-	 * @return null|\stdClass
-	 */
-	public function primary_membership_level( $level, $user_id ) {
-		
-		return $level;
-	}
-	
-	/**
-	 * Returns the assigned/active membership level IDs for the specified user
-	 *
-	 * @param int[] $user_level_ids
+	 * @param int[] $level_ids
 	 * @param int   $user_id
 	 *
-	 * @return mixed
+	 * @return int[]
 	 */
-	public function membership_level_ids_for_user( $user_level_ids, $user_id ) {
+	public function get_level_history_for_user( $level_ids, $user_id ) {
 		
-		if ( true === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			
-			$utils    = Utilities::get_instance();
-			$user     = get_user_by( 'ID', $user_id );
-			$statuses = $this->statuses_inactive_membership( array() );
-			
-			$user_level_ids = $this->recent_membership_levels_for_user( array(), $user->ID, $user_level_ids,$statuses  );
-			
-			$utils->log( "Found " . count( $user_level_ids ) . " recently updated product categories for {$user_id}" );
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $level_ids;
 		}
 		
-		return $user_level_ids;
+		$utils = Utilities::get_instance();
+		
+		$customer_orders_query = array(
+			'numberposts' => - 1,
+			'meta_key'    => '_customer_user',
+			'meta_value'  => $user_id,
+			'post_type'   => wc_get_order_types(),
+			'post_status' => array_keys( wc_get_order_statuses() ),
+			'no_found_rows' => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'fields' => 'ids',
+		);
+		
+		$order_objs = new \WP_Query( $customer_orders_query );
+		$order_ids = $order_objs->get_posts();
+		$order_cat_ids = array();
+		
+		$utils->log("Found " . count($order_ids) . " orders for {$user_id}");
+		
+		if ( empty( $order_ids )  ) {
+			return $level_ids;
+		}
+		
+		foreach( $order_ids as $order_id ) {
+		
+			$order = wc_get_order( $order_id );
+			$order_items = $order->get_items();
+			$product_categories = array();
+			
+			$utils->log("Order {$order_id} has " . count( $order_items) . " order items");
+			
+			/**
+			 * @param \WC_Order_Item $order_item
+			 */
+			foreach( $order_items as $order_item ) {
+				
+				$product      = $order_item->get_product();
+				$variation_id = $order_item->get_variation_id();
+				
+				$product_id = ( ! empty( $variation_id ) && ( 'product_variation' === $product->post_type ) ) ? $product->get_parent_id() : $product->get_id();
+				
+				$product_categories[] = get_the_terms( $product_id, 'product_cat' );
+				
+				$utils->log("Found " . count( $product_categories ) . " product categories for {$product_id}");
+				
+				if ( empty( $product_categories ) ) {
+					continue;
+				}
+				
+				/**
+				 * @param \WP_Term[] $product_categories
+				 */
+				foreach( $product_categories as $prod_category ) {
+					$order_cat_ids[] = $prod_category->term_id;
+				}
+			}
+		}
+		
+		return ! empty( $order_cat_ids ) ? array_merge( $level_ids, $order_cat_ids ) : array();
 	}
 }
