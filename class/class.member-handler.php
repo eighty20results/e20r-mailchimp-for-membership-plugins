@@ -64,11 +64,7 @@ class Member_Handler {
 		$utils = Utilities::get_instance();
 		$utils->log( "Attempt to load supported membership plugin hooks" );
 		
-		$mc_api = MailChimp_API::get_instance();
-		
 		global $e20r_mailchimp_plugins;
-		
-		// $membership_plugin = $mc_api->get_option( 'membership_plugin' );
 		
 		foreach ( $e20r_mailchimp_plugins as $slug => $plugin_settings ) {
 			$this->load_membership_filters( $plugin_settings, $plugin_settings['plugin_slug'] );
@@ -208,6 +204,10 @@ class Member_Handler {
 	
 	/**
 	 * Get the e20r_mc_levels if membership plugin/option is installed
+	 *
+	 * @param string $prefix
+	 *
+	 * @return array
 	 */
 	public function get_levels( $prefix = 'any' ) {
 		
