@@ -234,11 +234,14 @@ class User_Handler {
 	 * Save MailChimp fields from User Profile
 	 *
 	 * @param $user_id
+     *
+     * @since v2.5 - BUG FIX: Would delete user from MailChimp list when updating user(s) profile (Mailchimp_API::delete() vs Controlller::unsubscribe()
 	 */
 	public function save_profile_fields( $user_id ) {
 		
 		$mc_api    = MailChimp_API::get_instance();
 		$utils = Utilities::get_instance();
+		$controller = Controller::get_instance();
 		
 		$utils->log("Request from Profile update: " . print_r( $_REQUEST, true ));
 		
@@ -271,9 +274,13 @@ class User_Handler {
 				if ( in_array( $list, $additional_user_lists ) ) {
 					
 					$mc_api->subscribe( $list, $list_user );
+					
 				} else { //If we didn't find this list in the user selected lists, try to unsubscribe them
 					
-					$mc_api->unsubscribe( $list, $list_user );
+					/**
+					 * @since v2.5 BUG FIX: Use unsubscribe method, not 'delete'
+					 */
+					$controller->unsubscribe( $list, $list_user );
 				}
 			}
 		}
