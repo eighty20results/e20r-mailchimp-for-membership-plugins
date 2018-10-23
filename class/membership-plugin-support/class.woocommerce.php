@@ -897,8 +897,8 @@ class WooCommerce extends Membership_Plugin {
 			
 			$sql = $wpdb->prepare(
 				"SELECT p.ID
-							FROM wp_posts AS p
-							INNER JOIN wp_postmeta AS pm
+							FROM {$wpdb->posts} AS p
+							INNER JOIN {$wpdb->postmeta} AS pm
 								ON (p.ID = pm.post_id) AND
 								meta_key = '_customer_user' AND
 								meta_value = %d
