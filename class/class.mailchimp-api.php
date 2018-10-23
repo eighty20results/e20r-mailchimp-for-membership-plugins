@@ -87,8 +87,6 @@ class MailChimp_API {
 	/**
 	 * API constructor - Configure the settings, if the API key gets passed on instantiation.
 	 *
-	 * @param null $api_key - Key for Mailchimp API.
-	 *
 	 * @since 2.0.0
 	 */
 	public function __construct() {
@@ -197,8 +195,11 @@ class MailChimp_API {
 	 * Return headers to use for request
 	 *
 	 * @param null|string $command - The HTTP command (GET|PATCH|POST|DEL)
+	 * @param null|array  $body    - The HTTP request body
 	 *
 	 * @return array
+	 *
+	 * @since v2.6 - ENHANCEMENT: Updated PHPDoc block for Mailchimp_API::build_request() method
 	 */
 	public function build_request( $command = null, $body = null ) {
 		
@@ -338,7 +339,7 @@ class MailChimp_API {
 			switch ( $unsub_setting ) {
 				case 2:
 					// Update the mailing list interest groups for the user
-					$retval = $retval && $this->remote_user_update( $users, $list_id, true );
+					$retval = $retval && $this->remote_user_update( $users, $list_id, null, null, true );
 					break;
 				
 				default:
@@ -442,9 +443,13 @@ class MailChimp_API {
 	}
 	
 	/**
-	 * @param \WP_User $user
-	 * @param string   $list_id
-	 * @param bool     $show_warnings
+	 * Update user record on MailChimp server
+	 *
+	 * @param \WP_User   $user
+	 * @param string     $list_id
+	 * @param array|null $merge_fields
+	 * @param array|null $interests
+	 * @param bool       $show_warnings
 	 *
 	 * @return false;
 	 */
@@ -1028,39 +1033,25 @@ class MailChimp_API {
 		$ig_controller = Interest_Groups::get_instance();
 		$utils         = Utilities::get_instance();
 		
-		$cache = null;
+		$data      = null;
+		$cache_key = $this->generate_cache_key( $list_id, $type );
 		
-		switch ( $type ) {
-			case 'merge_fields':
-				$cache_key = "e20rmc_mf_{$list_id}";
-				break;
-			case 'interest_groups':
-				$cache_key = "e20rmc_ig_{$list_id}";
-				break;
-			case 'interests':
-				$cache_key = "{$list_id}";
-				break;
-			default:
-				$cache_key = null;
-				$utils->log( "Key for transient is NULL. That makes no sense!?!" );
-		}
-		
-		$utils->log( "Using transient key: {$cache_key}" );
+		$utils->log( "Using cache key: {$cache_key}." );
 		
 		if ( ! is_null( $cache_key ) && ( ( null === ( $cache = Cache::get( $cache_key, 'e20r_mc_api' ) ) ) || $force === true ) ) {
 			
-			$utils->log( "Invalid or empty cache for {$type}. Being forced? " . ( $force ? 'Yes' : 'No' ) );
+			$utils->log( "Invalid or empty cache for {$type}/{$cache_key}. Being forced? " . ( $force ? 'Yes' : 'No' ) );
 			
 			// Invalid cache, load from MC API server
 			switch ( $type ) {
 				case 'merge_fields':
 					$utils->log( "Loading merge fields from remote server" );
-					$cache = $mf_controller->get_from_remote( $list_id );
+					$data = $mf_controller->get_from_remote( $list_id );
 					break;
 				
 				case 'interest_groups':
 					$utils->log( "Loading interest groups from remote server" );
-					$cache = $ig_controller->get_from_remote( $list_id );
+					$data = $ig_controller->get_from_remote( $list_id );
 					break;
 				
 				case 'interests':
@@ -1073,7 +1064,7 @@ class MailChimp_API {
 					
 					// If the keys can't be located, return empty
 					if ( ! empty( $ids[0] ) && ! empty( $ids[1] ) ) {
-						$cache = $ig_controller->get_interests_for_category( $ids[0], $ids[1] );
+						$data = $ig_controller->get_interests_for_category( $ids[0], $ids[1] );
 					} else {
 						$msg = __( "Unable to extract the required category or list identifier for the MailChimp API server", Controller::plugin_slug );
 						$utils->add_message( $msg, 'error', 'backend' );
@@ -1082,13 +1073,48 @@ class MailChimp_API {
 					break;
 			}
 			
-			if ( ! empty( $cache ) ) {
+			if ( ! empty( $data ) ) {
 				// Save for future use
-				$this->set_cache( $list_id, $type, $cache );
+				$this->set_cache( $list_id, $type, $data );
 			}
 		}
 		
-		return $cache;
+		return $data;
+	}
+	
+	/**
+	 * Create the cache key to use
+	 *
+	 * @param string $list_id
+	 * @param string $type
+	 *
+	 * @return null|string
+	 */
+	private function generate_cache_key( $list_id, $type ) {
+		
+		$utils = Utilities::get_instance();
+		
+		switch ( $type ) {
+			case 'merge_fields':
+				$cache_key = "e20rmc_mf_{$list_id}";
+				break;
+			case 'interest_groups':
+				$cache_key = "e20rmc_ig_{$list_id}";
+				break;
+			case 'interests':
+			    
+			    if ( 1 !== preg_match( "/-/", $list_id ) ) {
+			        $utils->log("Unexpected list ID provided for interests: {$list_id}");
+                }
+                
+				$cache_key = "mcint{$list_id}";
+				break;
+			default:
+				$cache_key = null;
+				$utils->log( "ERROR: Key for cache transient is NULL. That makes no sense!?!" );
+		}
+		
+		return $cache_key;
 	}
 	
 	/**
@@ -1102,19 +1128,7 @@ class MailChimp_API {
 	 */
 	public function set_cache( $list_id, $type, $data ) {
 		
-		switch ( $type ) {
-			case 'merge_fields':
-				$cache_key = "e20rmc_mf_{$list_id}";
-				break;
-			case 'interest_groups':
-				$cache_key = "e20rmc_ig_{$list_id}";
-				break;
-			case 'interests':
-				$cache_key = "{$list_id}";
-				break;
-			default:
-				$cache_key = null;
-		}
+		$cache_key = $this->generate_cache_key( $list_id, $type );
 		
 		if ( ! is_null( $cache_key ) ) {
 			
@@ -1163,12 +1177,14 @@ class MailChimp_API {
 			
 			return update_option( 'e20rmcapi_list_settings', $settings, false );
 		}
+		
+		return false;
 	}
 	
 	/**
 	 * Save the named option (or as all options if no named option is specified)
 	 *
-	 * @param array       $value The individual setting value, or the full array of settings
+	 * @param mixed|array       $value The individual setting value, or the full array of settings
 	 * @param null|string $name
 	 *
 	 * @return bool

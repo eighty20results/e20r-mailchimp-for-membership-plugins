@@ -413,7 +413,7 @@ class MC_Settings {
             <form action="options.php" method="post">
                 <h3><?php _e( 'Automatically add users to your MailChimp.com list(s) when they sign up/register to access your site.', Controller::plugin_slug ); ?></h3>
                 <p><?php
-					printf( __( 'If you have a %s membership plugin installed, you can subscribe your members to a mailchimp MailChimp list and configure interest groups and merge fields based on the membership level', Controller::plugin_slug ),
+					printf( __( 'If you have a %s membership plugin installed, you can subscribe your members to a mailchimp MailChimp list and configure interest groups and merge fields based on the membership level ', Controller::plugin_slug ),
 						sprintf(
 							'<a href="https://eighty20results.com/documentation/e20r-mailchimp-membership-plugins/supported-membership-plugins" target="_blank">%s</a>',
 							__( 'supported ', Controller::plugin_slug )
@@ -798,7 +798,7 @@ class MC_Settings {
 		
 		// $newinput = array();
 		
-		$utils->log( "Received settings: " . print_r( $input, true ) );
+		// $utils->log( "Received settings: " . print_r( $input, true ) );
 		
 		foreach ( $input as $key => $value ) {
 			
@@ -940,7 +940,7 @@ class MC_Settings {
 			} // End of foreach for membership level loop
 		} // End of if empty
 		
-		$utils->log( "Saving settings: " . print_r( $new_input, true ) );
+		// $utils->log( "Saving settings: " . print_r( $new_input, true ) );
 		
 		return $new_input;
 	}

@@ -252,6 +252,8 @@ class Interest_Groups {
 			$level_lists = $mc_api->get_option( 'members_list' );
 		}
 		
+		$utils->log("Level Lists; " . print_r( $level_lists, true ));
+		
 		$list_id     = array_pop( $level_lists );
 		$list_config = $mc_api->get_list_conf_by_id( $list_id );
 		
@@ -283,7 +285,7 @@ class Interest_Groups {
 		
 		foreach ( $categories as $cat_id => $interest_cat ) {
 			
-			if ( false !== stripos( $interest_cat->name, $name ) ) {
+			if ( 1 === preg_match( '/' . preg_quote( $interest_cat->name) . '/i', $name ) ) {
 				
 				$utils->log( "Found {$name} so loading its interests" );
 				$remote_category = $mc_api->get_cache( "{$list_id}-{$cat_id}", 'interests', false );
