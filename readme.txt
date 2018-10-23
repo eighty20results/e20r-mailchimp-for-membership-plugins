@@ -2,9 +2,9 @@
 Contributors: eighty20results
 Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups, mailchimp interest groups
 Requires at least: 4.5
-Requires PHP: 5.4
-Tested up to: 4.9.6
-Stable tag: 2.4
+Requires PHP: 5.6
+Tested up to: 4.9.8
+Stable tag: 2.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,38 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 2.7 ==
+
+* BUG FIX: Would delete user from MailChimp list when updating user(s) profile (Mailchimp_API::delete() vs Controlller::unsubscribe()
+* BUG FIX: Specified wrong table when looking for recent products bought by the customer in the WooCommerce store
+* BUG FIX: Wouldn't always update the remote user record on mailchimp.com
+* BUG FIX: Escape the regex Interest Category name (just in case)
+* ENHANCEMENT: Refactor Mailchimp_API::get_cache() method
+* ENHANCEMENT: Add Mailchimp_API::generate_cache_key() method
+* ENHANCEMENT: Add PHPDoc blocks for more methods in Mailchimp_API class
+* ENHANCEMENT: Added 'Mailchimp_API::delete()' method and deprecated Mailchimp_API::unsubscribe()
+* ENHANCEMENT: Refactored PMPro::membership_level_ids_for_user() method
+* ENHANCEMENT: Added PMPro::get_level_history_for_user() method
+* ENHANCEMENT: Add member module specific method for level/category history
+* ENHANCEMENT: Use 'Mailchimp_API::delete()' method when removing users from lists
+* ENHANCEMENT: Removed stale (unused) code from Member_Handler() class
+* ENHANCEMENT: Improved documentation for Member_Handler::get_levels() method
+* ENHANCEMENT: Refactored WooCommerce::plugin_load() method
+* ENHANCEMENT: Refactored WooCommerce::verify_custom_fields() method
+* ENHANCEMENT: Refactored WooCommerce::get_most_recent_product_cats() method
+* ENHANCEMENT: Refactored WooCommerce::init_default_groups() method
+* ENHANCEMENT: Refactored WooCommerce::get_interest_cat_label() method
+* ENHANCEMENT: Refactored WooCommerce::is_on_checkout_page() method
+* ENHANCEMENT: Refactored WooCommerce::set_mf_values_for_member() method
+* ENHANCEMENT: Refactored WooCommerce::list_members_for_update() method
+* ENHANCEMENT: Refactored WooCommerce::get_level_definition() method
+* ENHANCEMENT: Refactored WooCommerce::has_membership_plugin() method
+* ENHANCEMENT: Refactored WooCommerce::membership_level_ids_for_user() method
+* ENHANCEMENT: Added WooCommerce::get_level_history_for_user() method
+* ENHANCEMENT: Reordered methods in class.woocommerce.php
+* ENHANCEMENT: Add the GDPR opt-in to the PMPro Signup Shortcode form
+* ENHANCEMENT: Move GDPR opt-in field to the 'pmpro_checkout_after_user_fields' action for Paid Memberships Pro
 
 == 2.4 ==
 
