@@ -694,6 +694,10 @@ class MailChimp_API {
 			case 'interests':
 				$cache_key = "{$list_id}";
 				break;
+			case 'list_info':
+				$cache_key = 'list_info';
+				break;
+			
 			default:
 				$cache_key = null;
 		}
@@ -727,7 +731,7 @@ class MailChimp_API {
 				$api_key = $this->get_option( 'api_key' );
 				
 				if ( ! empty( $api_key ) ) {
-					$utils->log( "Forcing a reload from the upstream API server" );
+					$utils->log( "Loading lists (nothing configured)" );
 					$this->connect();
 					$this->load_lists( $force );
 				}
@@ -768,11 +772,10 @@ class MailChimp_API {
 		$limit = $this->get_option( 'mc_api_fetch_list_limit' );
 		$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
 		
-		$last_refreshed = $this->get_option( 'last_server_refresh' );
-		
-		if ( false === $force && $last_refreshed > ( current_time( 'timestamp' ) - ( 5 * 60 ) ) ) {
-			$utils->log( "We'll pretend we refreshed the list - it's been less than 5 minutes" );
-			
+		/**
+		 * Return immediately if we have cached info
+		 */
+		if ( null !== ( $list_info = Cache::get( 'list_info', 'e20r_mc_api' ) ) ) {
 			return true;
 		}
 		
@@ -857,6 +860,13 @@ class MailChimp_API {
 		return true;
 	}
 	
+	/**
+	 * Load list info from MailChimp (or cache)
+	 *
+	 * @param bool $force
+	 *
+	 * @return bool
+	 */
 	public function load_lists( $force = false ) {
 		
 		$utils = Utilities::get_instance();
@@ -866,95 +876,141 @@ class MailChimp_API {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param   int $max_lists - Max number of lists to return
+		 * @param   int $max_objects - Max number of objects to return (15 is default)
+		 *
+		 * @uses  e20r_mailchimp_list_fetch_limit (deprecated)
+		 * @uses  e20r_mailchimp_object_fetch_limit
 		 */
-		$limit = $this->get_option( 'mc_api_fetch_list_limit' );
-		$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
+		$limit     = $this->get_option( 'mc_api_fetch_list_limit' );
+		$cache_key = $this->generate_cache_key( null, 'list_info' );
+		$max       = apply_filters( 'e20r_mailchimp_list_fetch_limit', ( ! empty( $limit ) ? $limit : 15 ) );
+		$max       = apply_filters( 'e20r_mailchimp_object_fetch_limit', $max );
+		$body      = null;
 		
-		$last_refreshed = $this->get_option( 'last_server_refresh' );
+		$utils->log("Looking in the {$cache_key} cache for list info from upstream");
 		
-		if ( false === $force && $last_refreshed > ( current_time( 'timestamp' ) - ( 5 * 60 ) ) ) {
-			$utils->log( "We'll pretend we refreshed the list - it's been less than 5 minutes" );
+		if ( null === ( $body = Cache::get( $cache_key, 'e20r_mc_api' ) ) ) {
 			
-			return true;
+			$url      = $this->get_api_url( "/lists/?count={$max}" );
+			$response = wp_remote_get( $url, $this->url_args );
+			$code     = wp_remote_retrieve_response_code( $response );
+			
+			// Fix: is_wp_error() appears to be unreliable since WordPress v4.5
+			if ( 200 > $code || 300 <= $code ) {
+				
+				$utils->log( "Something wrong with the request?!?" );
+				
+				switch ( wp_remote_retrieve_response_code( $response ) ) {
+					case 401:
+						$msg = sprintf(
+							'%s: <p><em>%s</em> %s',
+							__( 'Sorry, but MailChimp was unable to verify your API key. MailChimp gave this response', Controller::plugin_slug ),
+							wp_remote_retrieve_response_message( $response ),
+							__( 'Please try entering your API key again.', Controller::plugin_slug )
+						);
+						
+						$utils->add_message( $msg, 'error', 'backend' );
+						$utils->log( $msg );
+						
+						$body = false;
+						break;
+					
+					default:
+						$msg = sprintf(
+							__(
+								'Error while communicating with the Mailchimp servers: <p><em>%s</em></p>',
+								Controller::plugin_slug
+							),
+							wp_remote_retrieve_response_message( $response )
+						);
+						
+						$utils->add_message( $msg, 'error', 'backend' );
+						$utils->log( wp_remote_retrieve_response_message( $response ) );
+						
+						$body = false;
+				}
+			} else {
+				
+				$body = $utils->decode_response( $response['body'] );
+				
+				if ( ! isset( $body->lists ) ) {
+					$utils->add_message( __( 'No Mailing lists found in your MailChimp account!', Controller::plugin_slug ), 'error', 'backend' );
+					$body = false;
+				}
+			}
 		}
 		
-		$url      = $this->get_api_url( "/lists/?count={$max}" );
-		$response = wp_remote_get( $url, $this->url_args );
-		$code     = wp_remote_retrieve_response_code( $response );
-		
-		// Fix: is_wp_error() appears to be unreliable since WordPress v4.5
-		if ( 200 > $code || 300 <= $code ) {
+		if ( empty( $body ) || ! isset( $body->lists ) ) {
+			$utils->log( "Error: No list info found upstream (or in the cache)!!!" );
 			
-			$utils->log( "Something wrong with the request?!?" );
-			
-			switch ( wp_remote_retrieve_response_code( $response ) ) {
-				case 401:
-					$msg = sprintf(
-						'%s: <p><em>%s</em> %s',
-						__( 'Sorry, but MailChimp was unable to verify your API key. MailChimp gave this response', Controller::plugin_slug ),
-						wp_remote_retrieve_response_message( $response ),
-						__( 'Please try entering your API key again.', Controller::plugin_slug )
-					);
-					
-					$utils->add_message( $msg, 'error', 'backend' );
-					$utils->log( $msg );
-					
-					return false;
-					break;
-				
-				default:
-					$msg = sprintf(
-						__(
-							'Error while communicating with the Mailchimp servers: <p><em>%s</em></p>',
-							Controller::plugin_slug
-						),
-						wp_remote_retrieve_response_message( $response )
-					);
-					
-					$utils->add_message( $msg, 'error', 'backend' );
-					$utils->log( wp_remote_retrieve_response_message( $response ) );
-					
-					return false;
-			}
-		} else {
-			
-			$body = $utils->decode_response( $response['body'] );
-			
-			if ( ! isset( $body->lists ) ) {
-				$utils->add_message( __( 'No Mailing lists found in your MailChimp account!', Controller::plugin_slug ), 'error', 'backend' );
-				
-				return false;
-			}
-			
-			$utils->log( "Found lists upstream.." );
-			foreach ( $body->lists as $key => $list ) {
-				
-				// Grab existing settings
-				$list_settings = $this->get_list_conf_by_id( $list->id );
-				
-				// Create the all_lists member variable
-				$this->all_lists[ $list->id ]           = array();
-				$this->all_lists[ $list->id ]['id']     = $list->id;
-				$this->all_lists[ $list->id ]['web_id'] = $list->id;
-				$this->all_lists[ $list->id ]['name']   = $list->name;
-				
-				// Update the list settings
-				$list_settings->name                = $list->name;
-				$list_settings->id                  = $list->id;
-				$list_settings->interest_categories = $this->get_cache( $list->id, 'interest_groups', false );
-				$list_settings->merge_fields        = $this->get_cache( $list->id, 'merge_fields', false ); // $mf_class->get_from_remote( $list->id, false );
-				
-				// Save the list configuration to persistent storage
-				$this->save_list_conf( $list_settings, null, $list->id );
-			}
-			
-			// Update the setting (keep it fresh
-			update_option( 'e20r_mc_lists', $this->all_lists, false );
-			$this->save_option( current_time( 'timestamp' ), 'last_server_refresh' );
+			return false;
 		}
+		
+		$utils->log( "Found lists..." );
+		
+		foreach ( $body->lists as $key => $list ) {
+			
+			// Grab existing settings
+			$list_settings = $this->get_list_conf_by_id( $list->id );
+			
+			// Create the all_lists member variable
+			$this->all_lists[ $list->id ]           = array();
+			$this->all_lists[ $list->id ]['id']     = $list->id;
+			$this->all_lists[ $list->id ]['web_id'] = $list->id;
+			$this->all_lists[ $list->id ]['name']   = $list->name;
+			
+			// Update the list settings
+			$list_settings->name                = $list->name;
+			$list_settings->id                  = $list->id;
+			$list_settings->interest_categories = $this->get_cache( $list->id, 'interest_groups' );
+			$list_settings->merge_fields        = $this->get_cache( $list->id, 'merge_fields' ); // $mf_class->get_from_remote( $list->id, false );
+			
+			// Save the list configuration to persistent storage
+			$this->save_list_conf( $list_settings, null, $list->id );
+		}
+		
+		// Update the setting (keep it fresh
+		update_option( 'e20r_mc_lists', $this->all_lists, false );
 		
 		return true;
+	}
+	
+	/**
+	 * Create the cache key to use
+	 *
+	 * @param string $list_id
+	 * @param string $type
+	 *
+	 * @return null|string
+	 */
+	public function generate_cache_key( $list_id, $type ) {
+		
+		$utils = Utilities::get_instance();
+		
+		switch ( $type ) {
+			case 'merge_fields':
+				$cache_key = "e20rmc_mf_{$list_id}";
+				break;
+			case 'interest_groups':
+				$cache_key = "e20rmc_ig_{$list_id}";
+				break;
+			case 'interests':
+				
+				if ( 1 !== preg_match( "/-/", $list_id ) ) {
+					$utils->log( "Unexpected list ID provided for interests: {$list_id}" );
+				}
+				
+				$cache_key = "mcint{$list_id}";
+				break;
+			case 'list_info':
+				$cache_key = "e20rmc_lists";
+				break;
+			default:
+				$cache_key = null;
+				$utils->log( "ERROR: Key for cache is NULL. That makes no sense!?!" );
+		}
+		
+		return $cache_key;
 	}
 	
 	/**
@@ -970,9 +1026,9 @@ class MailChimp_API {
 		
 		$list_conf = get_option( 'e20rmcapi_list_settings', array() );
 		
-		if ( ! empty( $list_conf ) && ! is_null( $list_id ) ) {
+		if ( ! empty( $list_conf ) && ! empty( $list_id ) ) {
 			
-			$utils->log( "Have a list config and a list ID..." );
+			$utils->log( "Have a list config and a list ID ({$list_id})..." );
 			
 			if ( empty( $list_conf[ $list_id ] ) ) {
 				$list_conf = $this->create_default_list_conf( $list_id );
@@ -1038,7 +1094,7 @@ class MailChimp_API {
 		
 		$utils->log( "Using cache key: {$cache_key}." );
 		
-		if ( ! is_null( $cache_key ) && ( ( null === ( $cache = Cache::get( $cache_key, 'e20r_mc_api' ) ) ) || $force === true ) ) {
+		if ( ! empty( $cache_key ) && ( ( null === ( $data = Cache::get( $cache_key, 'e20r_mc_api' ) ) ) || true === $force ) ) {
 			
 			$utils->log( "Invalid or empty cache for {$type}/{$cache_key}. Being forced? " . ( $force ? 'Yes' : 'No' ) );
 			
@@ -1071,6 +1127,12 @@ class MailChimp_API {
 						$utils->log( $msg );
 					}
 					break;
+				
+				case 'list_info':
+					$utils->log( "Loading list info from MailChimp.com" );
+					$this->load_lists( false );
+					$data = $this->all_lists;
+					break;
 			}
 			
 			if ( ! empty( $data ) ) {
@@ -1080,41 +1142,6 @@ class MailChimp_API {
 		}
 		
 		return $data;
-	}
-	
-	/**
-	 * Create the cache key to use
-	 *
-	 * @param string $list_id
-	 * @param string $type
-	 *
-	 * @return null|string
-	 */
-	private function generate_cache_key( $list_id, $type ) {
-		
-		$utils = Utilities::get_instance();
-		
-		switch ( $type ) {
-			case 'merge_fields':
-				$cache_key = "e20rmc_mf_{$list_id}";
-				break;
-			case 'interest_groups':
-				$cache_key = "e20rmc_ig_{$list_id}";
-				break;
-			case 'interests':
-			    
-			    if ( 1 !== preg_match( "/-/", $list_id ) ) {
-			        $utils->log("Unexpected list ID provided for interests: {$list_id}");
-                }
-                
-				$cache_key = "mcint{$list_id}";
-				break;
-			default:
-				$cache_key = null;
-				$utils->log( "ERROR: Key for cache transient is NULL. That makes no sense!?!" );
-		}
-		
-		return $cache_key;
 	}
 	
 	/**
@@ -1137,7 +1164,7 @@ class MailChimp_API {
 			 *
 			 * @param int $cache_timeout Time before the cache refreshes (Default: HOUR_IN_SECONDS)
 			 */
-			$cache_timeout = apply_filters( 'e20r_mailchimp_cache_timeout_secs', ( 5 * MINUTE_IN_SECONDS ) );
+			$cache_timeout = apply_filters( 'e20r_mailchimp_cache_timeout_secs', HOUR_IN_SECONDS );
 			
 			return Cache::set( $cache_key, $data, $cache_timeout, 'e20r_mc_api' );
 		}
@@ -1184,7 +1211,7 @@ class MailChimp_API {
 	/**
 	 * Save the named option (or as all options if no named option is specified)
 	 *
-	 * @param mixed|array       $value The individual setting value, or the full array of settings
+	 * @param mixed|array $value The individual setting value, or the full array of settings
 	 * @param null|string $name
 	 *
 	 * @return bool
