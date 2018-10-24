@@ -94,16 +94,16 @@ class WooCommerce extends Membership_Plugin {
 		}
 		
 		// If PMPro is active (alone)
-		if  ( true === $utils->plugin_is_active( 'pmpro_getAllLevels' ) ) {
+		if  ( true === $utils->plugin_is_active( null, 'pmpro_getAllLevels' ) ) {
 			add_action( 'pmpro_paypalexpress_session_vars', array( $this, 'session_vars' ), 10 );
 			add_action( 'pmpro_save_membership_level', array( $this, 'clear_levels_cache' ), 10 );
-			add_action( 'pmpro_checkout_after_tos_fields', array( $this, 'view_additional_lists' ), 10 );
+			add_action( 'pmpro_checkout_before_submit_button', array( $this, 'view_additional_lists' ), 10 );
 			
 			add_filter( 'pmpro_registration_checks', array( $this, 'registration_checks' ), 10, 1);
 		}
 		
 		// If the PMPro Signup Shortcode plugin is active
-		if ( true === $utils->plugin_is_active( 'pmprosus_signup_shortcode' ) ) {
+		if ( true === $utils->plugin_is_active( null, 'pmprosus_signup_shortcode' ) ) {
 			add_action( 'pmpro_signup_form_before_submit', array( $this, 'add_custom_views' ), 99 );
 		}
 		
