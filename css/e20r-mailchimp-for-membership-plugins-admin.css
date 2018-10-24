@@ -26,6 +26,13 @@ img.e20r-spinner-image {
     min-width: 370px;
     width: auto;
 }
+input.e20r-reset-button,
+a.e20r-reset-button {
+    float: right;
+}
+input.e20rmc-merge-field-header {
+    float: left;
+}
 input[type="number"].e20r-settings-fields {
     min-width: 370px;
     width: auto;
