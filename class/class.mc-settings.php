@@ -37,8 +37,9 @@ class MC_Settings {
 	public function load_actions() {
 		
 	    if ( is_user_logged_in() ) {
-		    add_action( 'wp_ajax_e20rmc_refresh_list_id', array( self::get_instance(), 'options_refresh' ) );
-		
+		    add_action( 'wp_ajax_e20rmc_refresh_list_id', array( $this, 'options_refresh' ) );
+            add_action( 'wp_ajax_e20rmc_clear_cache', array( $this, 'clear_cache' ) );
+            
 		    add_action( "admin_init", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
 		    add_action( 'admin_init', array( $this, 'admin_init' ) );
 		
@@ -366,7 +367,7 @@ class MC_Settings {
 		if ( ! empty( $mc_api ) ) {
 			
 			$utils->log( "Loading lists from cache or upstream" );
-			$e20r_mc_lists = $mc_api->get_all_lists( true );
+			$e20r_mc_lists = $mc_api->get_all_lists();
 			$all_lists     = array();
 			
 			if ( ! empty( $e20r_mc_lists ) ) {
@@ -411,7 +412,7 @@ class MC_Settings {
 			<?php $utils->display_messages( 'backend' ); ?>
 
             <form action="options.php" method="post">
-                <h3><?php _e( 'Automatically add users to your MailChimp.com list(s) when they sign up/register to access your site.', Controller::plugin_slug ); ?></h3>
+                <h3><span class="e20r-mailchimp-settings"><?php _e( 'Automatically add users to your MailChimp.com list(s) when they sign up/register to access your site.', Controller::plugin_slug ); ?><span class="e20r-mailchimp-buttom"><input type="button" id="e20r-mc-reset-cache" value="<?php _e( 'Clear local Cache', Controller::plugin_slug ); ?>" class="button button-primary e20r-reset-button"></span></h3>
                 <p><?php
 					printf( __( 'If you have a %s membership plugin installed, you can subscribe your members to a mailchimp MailChimp list and configure interest groups and merge fields based on the membership level ', Controller::plugin_slug ),
 						sprintf(
@@ -965,24 +966,60 @@ class MC_Settings {
 	}
 	
 	/**
+	 * Clear all locally cached MailChimp data (force refresh from API server(s)
+	 */
+	public function clear_cache() {
+		
+	    $utils = Utilities::get_instance();
+	    
+		wp_verify_nonce( 'e20rmc_update_nonce', 'e20rmc_update_members' );
+		
+		$mc_api = MailChimp_API::get_instance();
+		
+		$utils->log( "Nonce is verified" );
+		$list_config = $mc_api->get_list_conf_by_id();
+		
+		// Clear all cached data for MailChimp.com
+		foreach( $list_config as $list_id => $list_settings ) {
+		    
+		    foreach( $list_settings->interest_categories as $interest_category_id => $ic_settings ) {
+		        
+			    // Clear cached interests
+                $mc_api->clear_cache( "{$list_id}-{$interest_category_id}", 'interests');
+			    
+                // Clear cached interest categories/groups
+                $mc_api->clear_cache( $list_id, 'interest_groups' );
+            }
+			
+			// Clear cached merge field info
+            foreach( $list_settings->merge_fields as $field_name => $field_settings ) {
+                $mc_api->clear_cache( $list_id, 'merge_fields' );
+            }
+            
+            // Clear any cached list info
+            $mc_api->clear_cache( null, 'list_info' );
+        }
+        
+        wp_send_json_success();
+		wp_die();
+    }
+    
+	/**
 	 * Handler for the "Server refresh" buttons on the options page
 	 */
 	public function options_refresh() {
 		
 		$utils = Utilities::get_instance();
 		
-		global $pmpro_msg;
-		global $pmpro_msgt;
-		
 		$list_id = $utils->get_variable( 'e20rmc_refresh_list_id', null );
 		$utils->log( "Processing for list {$list_id}" );
 		
 		if ( empty( $list_id ) ) {
 			
-			$pmpro_msg  = __( "Unable to refresh unknown list", Controller::plugin_slug );
-			$pmpro_msgt = "error";
-			$utils->log( $pmpro_msg );
-			wp_send_json_error( $pmpro_msg );
+		    $msg = __( "Unable to refresh unknown list", Controller::plugin_slug );
+			$utils->add_message(  $msg, 'error', 'backend' );
+			$utils->log( $msg );
+			wp_send_json_error( $msg );
 			wp_die();
 		}
 		
@@ -990,7 +1027,6 @@ class MC_Settings {
 		$utils->log( "Nonce is verified" );
 		
 		$mc_api   = MailChimp_API::get_instance();
-		$mg_class = Merge_Fields::get_instance();
 		$ig_class = Interest_Groups::get_instance();
 		$utils    = Utilities::get_instance();
 		$level    = null;
@@ -1002,7 +1038,7 @@ class MC_Settings {
 		if ( empty( $mc_api ) ) {
 			
 			$error_msg  = __( "Unable to load MailChimp API interface", Controller::plugin_slug );
-			$error_msgt = "error";
+			$utils->add_message( $error_msg, 'error', 'backend' );
 			$utils->log( $error_msg );
 			wp_send_json_error( $error_msg );
 			wp_die();
@@ -1034,7 +1070,7 @@ class MC_Settings {
 		}
 		
 		// Force update of upstream interest groups
-		if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', true ) ) ) {
+		if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', false ) ) ) {
 			
 			$msg = sprintf( __( "Unable to refresh MailChimp Interest Group information for %s", Controller::plugin_slug ), $level->name );
 			$utils->add_message( $msg, 'error', 'backend' );
@@ -1045,7 +1081,7 @@ class MC_Settings {
 		}
 		
 		// Force refresh of upstream merge fields
-		if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mc_api->get_cache( $list_id, 'merge_fields', true ) ) ) {
+		if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mc_api->get_cache( $list_id, 'merge_fields', false ) ) ) {
 			
 			$msg = sprintf( __( "Unable to refresh MailChimp Merge Field information for %s", Controller::plugin_slug ), $level->name );
 			$utils->add_message( $msg, 'error', 'backend' );
