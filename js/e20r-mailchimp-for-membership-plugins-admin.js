@@ -26,9 +26,16 @@ jQuery(document).ready(function( $ ) {
             this.refresh_btn = $('input.e20rmc_server_refresh');
             this.bg_update_btn = $('#e20rmc_background');
             this.ack = $('#e20rmc-warning-ack');
+            this.clear_cache_btn = $('#e20r-mc-reset-cache');
 
             this.list_is_defined = $('#e20rmc-list-is-defined').val();
             var self = this;
+
+            self.clear_cache_btn.on('click', function(event){
+
+                event.preventDefault();
+                self.clear_cache();
+            });
 
             self.refresh_btn.each( function() {
 
@@ -59,10 +66,35 @@ jQuery(document).ready(function( $ ) {
             self.ack.unbind('click').on('click', function() {
 
                 if ( $(this).is(':checked') ) {
-                    window.console.log("Requesting that the background processing buttin is shown");
+                    window.console.log("Requesting that the background processing button is shown");
                     self.bg_update_btn.show();
                 } else {
                     self.bg_update_btn.hide();
+                }
+            });
+        },
+        clear_cache: function() {
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                timeout: 15000,
+                dataType: 'JSON',
+                data: {
+                    action: 'e20rmc_clear_cache',
+                    e20rmc_update_nonce: $('#e20rmc_update_nonce').val()
+                },
+                success: function( $response ) {
+
+                    if ( $response.success === false && $response.data.msg.length > 0 ) {
+                        window.alert( $response.data.msg );
+                        return;
+                    }
+
+                    location.reload( true );
+                },
+                error: function( hdr, $error, errorThrown ) {
+                    window.alert("Error ( " + $error + " ) while clearing local mailchimp.com settings");
+                    window.console.log("Error:", errorThrown, $error, hdr  );
                 }
             });
         },
@@ -112,7 +144,7 @@ jQuery(document).ready(function( $ ) {
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
-                timeout: 10000,
+                timeout: 30000,
                 dataType: 'JSON',
                 data: data,
                 success: function( $response ) {
