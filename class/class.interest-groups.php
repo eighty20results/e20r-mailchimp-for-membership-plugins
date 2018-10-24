@@ -164,7 +164,7 @@ class Interest_Groups {
 					
 					$utils->log( "Processing Interest for level {$l_id}: {$ig_name}" );
 					
-					if ( ! in_array( $ig_name, $cat_interests ) ) {
+					if ( empty( $cat_interests ) || ( is_array( $cat_interests ) && ! in_array( $ig_name, $cat_interests ) ) ) {
 						
 						$tmp_interest = $this->add_remote_interest_to_category( $list_id, $r_category->id, $ig_name );
 						
@@ -252,7 +252,7 @@ class Interest_Groups {
 			$level_lists = $mc_api->get_option( 'members_list' );
 		}
 		
-		$utils->log("Level Lists; " . print_r( $level_lists, true ));
+		$utils->log( "Level Lists; " . print_r( $level_lists, true ) );
 		
 		$list_id     = array_pop( $level_lists );
 		$list_config = $mc_api->get_list_conf_by_id( $list_id );
@@ -285,7 +285,7 @@ class Interest_Groups {
 		
 		foreach ( $categories as $cat_id => $interest_cat ) {
 			
-			if ( 1 === preg_match( '/' . preg_quote( $interest_cat->name) . '/i', $name ) ) {
+			if ( 1 === preg_match( '/' . preg_quote( $interest_cat->name ) . '/i', $name ) ) {
 				
 				$utils->log( "Found {$name} so loading its interests" );
 				$remote_category = $mc_api->get_cache( "{$list_id}-{$cat_id}", 'interests', false );
@@ -363,7 +363,24 @@ class Interest_Groups {
 			$utils->log( "Error Response returned: " . print_r( $error, true ) );
 			
 			if ( 'Bad Request' === $msg && 'Invalid Resource' === $error->title && false !== stripos( $error->detail, 'already exists' ) ) {
+				
 				$utils->log( "Interest Category {$category->name} is already present for {$list_id}" );
+				
+				$settings      = array();
+				$remote_groups = $this->get_from_remote( $list_id );
+				
+				foreach ( $remote_groups as $group_id => $group_info ) {
+					
+					$pattern = '/^' . preg_quote( trim( $group_info->name ) ) . '$/';
+					
+					if ( 1 === preg_match( $pattern, trim( $category->name ) ) ) {
+						
+						// Workaround for compatibility w/build_category_settings() method
+						$group_info->title = $group_info->name;
+						
+						return $this->build_category_settings( $group_info, $list_id );
+					}
+				}
 				
 				return true;
 			}
@@ -376,18 +393,86 @@ class Interest_Groups {
 		} else {
 			
 			$cat = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-			$utils->log( "Added {$cat->title} on the MailChimp Server: {$cat->id}" );
 			
-			$settings[ $cat->id ]            = new \stdClass();
-			$settings[ $cat->id ]->name      = $cat->title;
-			$settings[ $cat->id ]->type      = $cat->type;
-			$settings[ $cat->id ]->id        = $cat->id;
-			$settings[ $cat->id ]->interests = array();
-			
-			return $settings;
+			return $this->build_category_settings( $cat, $list_id );
 		}
 	}
 	
+	/**
+	 * Return all interest categories for the specified list ID
+	 *
+	 * @since 2.1
+	 *
+	 * @param       string $list_id MailChimp List ID
+	 * @param       bool   $force   Whether to force the refresh from upstream
+	 *
+	 * @return      mixed           False = error | array( interest-category-id => object[1], )
+	 *
+	 * @see   http://developer.mailchimp.com/documentation/mailchimp/reference/lists/interest-categories/ - Docs for
+	 *        Interest Categories on MailChimp
+	 */
+	public function get_from_remote( $list_id, $force = false ) {
+		
+		$utils  = Utilities::get_instance();
+		$mc_api = MailChimp_API::get_instance();
+		
+		$utils->log( "Loading from MailChimp Server(s)" );
+		$limit = $mc_api->get_option( 'mc_api_fetch_list_limit' );
+		$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
+		
+		// get all existing interest categories from MC servers
+		$url  = $mc_api->get_api_url( "/lists/{$list_id}/interest-categories/?count={$max}" );
+		$args = $mc_api->build_request( 'GET', null );
+		
+		$utils->log( "Fetching interest categories for {$list_id} from the MailChimp servers" );
+		
+		$resp = wp_remote_request( $url, $args );
+		$code = wp_remote_retrieve_response_code( $resp );
+		
+		if ( 200 > $code || 300 <= $code ) {
+			
+			$msg = wp_remote_retrieve_response_message( $resp );
+			$utils->add_message( $msg, 'error', 'backend' );
+			$utils->log( $msg );
+			
+			return false;
+		}
+		
+		$group   = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+		$int_cat = array();
+		
+		// Save the interest category information we (may) need
+		foreach ( $group->categories as $cat ) {
+			
+			$int_cat[ $cat->id ]            = new \stdClass();
+			$int_cat[ $cat->id ]->id        = $cat->id;
+			$int_cat[ $cat->id ]->type      = $cat->type;
+			$int_cat[ $cat->id ]->name      = $cat->title;
+			$int_cat[ $cat->id ]->interests = $mc_api->get_cache( "{$list_id}-{$cat->id}", 'interests', false );
+		}
+		
+		if ( ! empty( $int_cat ) ) {
+			
+			$mc_api->set_cache( $list_id, 'interest_groups', $int_cat );
+			$mcapi_list_settings = $mc_api->get_list_conf_by_id();
+			
+			if ( empty( $mcapi_list_settings ) ) {
+				$mcapi_list_settings = $mc_api->create_default_list_conf( $list_id );
+			}
+			
+			if ( empty( $mcapi_list_settings[ $list_id ] ) ) {
+				$mcapi_list_settings += $mc_api->create_default_list_conf( $list_id );
+			}
+			
+			$mcapi_list_settings[ $list_id ]->interest_categories = $int_cat;
+			
+			$utils->log( "Saving all settings for all lists. " );
+			$mc_api->save_list_conf( $mcapi_list_settings );
+			
+		}
+		
+		return $int_cat;
+	}
 	/*
 	// FIXME: May not be needed (get_remote_category() )
 	public function get_remote_category( $list_id, $category_id ) {
@@ -432,13 +517,50 @@ class Interest_Groups {
 	*/
 	
 	/**
+	 * Generate the settings for a Interest Category
+	 *
+	 * @param \stdClass $cat
+	 * @param string    $list_id
+	 *
+	 * @return array
+	 */
+	private function build_category_settings( $cat, $list_id ) {
+		
+		$utils = Utilities::get_instance();
+		
+		$utils->log( "Added {$cat->title} on the MailChimp Server: {$cat->id}" );
+		$settings = array();
+		
+		$settings[ $cat->id ]            = new \stdClass();
+		$settings[ $cat->id ]->name      = $cat->title;
+		$settings[ $cat->id ]->type      = $cat->type;
+		$settings[ $cat->id ]->id        = $cat->id;
+		$settings[ $cat->id ]->interests = array();
+		
+		
+		if ( ! empty( $cat->interests ) ) {
+			// Process the interests received
+			foreach ( $cat->interests as $interest_id => $interest_title ) {
+				
+				$settings[ $cat->id ]->interests[ $interest_id ]              = new \stdClass();
+				$settings[ $cat->id ]->interests[ $interest_id ]->id          = $interest_id;
+				$settings[ $cat->id ]->interests[ $interest_id ]->name        = $interest_title;
+				$settings[ $cat->id ]->interests[ $interest_id ]->category_id = $cat->id;
+				$settings[ $cat->id ]->interests[ $interest_id ]->list_id     = $list_id;
+			}
+		}
+		
+		return $settings;
+	}
+	
+	/**
 	 * Add a new interest to an Interest Category for list (list id)
 	 *
 	 * @param string $list_id
 	 * @param string $category_id
 	 * @param string $interest
 	 *
-	 * @return bool|\stdClass
+	 * @return bool|array
 	 */
 	public function add_remote_interest_to_category( $list_id, $category_id, $interest ) {
 		
@@ -469,7 +591,9 @@ class Interest_Groups {
 			$error = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
 			
 			if ( 'Bad Request' === $msg && 'Invalid Resource' === $error->title && false !== stripos( $error->detail, 'already exists' ) ) {
-				$utils->log( "MCAPI: Interest '{$interest}' is already present for category {$category_id} in list {$list_id}" );
+				
+				$utils->log( "MCAPI: Interest '{$interest}' is already upstream for category {$category_id} in list {$list_id}" );
+				$interests = $mc->get_cache( "{$list_id}-{$category_id}",'interests', false );
 				
 				return true;
 			}
@@ -483,16 +607,83 @@ class Interest_Groups {
 			
 			$int = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
 			
-			$utils->log( "Added interest {$int->name} on the MailChimp Server: {$int->id}" );
-			
-			$settings[ $int->id ]              = new \stdClass();
-			$settings[ $int->id ]->name        = $int->name;
-			$settings[ $int->id ]->list_id     = $int->list_id;
-			$settings[ $int->id ]->category_id = $int->category_id;
-			$settings[ $int->id ]->id          = $int->id;
-			
-			return $settings;
+			return $this->build_interest_settings( $int );
 		}
+	}
+	
+	/**
+	 * Read all interests for an interest category from the MailChimp server
+	 *
+	 * @since 2.1
+	 *
+	 * @param   string $list_id ID of the Distribution List on MailChimp server
+	 * @param   string $cat_id  ID of the Interest Category on MailChimp server
+	 *
+	 * @return  array|bool      Array of interest names & IDs
+	 */
+	public function get_interests_for_category( $list_id, $cat_id ) {
+		
+		$mc    = MailChimp_API::get_instance();
+		$utils = Utilities::get_instance();
+		
+		if ( null === ( $interests = Cache::get( "{$list_id}-{$cat_id}", 'e20r_mc_api' ) ) ) {
+			
+			$limit = $mc->get_option( 'mc_api_fetch_list_limit' );
+			$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
+			
+			$url  = $mc->get_api_url( "/lists/{$list_id}/interest-categories/{$cat_id}/interests/?count={$max}" );
+			$args = $mc->build_request( 'GET', null );
+			
+			$utils->log( "Fetching interests for category {$cat_id} in list {$list_id} from the MailChimp servers" );
+			
+			$resp = wp_remote_request( $url, $args );
+			$code = wp_remote_retrieve_response_code( $resp );
+			
+			if ( 200 > $code || 300 <= $code ) {
+				$utils->add_message( wp_remote_retrieve_response_message( $resp ), 'error', 'backend' );
+				
+				$utils->log( wp_remote_retrieve_response_message( $resp ) );
+				
+				return false;
+			}
+			
+			$i_list = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+			
+			$interests = array();
+			
+			foreach ( $i_list->interests as $interest ) {
+				$interests[ $interest->id ] = $interest->name;
+			}
+			
+			if ( ! empty( $interests ) ) {
+				$utils->log( "Found " . count( $interests ) . " interest(s) for {$cat_id}" );
+				$mc->set_cache( "{$list_id}-{$cat_id}", 'interests', $interests );
+			}
+		}
+		
+		return $interests;
+	}
+	
+	/**
+	 * Build the settings for the interest group/interest
+	 *
+	 * @param mixed $int
+	 *
+	 * @return array
+	 */
+	private function build_interest_settings( $int ) {
+		
+		$utils = Utilities::get_instance();
+		
+		$utils->log( "Added interest {$int->name} on the MailChimp Server: {$int->id}" );
+		
+		$settings[ $int->id ]              = new \stdClass();
+		$settings[ $int->id ]->name        = $int->name;
+		$settings[ $int->id ]->list_id     = $int->list_id;
+		$settings[ $int->id ]->category_id = $int->category_id;
+		$settings[ $int->id ]->id          = $int->id;
+		
+		return $settings;
 	}
 	
 	/**
@@ -699,135 +890,6 @@ class Interest_Groups {
 	}
 	
 	/**
-	 * Return all interest categories for the specified list ID
-	 *
-	 * @since 2.1
-	 *
-	 * @param       string $list_id MailChimp List ID
-	 * @param       bool   $force   Whether to force the refresh from upstream
-	 *
-	 * @return      mixed           False = error | array( interest-category-id => object[1], )
-	 *
-	 * @see   http://developer.mailchimp.com/documentation/mailchimp/reference/lists/interest-categories/ - Docs for
-	 *        Interest Categories on MailChimp
-	 */
-	public function get_from_remote( $list_id, $force = false ) {
-		
-		$utils  = Utilities::get_instance();
-		$mc_api = MailChimp_API::get_instance();
-		
-		$utils->log( "Loading from MailChimp Server(s)" );
-		$limit = $mc_api->get_option( 'mc_api_fetch_list_limit' );
-		$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
-		
-		// get all existing interest categories from MC servers
-		$url  = $mc_api->get_api_url( "/lists/{$list_id}/interest-categories/?count={$max}" );
-		$args = $mc_api->build_request( 'GET', null );
-		
-		$utils->log( "Fetching interest categories for {$list_id} from the MailChimp servers" );
-		
-		$resp = wp_remote_request( $url, $args );
-		$code = wp_remote_retrieve_response_code( $resp );
-		
-		if ( 200 > $code || 300 <= $code ) {
-			
-			$msg = wp_remote_retrieve_response_message( $resp );
-			$utils->add_message( $msg, 'error', 'backend' );
-			$utils->log( $msg );
-			
-			return false;
-		}
-		
-		$group   = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-		$int_cat = array();
-		
-		// Save the interest category information we (may) need
-		foreach ( $group->categories as $cat ) {
-			
-			$int_cat[ $cat->id ]            = new \stdClass();
-			$int_cat[ $cat->id ]->id        = $cat->id;
-			$int_cat[ $cat->id ]->type      = $cat->type;
-			$int_cat[ $cat->id ]->name      = $cat->title;
-			$int_cat[ $cat->id ]->interests = $mc_api->get_cache( "{$list_id}-{$cat->id}", 'interests' );
-		}
-		
-		if ( ! empty( $int_cat ) ) {
-			
-			$mc_api->set_cache( $list_id, 'interest_groups', $int_cat );
-			$mcapi_list_settings = $mc_api->get_list_conf_by_id();
-			
-			if ( empty( $mcapi_list_settings ) ) {
-				$mcapi_list_settings = $mc_api->create_default_list_conf( $list_id );
-			}
-			
-			if ( empty( $mcapi_list_settings[ $list_id ] ) ) {
-				$mcapi_list_settings += $mc_api->create_default_list_conf( $list_id );
-			}
-			
-			$mcapi_list_settings[ $list_id ]->interest_categories = $int_cat;
-			
-			$utils->log( "Saving all settings for all lists. " );
-			$mc_api->save_list_conf( $mcapi_list_settings );
-		}
-		
-		return $int_cat;
-	}
-	
-	/**
-	 * Read all interests for an interest category from the MailChimp server
-	 *
-	 * @since 2.1
-	 *
-	 * @param   string $list_id ID of the Distribution List on MailChimp server
-	 * @param   string $cat_id  ID of the Interest Category on MailChimp server
-	 *
-	 * @return  array|bool      Array of interest names & IDs
-	 */
-	public function get_interests_for_category( $list_id, $cat_id ) {
-		
-		$mc    = MailChimp_API::get_instance();
-		$utils = Utilities::get_instance();
-		
-		if ( null === ( $interests = Cache::get( "{$list_id}-{$cat_id}", 'e20r_mc_api' ) ) ) {
-			
-			$limit = $mc->get_option( 'mc_api_fetch_list_limit' );
-			$max   = ! empty( $limit ) ? $limit : apply_filters( 'e20r_mailchimp_list_fetch_limit', 15 );
-			
-			$url  = $mc->get_api_url( "/lists/{$list_id}/interest-categories/{$cat_id}/interests/?count={$max}" );
-			$args = $mc->build_request( 'GET', null );
-			
-			$utils->log( "Fetching interests for category {$cat_id} in list {$list_id} from the MailChimp servers" );
-			
-			$resp = wp_remote_request( $url, $args );
-			$code = wp_remote_retrieve_response_code( $resp );
-			
-			if ( 200 > $code || 300 <= $code ) {
-				$utils->add_message( wp_remote_retrieve_response_message( $resp ), 'error', 'backend' );
-				
-				$utils->log( wp_remote_retrieve_response_message( $resp ) );
-				
-				return false;
-			}
-			
-			$i_list = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
-			
-			$interests = array();
-			
-			foreach ( $i_list->interests as $interest ) {
-				$interests[ $interest->id ] = $interest->name;
-			}
-			
-			if ( ! empty( $interests ) ) {
-				$utils->log( "Found " . count( $interests ) . " interest(s) for {$cat_id}" );
-				// HACK: Using list_id:cat_id as the identifier for interests within an interest category
-				Cache::set( "{$list_id}-{$cat_id}", $interests, MINUTE_IN_SECONDS, 'e20r_mc_api' );
-			}
-		}
-		
-		return $interests;
-	}
-	
-	/**
 	 * Updates server side interest categories for a mailing list (id)
 	 *
 	 * @since 2.1
@@ -888,13 +950,13 @@ class Interest_Groups {
 		// Try to populate the interest groups.
 		if ( empty( $mcapi_list_settings[ $list_id ]->interest_categories ) ) {
 			$utils->log( "Loading Interest Categories from cache" );
-			$mcapi_list_settings[ $list_id ]->interest_categories = $mc_api->get_cache( $list_id, 'interest_groups' );
+			$mcapi_list_settings[ $list_id ]->interest_categories = $mc_api->get_cache( $list_id, 'interest_groups', false );
 		}
 		
 		// Try to populate the merge fields
 		if ( empty( $mcapi_list_settings[ $list_id ]->merge_fields ) ) {
 			$utils->log( "Loading Merge Fields from cache" );
-			$mcapi_list_settings[ $list_id ]->merge_fields = $mc_api->get_cache( $list_id, 'merge_fields' );
+			$mcapi_list_settings[ $list_id ]->merge_fields = $mc_api->get_cache( $list_id, 'merge_fields', false );
 		}
 		
 		/**
@@ -915,7 +977,7 @@ class Interest_Groups {
 			$utils->log( "Checking for v2 - v3 Interest Group conversion..." );
 			
 			// Reload & force remote sync
-			$mcapi_list_settings[ $list_id ]->interest_categories = $mc_api->get_cache( $list_id, 'interest_groups', true );
+			$mcapi_list_settings[ $list_id ]->interest_categories = $mc_api->get_cache( $list_id, 'interest_groups', false );
 			
 			$utils->log( "Found " . count( $mcapi_list_settings[ $list_id ]->interest_categories ) . " cached interest categories" );
 			foreach ( $user_merge_fields as $field_name => $value ) {
