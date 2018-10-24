@@ -1,1 +1,3 @@
-BUG FIX: Fatal error in Utilities module
+BUG FIX: WPCS update for MC_Settings() class
+BUG FIX: Updated Utilities module (didn't correctly identify the PMPro Subscription Delays add-on)
+BUG FIX: Didn't detect Debug version of Plus module when loaded

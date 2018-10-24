@@ -4,7 +4,7 @@ Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing
 Requires at least: 4.5
 Requires PHP: 5.6
 Tested up to: 5.0
-Stable tag: 2.9.1
+Stable tag: 2.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,12 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 2.9.2 ==
+
+* BUG FIX: WPCS update for MC_Settings() class
+* BUG FIX: Updated Utilities module (didn't correctly identify the PMPro Subscription Delays add-on)
+* BUG FIX: Didn't detect Debug version of Plus module when loaded
 
 == 2.9.1 ==
 
