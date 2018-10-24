@@ -29,6 +29,27 @@ class Merge_Fields {
 	private static $instance = null;
 	
 	/**
+	 * Merge_Fields constructor.
+	 */
+	private function __construct() {
+	}
+	
+	/**
+	 * Return or instantiate the Merge_Fields class
+	 *
+	 * @return Merge_Fields|null
+	 */
+	public static function get_instance() {
+		
+		if ( is_null( self::$instance ) ) {
+			
+			self::$instance = new self;
+		}
+		
+		return self::$instance;
+	}
+	
+	/**
 	 * Fetch Merge Fields for specified list ID
 	 *
 	 * @param string $list_id
@@ -117,9 +138,123 @@ class Merge_Fields {
 	}
 	
 	/**
+	 * Check if a merge field is in an array of merge fields
+	 *
+	 * @param   string    $field_tag
+	 * @param   string    $field_tag
+	 * @param   \stdClass $comparison_field
+	 *
+	 * @return  boolean|\stdClass
+	 */
+	public function in_merge_fields( $field_tag, $field_type, $comparison_field ) {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( empty( $comparison_field ) ) {
+			return false;
+		}
+		
+		$utils->log( "Processing: {$field_tag}/{$field_type}" );
+		
+		if ( ( isset( $comparison_field->tag ) && $comparison_field->tag === $field_tag && $field_type == $comparison_field->type ) ) {
+			
+			$utils->log( "Found {$field_tag}/{$field_type} in supplied field definition" );
+			
+			return $comparison_field;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Generate a default merge field definition to use with the MC API
+	 *
+	 * @param string $field_name Then name of the merge field
+	 *
+	 * @return array    array( 'name' => $field_name, 'type' => $default_type, 'visible' => $default_visibility )
+	 */
+	private function merge_field_def( $requested_tag, $list_id ) {
+		
+		$mc_api           = MailChimp_API::get_instance();
+		$utils            = Utilities::get_instance();
+		$list_settings    = $mc_api->get_list_conf_by_id( $list_id );
+		$available_fields = apply_filters( 'e20r-mailchimp-merge-tag-settings', $list_settings->merge_fields, null );
+		$field_def        = null;
+		
+		/**
+		 * @filter e20r-mailchimp-default-merge-tag-visibility - Configure the default visibility for a new merge field
+		 *
+		 * @param bool   $visibility Default: false (not shown in MailChimp forms)
+		 * @param string $list_id
+		 */
+		$default_visibility = apply_filters( 'e20r-mailchimp-default-merge-tag-visibility', false, $list_id );
+		
+		/**
+		 * @filter e20r-mailchimp-default-merge-tag-field-type - Configure the default visibility for a new merge field
+		 *
+		 * @param string $field_type Default: 'text'
+		 * @param string $list_id
+		 */
+		$default_type = apply_filters( 'e20r-mailchimp-default-merge-tag-field-type', 'text', $list_id );
+		
+		// Look for an existing definition for the requested field tag/merge field tag
+		foreach ( $available_fields as $key => $field ) {
+			
+			if ( $field['tag'] === $requested_tag ) {
+				$utils->log( "Found {$requested_tag}: " . print_r( $field, true ) );
+				$field_def = $field;
+				break;
+			}
+		}
+		
+		$new_field = array();
+		
+		// Process the field definition
+		if ( ! empty( $field_def ) ) {
+			
+			foreach ( $field_def as $key => $setting ) {
+				
+				switch ( $key ) {
+					case 'type':
+						
+						if ( empty( $setting ) ) {
+							$new_field[ $key ] = $default_type;
+						} else {
+							$new_field[ $key ] = $setting;
+						}
+						
+						break;
+					case 'public':
+						
+						if ( empty( $setting ) ) {
+							$new_field[ $key ] = $default_visibility;
+						} else {
+							$new_field[ $key ] = $setting;
+						}
+						
+						break;
+					default:
+						$new_field[ $key ] = $setting;
+				}
+			}
+		} else {
+			$utils->log( "No definition found so using default values" );
+			$new_field = array(
+				'tag'    => $requested_tag,
+				'name'   => $requested_tag,
+				'type'   => $default_type,
+				'public' => $default_visibility,
+			);
+		}
+		
+		return $new_field;
+	}
+	
+	/**
 	 * Add a merge field to a list (very basic)
 	 *
-	 * @param string $merge_field - The Merge Field Name
+	 * @param string $name        - The Merge Field Name
+	 * @param string $tag         - The Merge Field Tag
 	 * @param string $type        - The Merge Field Type (text, number, date, birthday, address, zip code, phone,
 	 *                            website)
 	 * @param mixed  $public      - Whether the field should show on the subscribers MailChimp profile. Defaults to
@@ -215,186 +350,6 @@ class Merge_Fields {
 	}
 	
 	/**
-	 * Generate a default merge field definition to use with the MC API
-	 *
-	 * @param string $field_name Then name of the merge field
-	 *
-	 * @return array    array( 'name' => $field_name, 'type' => $default_type, 'visible' => $default_visibility )
-	 */
-	private function merge_field_def( $requested_tag, $list_id ) {
-		
-		$mc_api           = MailChimp_API::get_instance();
-		$utils            = Utilities::get_instance();
-		$list_settings    = $mc_api->get_list_conf_by_id( $list_id );
-		$available_fields = apply_filters( 'e20r-mailchimp-merge-tag-settings', $list_settings->merge_fields, null );
-		$field_def        = null;
-		
-		/**
-		 * @filter e20r-mailchimp-default-merge-tag-visibility - Configure the default visibility for a new merge field
-		 *
-		 * @param bool   $visibility Default: false (not shown in MailChimp forms)
-		 * @param string $list_id
-		 */
-		$default_visibility = apply_filters( 'e20r-mailchimp-default-merge-tag-visibility', false, $list_id );
-		
-		/**
-		 * @filter e20r-mailchimp-default-merge-tag-field-type - Configure the default visibility for a new merge field
-		 *
-		 * @param string $field_type Default: 'text'
-		 * @param string $list_id
-		 */
-		$default_type = apply_filters( 'e20r-mailchimp-default-merge-tag-field-type', 'text', $list_id );
-		
-		// Look for an existing definition for the requested field tag/merge field tag
-		foreach ( $available_fields as $key => $field ) {
-			
-			if ( $field['tag'] === $requested_tag ) {
-				$utils->log( "Found {$requested_tag}: " . print_r( $field, true ) );
-				$field_def = $field;
-				break;
-			}
-		}
-		
-		$new_field = array();
-		
-		// Process the field definition
-		if ( ! empty( $field_def ) ) {
-			
-			foreach ( $field_def as $key => $setting ) {
-				
-				switch ( $key ) {
-					case 'type':
-						
-						if ( empty( $setting ) ) {
-							$new_field[ $key ] = $default_type;
-						} else {
-							$new_field[ $key ] = $setting;
-						}
-						
-						break;
-					case 'public':
-						
-						if ( empty( $setting ) ) {
-							$new_field[ $key ] = $default_visibility;
-						} else {
-							$new_field[ $key ] = $setting;
-						}
-						
-						break;
-					default:
-						$new_field[ $key ] = $setting;
-				}
-			}
-		} else {
-			$utils->log( "No definition found so using default values" );
-			$new_field = array(
-				'tag'    => $requested_tag,
-				'name'   => $requested_tag,
-				'type'   => $default_type,
-				'public' => $default_visibility,
-			);
-		}
-		
-		return $new_field;
-	}
-	
-	/**
-	 * Check if a merge field is in an array of merge fields
-	 *
-	 * @param   string    $field_tag
-	 * @param   string    $field_tag
-	 * @param   \stdClass $comparison_field
-	 *
-	 * @return  boolean|\stdClass
-	 */
-	public function in_merge_fields( $field_tag, $field_type, $comparison_field ) {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( empty( $comparison_field ) ) {
-			return false;
-		}
-		
-		$utils->log( "Processing: {$field_tag}/{$field_type}" );
-		
-		if ( ( isset( $comparison_field->tag ) && $comparison_field->tag === $field_tag && $field_type == $comparison_field->type ) ) {
-			
-			$utils->log( "Found {$field_tag}/{$field_type} in supplied field definition" );
-			
-			return $comparison_field;
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Configure merge fields for Mailchimp (uses filter)
-	 *
-	 * @param       string $list_id     - The MC list ID
-	 * @param       array  $list_fields - Array of merge fields we don't think are defined on the MailChimp server
-	 *
-	 * @type   array       $list_fields (
-	 * @type   string      $tag         tag
-	 * @type   string      $tag         name
-	 * @type   string|null $type        field type
-	 * @type   bool        $public      Whether the field is to be hidden (false)
-	 *      )
-	 *
-	 * @return      array                  - Merge field list
-	 *
-	 * @since 2.1
-	 */
-	public function sync_config_to_remote( $list_id, $list_fields = array() ) {
-		
-		$utils  = Utilities::get_instance();
-		$mc_api = MailChimp_API::get_instance();
-		
-		$list_settings  = $mc_api->get_list_conf_by_id( $list_id );
-		$upstream_field = array();
-		
-		// Nothing to be done.
-		if ( empty( $list_fields ) && empty( $list_settings->merge_fields ) ) {
-			$utils->log( "No fields to process!" );
-			
-			return array();
-		}
-		
-		// Process all user defined and default merge fields to see if we need to update the upstream server.
-		foreach ( $list_fields as $key => $field ) {
-			
-			$utils->log( "We need to add {$field['tag']}?" );
-			
-			// Get the default merge field definition
-			$new_def = $this->merge_field_def( $field['tag'], $list_id );
-			
-			$utils->log( "Adding merge field to upstream server: {$new_def['tag']} of type {$new_def['type']}" );
-			
-			$upstream_field[ $new_def['tag'] ] = $this->add( $list_id, $new_def['tag'], $new_def['name'], $new_def['type'], $new_def['public'] );
-			
-			if ( ! empty( $upstream_field ) ) {
-				// Add it locally as well
-				$list_settings->merge_fields = array_combine(
-					array_merge(
-						array_keys( $list_settings->merge_fields ),
-						array_keys( $upstream_field )
-					),
-					array_merge(
-						array_values( $list_settings->merge_fields ),
-						array_values( $upstream_field )
-					)
-				);
-			}
-		}
-		
-		$mc_api->save_list_conf( $list_settings, null, $list_id );
-		$mc_api->clear_cache( $list_id, 'merge_fields' );
-		
-		$utils->log( "Returning " . count( $list_settings->merge_fields ) . " merge fields from remote update operation" );
-		
-		return $list_settings->merge_fields;
-	}
-	
-	/**
 	 * Get previously defined merge fields for a list (via MC API)
 	 *
 	 * @param string $list_id - The MC list ID
@@ -415,6 +370,7 @@ class Merge_Fields {
 		// Prepare to access the API
 		$url          = $mc_api->get_api_url( "/lists/{$list_id}/merge-fields/?count={$max}" );
 		$default_args = $mc_api->build_request( 'GET', null );
+		
 		
 		// Connect to mailchimp.com
 		$response = wp_remote_request( $url, $default_args );
@@ -442,7 +398,7 @@ class Merge_Fields {
 			$list_settings->merge_fields = array();
 		}
 		
-		$utils->log( "Recieved " . count( $fields ) . " merge fields from upstream server." );
+		$utils->log( "Received " . count( $fields ) . " merge fields from upstream server." );
 		
 		foreach ( $fields as $field ) {
 			
@@ -461,6 +417,7 @@ class Merge_Fields {
 		
 		// Update the MailChimp API settings for list (no autoload)
 		$mc_api->save_list_conf( $list_settings, null, $list_id );
+		$mc_api->set_cache( $list_id, 'merge_fields', $list_settings->merge_fields );
 		
 		return $list_settings->merge_fields;
 		
@@ -657,6 +614,73 @@ class Merge_Fields {
 	}
 	
 	/**
+	 * Configure merge fields for Mailchimp (uses filter)
+	 *
+	 * @param       string $list_id     - The MC list ID
+	 * @param       array  $list_fields - Array of merge fields we don't think are defined on the MailChimp server
+	 *
+	 * @type   array       $list_fields (
+	 * @type   string      $tag         tag
+	 * @type   string      $tag         name
+	 * @type   string|null $type        field type
+	 * @type   bool        $public      Whether the field is to be hidden (false)
+	 *      )
+	 *
+	 * @return      array                  - Merge field list
+	 *
+	 * @since 2.1
+	 */
+	public function sync_config_to_remote( $list_id, $list_fields = array() ) {
+		
+		$utils  = Utilities::get_instance();
+		$mc_api = MailChimp_API::get_instance();
+		
+		$list_settings  = $mc_api->get_list_conf_by_id( $list_id );
+		$upstream_field = array();
+		
+		// Nothing to be done.
+		if ( empty( $list_fields ) && empty( $list_settings->merge_fields ) ) {
+			$utils->log( "No fields to process!" );
+			
+			return array();
+		}
+		
+		// Process all user defined and default merge fields to see if we need to update the upstream server.
+		foreach ( $list_fields as $key => $field ) {
+			
+			$utils->log( "We need to add {$field['tag']}?" );
+			
+			// Get the default merge field definition
+			$new_def = $this->merge_field_def( $field['tag'], $list_id );
+			
+			$utils->log( "Adding merge field to upstream server: {$new_def['tag']} of type {$new_def['type']}" );
+			
+			$upstream_field[ $new_def['tag'] ] = $this->add( $list_id, $new_def['tag'], $new_def['name'], $new_def['type'], $new_def['public'] );
+			
+			if ( ! empty( $upstream_field ) ) {
+				// Add it locally as well
+				$list_settings->merge_fields = array_combine(
+					array_merge(
+						array_keys( $list_settings->merge_fields ),
+						array_keys( $upstream_field )
+					),
+					array_merge(
+						array_values( $list_settings->merge_fields ),
+						array_values( $upstream_field )
+					)
+				);
+			}
+		}
+		
+		$mc_api->save_list_conf( $list_settings, null, $list_id );
+		$mc_api->clear_cache( $list_id, 'merge_fields' );
+		
+		$utils->log( "Returning " . count( $list_settings->merge_fields ) . " merge fields from remote update operation" );
+		
+		return $list_settings->merge_fields;
+	}
+	
+	/**
 	 * Load data if the user has specified a
 	 *
 	 * @param array       $fields
@@ -668,7 +692,7 @@ class Merge_Fields {
 	public function admin_defined_listsubscribe( $fields, $user, $list_id = null ) {
 		
 		$utils = Utilities::get_instance();
-  
+		
 		global $current_user;
 		
 		if ( empty( $user ) ) {
@@ -683,57 +707,58 @@ class Merge_Fields {
 		}
 		
 		
-		if ( !empty( $user) && ! isset( $user->membership_levels ) ) {
+		if ( ! empty( $user ) && ! isset( $user->membership_levels ) ) {
 			$user->membership_levels = pmpro_getMembershipLevelsForUser( $user->ID, true );
 		}
 		
-		if ( !empty( $user) && ! isset( $user->membership_level ) ) {
+		if ( ! empty( $user ) && ! isset( $user->membership_level ) ) {
 			$user->membership_level = pmpro_getMembershipLevelForUser( $user->ID, true );
 		}
 		
-        $prefix      = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
+		$prefix   = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
 		$level_id = isset( $user->membership_level->id ) ? $user->membership_level->id : null;
 		
 		// Try to locate the level ID for the user (even if they're cancelling)
-		if ( !empty($user) && empty( $level_id ) ) {
+		if ( ! empty( $user ) && empty( $level_id ) ) {
 			
 			$utils->log( "No membership level found for {$user->ID}" );
 			// TODO: Grab the most recent membership level (or last order) for the user (by filter)
-            
-            if ( empty( $level_id ) ) {
-                //$levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses
-                $previous_level_ids = apply_filters( 'e20r-mailchimp-user-old-membership-levels', array(), $user->ID, $level_id, array( 'cancelled' ) );
-                if ( !empty( $previous_level_ids ) ) {
-                    
-                    // Grab the first level ID from the previous level ID list (most recent)
-                    $level_id = array_shift( $previous_level_ids );
-                } else {
-                    $utils->log("Error: Unable to locate the user's previous 'membership' level/product order");
-                    // Giving up!
-                    return $fields;
-                }
-            }
+			
+			if ( empty( $level_id ) ) {
+				//$levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses
+				$previous_level_ids = apply_filters( 'e20r-mailchimp-user-old-membership-levels', array(), $user->ID, $level_id, array( 'cancelled' ) );
+				if ( ! empty( $previous_level_ids ) ) {
+					
+					// Grab the first level ID from the previous level ID list (most recent)
+					$level_id = array_shift( $previous_level_ids );
+				} else {
+					$utils->log( "Error: Unable to locate the user's previous 'membership' level/product order" );
+					
+					// Giving up!
+					return $fields;
+				}
+			}
 		}
-        
-        $mc_api            = MailChimp_API::get_instance();
+		
+		$mc_api         = MailChimp_API::get_instance();
 		$settings_class = MC_Settings::get_instance();
 		
-		if ( !empty( $user ) && isset( $user->membership_level->id ) ) {
+		if ( ! empty( $user ) && isset( $user->membership_level->id ) ) {
 			$level_settings = $mc_api->get_option( "level_{$prefix}_{$level_id}_merge_fields" );
 		}
 		
 		// Tro to grab the list ID from settings
-		if ( empty( $list_id ) && !empty( $level_id  )) {
+		if ( empty( $list_id ) && ! empty( $level_id ) ) {
 			
-		    $list_ids = $mc_api->get_option( "level_{$prefix}_{$level_id}_lists" );
+			$list_ids = $mc_api->get_option( "level_{$prefix}_{$level_id}_lists" );
 			
 			if ( empty( $list_ids ) ) {
-			    $utils->log("No level specific list found for {$level_id}");
-			    $list_ids = $mc_api->get_option("members_list" );
-            }
-            
-            // Grab the first entry in the array of list IDs
-			$list_id  = array_shift($list_ids );
+				$utils->log( "No level specific list found for {$level_id}" );
+				$list_ids = $mc_api->get_option( "members_list" );
+			}
+			
+			// Grab the first entry in the array of list IDs
+			$list_id = array_shift( $list_ids );
 		}
 		
 		
@@ -779,21 +804,6 @@ class Merge_Fields {
 		$utils->log( "Setting merge tag values for {$user->ID}: " . print_r( $fields, true ) );
 		
 		return $fields;
-	}
-	
-	/**
-	 * Return or instantiate the Merge_Fields class
-	 *
-	 * @return Merge_Fields|null
-	 */
-	public static function get_instance() {
-		
-		if ( is_null( self::$instance ) ) {
-			
-			self::$instance = new self;
-		}
-		
-		return self::$instance;
 	}
 	
 	/**
@@ -859,12 +869,6 @@ class Merge_Fields {
 		$field_def['name'] = preg_replace( '/\s+/', '', $field_def['name'] );
 		
 		return $field_def;
-	}
-	
-	/**
-	 * Merge_Fields constructor.
-	 */
-	private function __construct() {
 	}
 	
 }
