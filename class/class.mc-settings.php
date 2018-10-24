@@ -32,23 +32,6 @@ class MC_Settings {
 	private static $instance = null;
 	
 	/**
-	 * Load actions and filters for the MailChimp plugin settings page(s)
-	 */
-	public function load_actions() {
-		
-	    if ( is_user_logged_in() ) {
-		    add_action( 'wp_ajax_e20rmc_refresh_list_id', array( $this, 'options_refresh' ) );
-            add_action( 'wp_ajax_e20rmc_clear_cache', array( $this, 'clear_cache' ) );
-            
-		    add_action( "admin_init", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
-		    add_action( 'admin_init', array( $this, 'admin_init' ) );
-		
-		    add_action( 'admin_menu', array( $this, 'admin_add_page' ) );
-		    add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) );
-	    }
-	}
-	
-	/**
 	 * Return or instantiate the MC_Settings class
 	 *
 	 * @return MC_Settings|null
@@ -60,6 +43,23 @@ class MC_Settings {
 		}
 		
 		return self::$instance;
+	}
+	
+	/**
+	 * Load actions and filters for the MailChimp plugin settings page(s)
+	 */
+	public function load_actions() {
+		
+		if ( is_user_logged_in() ) {
+			add_action( 'wp_ajax_e20rmc_refresh_list_id', array( $this, 'options_refresh' ) );
+			add_action( 'wp_ajax_e20rmc_clear_cache', array( $this, 'clear_cache' ) );
+			
+			add_action( "admin_init", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
+			add_action( 'admin_init', array( $this, 'admin_init' ) );
+			
+			add_action( 'admin_menu', array( $this, 'admin_add_page' ) );
+			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) );
+		}
 	}
 	
 	/**
@@ -177,37 +177,37 @@ class MC_Settings {
 		
 		// Only needed/used if the WooCommerce plugin is the configured membership plugin
 		if ( 'wc' == apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null ) ) {
-		
-            $user_selection = array(
-                'option_name'        => 'wcuser',
-                'option_default'     => E20R_MAILCHIMP_BILLING_USER,
-                'option_description' => __( 'Select the user email to add to the list on completion of the checkout.', Controller::plugin_slug ),
-                'options'            => array(
-                    array(
-                        'value' => E20R_MAILCHIMP_NA,
-                        'label' => __("Not applicable", Controller::plugin_slug )
-                    ),
-                    array(
-                        'value' => E20R_MAILCHIMP_CURRENT_USER,
-                        'label' => __( "Email of currently logged in user", Controller::plugin_slug ),
-                    ),
-                    array(
-                        'value' => E20R_MAILCHIMP_BILLING_USER,
-                        'label' => __( "Email of person in billing information", Controller::plugin_slug ),
-                    ),
-                ),
-            );
-            
-            add_settings_field(
-                'e20r_mc_selected_wc_user',
-                __( "Email address to use for subscription", Controller::plugin_slug ),
-                array( $this, 'select' ),
-                'e20r_mc_settings',
-                'e20r_mc_section_general',
-                $user_selection
-            );
+			
+			$user_selection = array(
+				'option_name'        => 'wcuser',
+				'option_default'     => E20R_MAILCHIMP_BILLING_USER,
+				'option_description' => __( 'Select the user email to add to the list on completion of the checkout.', Controller::plugin_slug ),
+				'options'            => array(
+					array(
+						'value' => E20R_MAILCHIMP_NA,
+						'label' => __( "Not applicable", Controller::plugin_slug ),
+					),
+					array(
+						'value' => E20R_MAILCHIMP_CURRENT_USER,
+						'label' => __( "Email of currently logged in user", Controller::plugin_slug ),
+					),
+					array(
+						'value' => E20R_MAILCHIMP_BILLING_USER,
+						'label' => __( "Email of person in billing information", Controller::plugin_slug ),
+					),
+				),
+			);
+			
+			add_settings_field(
+				'e20r_mc_selected_wc_user',
+				__( "Email address to use for subscription", Controller::plugin_slug ),
+				array( $this, 'select' ),
+				'e20r_mc_settings',
+				'e20r_mc_section_general',
+				$user_selection
+			);
 		}
-  
+		
 		add_settings_field(
 			'e20r_mc_option_additional_lists',
 			__( 'User selectable for checkout/profile (opt-in)', Controller::plugin_slug ),
@@ -311,15 +311,17 @@ class MC_Settings {
 			);
 		}
 		
-		$is_licensed = Licensing::is_licensed( 'e20r_mc', true );
+		$is_licensed   = Licensing::is_licensed( 'e20r_mc', true );
+		$plugin_loaded = $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ||
+		                 $utils->plugin_is_active( 'e20r-mailchimp-plus-debug/class.e20r-mailchimp-plus.php' );
 		
-		if ( true === $is_licensed && true ===  $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ) {
+		if ( true === $is_licensed && true === $plugin_loaded ) {
 			
-			$utils->log("Loading licensed settings");
+			$utils->log( "Loading licensed settings" );
 			
-		    do_action( 'e20r-mailchimp-licensed-register-settings', 'e20r_mc_settings', 'e20r_mc_licensed' );
-		    
-		} else if ( false === $is_licensed || false === $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ) {
+			do_action( 'e20r-mailchimp-licensed-register-settings', 'e20r_mc_settings', 'e20r_mc_licensed' );
+			
+		} else if ( false === $is_licensed || false === $plugin_loaded ) {
 			
 			$utils->log( "Won't load GUI settings for interest groups and merge fields" );
 			// TODO: Create notice about added value of buying license (added features and support).
@@ -394,25 +396,32 @@ class MC_Settings {
 			$list_id = array_pop( $lists );
 		}
 		
-		$is_licensed = Licensing::is_licensed( 'e20r_mc', true );
+		$is_licensed   = Licensing::is_licensed( 'e20r_mc', true );
+		$plugin_loaded = $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ||
+		                 $utils->plugin_is_active( 'e20r-mailchimp-plus-debug/class.e20r-mailchimp-plus.php' );
 		
 		$utils->log( "Loading Settings page HTML" ); ?>
         <div class="wrap">
-            <?php
-		
-		if ( false === $is_licensed || false === $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ) { ?>
-            <div class="e20r-mailchimp-recommendation">
-                <p><?php _e( "Get free upgrades, simplify your setup and ensure by purchasing the 'Plus' license from our website"); ?></p>
-            </div>
-            <?php
-		} ?>
+			<?php
+			
+			if ( false === $is_licensed || false === $plugin_loaded ) { ?>
+                <div class="e20r-mailchimp-recommendation">
+                    <p><?php _e( "Get free upgrades, simplify your setup and ensure by purchasing the 'Plus' license from our website" ); ?></p>
+                </div>
+				<?php
+			} ?>
             <div id="icon-options-general" class="icon32"><br></div>
             <h2><?php _e( 'MailChimp Integration Options and Settings', Controller::plugin_slug ); ?></h2>
 			
 			<?php $utils->display_messages( 'backend' ); ?>
 
             <form action="options.php" method="post">
-                <h3><span class="e20r-mailchimp-settings"><?php _e( 'Automatically add users to your MailChimp.com list(s) when they sign up/register to access your site.', Controller::plugin_slug ); ?><span class="e20r-mailchimp-buttom"><input type="button" id="e20r-mc-reset-cache" value="<?php _e( 'Clear local Cache', Controller::plugin_slug ); ?>" class="button button-primary e20r-reset-button"></span></h3>
+                <h3>
+                    <span class="e20r-mailchimp-settings"><?php _e( 'Automatically add users to your MailChimp.com list(s) when they sign up/register to access your site.', Controller::plugin_slug ); ?>
+                        <span class="e20r-mailchimp-buttom"><input type="button" id="e20r-mc-reset-cache"
+                                                                   value="<?php _e( 'Clear local Cache', Controller::plugin_slug ); ?>"
+                                                                   class="button button-primary e20r-reset-button"></span>
+                </h3>
                 <p><?php
 					printf( __( 'If you have a %s membership plugin installed, you can subscribe your members to a mailchimp MailChimp list and configure interest groups and merge fields based on the membership level ', Controller::plugin_slug ),
 						sprintf(
@@ -424,7 +433,7 @@ class MC_Settings {
 					printf( '<br/><br/><a href="http://eepurl.com/c1glUn" target="_blank">%s</a>', __( 'Get your Free MailChimp account.', Controller::plugin_slug ) );
 					?>
                 </p>
-				<?php if ( apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) &&  1 !== $update_status ) { ?>
+				<?php if ( apply_filters( 'e20r-mailchimp-membership-plugin-present', false ) && 1 !== $update_status ) { ?>
                     <hr/>
                     <div id="e20r_mc_update_members" class="postbox">
                         <div class="inside">
@@ -445,13 +454,13 @@ class MC_Settings {
 								?><br/><br/>
                             </p>
 							<?php wp_nonce_field( 'e20rmc_update_members', 'e20rmc_update_nonce' ); ?>
-							<?php if ( true === $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) && true === $is_licensed ) {
-							    $utils->log("Loading licensed settings form");
-							    do_action('e20r-mailchimp-licensed-add-to-settings-form', $list_id, $update_status );
-							    
-							} else if ( false === $is_licensed || false === $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ) {
-							    
-							    $utils->log("Plus plugin is inactive _or_ this plugin isn't licensed..." ); ?>
+							<?php if ( true === $plugin_loaded && true === $is_licensed ) {
+								$utils->log( "Loading licensed settings form" );
+								do_action( 'e20r-mailchimp-licensed-add-to-settings-form', $list_id, $update_status );
+								
+							} else if ( false === $is_licensed || false === $plugin_loaded ) {
+								
+								$utils->log( "Plus plugin is inactive _or_ this plugin isn't licensed..." ); ?>
 								<?php printf( __( '%1$sPurchase or renew your %3$svalid support and update license (buy and install now)%4$s to enable the automated background update for pre-existing active members%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', '<a href="https://eighty20results.com/shop/licenses/e20r-mailchimp-membership-plugins" target="_blank">', '</a>' ); ?>
 							<?php } ?>
                         </div>
@@ -484,7 +493,7 @@ class MC_Settings {
         <p></p>
 		<?php
 	}
-
+	
 	/**
 	 * API Key setting field on options page
 	 */
@@ -548,8 +557,8 @@ class MC_Settings {
 	
 	/**
 	 * Handler for the Membership Levels section on Options page
-     *
-     * @since v1.2.1 - BUG FIX: Incorrect path name to the WP Plugins directory
+	 *
+	 * @since v1.2.1 - BUG FIX: Incorrect path name to the WP Plugins directory
 	 */
 	public function section_levels() {
 		
@@ -707,50 +716,6 @@ class MC_Settings {
 	}
 	
 	/**
-	 * Create a list of user meta fields and return them w/data to indicate if the value(s) are serialized or not
-	 *
-	 * @return array
-	 * @access public
-	 */
-	public function get_user_meta_keys() {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( null === ( $meta_fields = Cache::get( 'e20rmc_meta_fields', 'e20r_mailchimp' ) ) ) {
-			
-			$utils->log( "Invalid cache for the user meta fields" );
-			
-			global $wpdb;
-			$sql              = "SELECT DISTINCT( meta_key ) AS meta_key FROM {$wpdb->usermeta} ORDER BY meta_key";
-			$meta_field_names = $wpdb->get_col( $sql );
-			$meta_fields      = array();
-			$is_serialized    = false;
-			
-			foreach ( $meta_field_names as $field_name ) {
-				
-				$meta_value_sql = $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s", $field_name );
-				$meta_values    = $wpdb->get_col( $meta_value_sql );
-				
-				foreach ( $meta_values as $meta_value ) {
-					$is_serialized = $is_serialized || @unserialize( $meta_value );
-				}
-				
-				$new_field                = new \stdClass();
-				$new_field->is_serialized = ( $is_serialized === false ? false : true );
-				$new_field->field_name    = $field_name;
-				
-				$meta_fields[ $field_name ] = $new_field;
-			}
-			
-			if ( ! empty( $meta_fields ) ) {
-				Cache::set( 'e20rmc_meta_fields', $meta_fields, 60 * MINUTE_IN_SECONDS, 'e20r_mailchimp' );
-			}
-		}
-		
-		return $meta_fields;
-	}
-	
-	/**
 	 * Create Select (drop-down) input for options page
 	 *
 	 * @param array $settings
@@ -827,9 +792,9 @@ class MC_Settings {
 					
 					$value = array_unique( $value );
 					break;
-					
-                default:
-                    $value = apply_filters( 'e20r-mailchimp-membership-plugin-save-default-settings-handler', $value, $key, $prefix, $defaults  );
+				
+				default:
+					$value = apply_filters( 'e20r-mailchimp-membership-plugin-save-default-settings-handler', $value, $key, $prefix, $defaults );
 			}
 			
 			// Assign processed value to $new_input array.
@@ -947,6 +912,50 @@ class MC_Settings {
 	}
 	
 	/**
+	 * Create a list of user meta fields and return them w/data to indicate if the value(s) are serialized or not
+	 *
+	 * @return array
+	 * @access public
+	 */
+	public function get_user_meta_keys() {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( null === ( $meta_fields = Cache::get( 'e20rmc_meta_fields', 'e20r_mailchimp' ) ) ) {
+			
+			$utils->log( "Invalid cache for the user meta fields" );
+			
+			global $wpdb;
+			$sql              = "SELECT DISTINCT( meta_key ) AS meta_key FROM {$wpdb->usermeta} ORDER BY meta_key";
+			$meta_field_names = $wpdb->get_col( $sql );
+			$meta_fields      = array();
+			$is_serialized    = false;
+			
+			foreach ( $meta_field_names as $field_name ) {
+				
+				$meta_value_sql = $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s", $field_name );
+				$meta_values    = $wpdb->get_col( $meta_value_sql );
+				
+				foreach ( $meta_values as $meta_value ) {
+					$is_serialized = $is_serialized || @unserialize( $meta_value );
+				}
+				
+				$new_field                = new \stdClass();
+				$new_field->is_serialized = ( $is_serialized === false ? false : true );
+				$new_field->field_name    = $field_name;
+				
+				$meta_fields[ $field_name ] = $new_field;
+			}
+			
+			if ( ! empty( $meta_fields ) ) {
+				Cache::set( 'e20rmc_meta_fields', $meta_fields, 60 * MINUTE_IN_SECONDS, 'e20r_mailchimp' );
+			}
+		}
+		
+		return $meta_fields;
+	}
+	
+	/**
 	 * Return the tag names from the e20r-mailchimp-merge-tag-settings filter
 	 *
 	 * @uses e20r-mailchimp-merge-tag-settings
@@ -970,8 +979,8 @@ class MC_Settings {
 	 */
 	public function clear_cache() {
 		
-	    $utils = Utilities::get_instance();
-	    
+		$utils = Utilities::get_instance();
+		
 		wp_verify_nonce( 'e20rmc_update_nonce', 'e20rmc_update_members' );
 		
 		$mc_api = MailChimp_API::get_instance();
@@ -980,30 +989,30 @@ class MC_Settings {
 		$list_config = $mc_api->get_list_conf_by_id();
 		
 		// Clear all cached data for MailChimp.com
-		foreach( $list_config as $list_id => $list_settings ) {
-		    
-		    foreach( $list_settings->interest_categories as $interest_category_id => $ic_settings ) {
-		        
-			    // Clear cached interests
-                $mc_api->clear_cache( "{$list_id}-{$interest_category_id}", 'interests');
-			    
-                // Clear cached interest categories/groups
-                $mc_api->clear_cache( $list_id, 'interest_groups' );
-            }
+		foreach ( $list_config as $list_id => $list_settings ) {
+			
+			foreach ( $list_settings->interest_categories as $interest_category_id => $ic_settings ) {
+				
+				// Clear cached interests
+				$mc_api->clear_cache( "{$list_id}-{$interest_category_id}", 'interests' );
+				
+				// Clear cached interest categories/groups
+				$mc_api->clear_cache( $list_id, 'interest_groups' );
+			}
 			
 			// Clear cached merge field info
-            foreach( $list_settings->merge_fields as $field_name => $field_settings ) {
-                $mc_api->clear_cache( $list_id, 'merge_fields' );
-            }
-            
-            // Clear any cached list info
-            $mc_api->clear_cache( null, 'list_info' );
-        }
-        
-        wp_send_json_success();
+			foreach ( $list_settings->merge_fields as $field_name => $field_settings ) {
+				$mc_api->clear_cache( $list_id, 'merge_fields' );
+			}
+			
+			// Clear any cached list info
+			$mc_api->clear_cache( null, 'list_info' );
+		}
+		
+		wp_send_json_success();
 		wp_die();
-    }
-    
+	}
+	
 	/**
 	 * Handler for the "Server refresh" buttons on the options page
 	 */
@@ -1016,8 +1025,8 @@ class MC_Settings {
 		
 		if ( empty( $list_id ) ) {
 			
-		    $msg = __( "Unable to refresh unknown list", Controller::plugin_slug );
-			$utils->add_message(  $msg, 'error', 'backend' );
+			$msg = __( "Unable to refresh unknown list", Controller::plugin_slug );
+			$utils->add_message( $msg, 'error', 'backend' );
 			$utils->log( $msg );
 			wp_send_json_error( $msg );
 			wp_die();
@@ -1037,7 +1046,7 @@ class MC_Settings {
 		
 		if ( empty( $mc_api ) ) {
 			
-			$error_msg  = __( "Unable to load MailChimp API interface", Controller::plugin_slug );
+			$error_msg = __( "Unable to load MailChimp API interface", Controller::plugin_slug );
 			$utils->add_message( $error_msg, 'error', 'backend' );
 			$utils->log( $error_msg );
 			wp_send_json_error( $error_msg );
@@ -1056,17 +1065,17 @@ class MC_Settings {
 		$utils->log( "Creating interest group the specified membership level (ID: {$level_id} )?" );
 		$ig_class->create_categories_for_membership( $level_id );
 		
-        $utils->log("Attempting to load custom groups/tags/etc");
+		$utils->log( "Attempting to load custom groups/tags/etc" );
 		
 		// Try updating the Merge Fields & Interest Groups on the MailChimp Server.
 		if ( false === $mc_api->update_server_settings( $list_id ) ) {
-		    
-		    $msg = __("Unable to update Groups and Merge Tags on the MailChimp.com server!", Controller::plugin_slug );
-		    $utils->add_message( $msg, 'error', 'backend' );
-		    $utils->log("Error: {$msg}");
-		    
-		    wp_send_json_error( $msg );
-		    wp_die();
+			
+			$msg = __( "Unable to update Groups and Merge Tags on the MailChimp.com server!", Controller::plugin_slug );
+			$utils->add_message( $msg, 'error', 'backend' );
+			$utils->log( "Error: {$msg}" );
+			
+			wp_send_json_error( $msg );
+			wp_die();
 		}
 		
 		// Force update of upstream interest groups
