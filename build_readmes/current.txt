@@ -1,1 +1,18 @@
-BUG FIX: Wouldn't show the GDPR opt-in for this plugin on PMPro forms if WooCommerce was the preferred integration
+ENHANCEMENT: Add CSS for cache reset button, edit on mailchimp button and field headers
+ENHANCEMENT: Add 'clear local cache' button handler - MC_Settings::clear_cache()
+ENHANCEMENT: Updated Merge_Fields class for WPCS
+ENHANCEMENT: Add support for locally caching all list info from MailChimp.com
+ENHANCEMENT: Shorten time to complete Mailchimp_API::connect()
+ENHANCEMENT: Use cached data if available in Mailchimp_API::load_lists()
+ENHANCEMENT: Add support for upstream list info in Cache
+ENHANCEMENT: Apply WPCS to Mailchimp_API() class
+ENHANCEMENT: WPCS in Interest_Groups() class
+ENHANCEMENT: Add support for Clear local cache button
+BUG FIX: AJAX timeout was too short for certain operations
+BUG FIX: Didn't load PMPro specific GDPR opt-in if WooCommerce was the selected plugin, but had PMPro installed as well.
+BUG FIX: Didn't always display GDPR opt-in on the PMPro checkout page
+BUG FIX: PHP Warning in Interest_Groups() class
+BUG FIX: Make sure the GDPR opt-in shows up on the PMPro checkout page and PMPro Signon Shortcode form
+BUG FIX: Save Merge Fields to local cache
+BUG FIX: Consistently use Utilities::add_message() for warnings/errors/notices
+BUG FIX: Don't force mailchimp.com lookup of mail lists, etc if a cached version exists already
