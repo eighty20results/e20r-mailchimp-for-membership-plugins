@@ -36,6 +36,11 @@ class WooCommerce extends Membership_Plugin {
 	 */
 	private static $instance = null;
 	
+	/**
+	 * The supported membership plugin
+	 *
+	 * @var string $plugin_type
+	 */
 	protected $plugin_type = 'woocommerce';
 	
 	/**
@@ -159,12 +164,16 @@ class WooCommerce extends Membership_Plugin {
 		// For standard order(s)
 		add_action( 'woocommerce_order_status_completed', array( $this, 'order_completed' ), 10, 1 );
 		
+		/**
+		 * Handled by woocommerce_order_status_completed action handler
+		
 		// For Subscription(s)
 		add_action( 'woocommerce_subscription_status_active', array( $this, "subscription_added" ), 10, 1 );
 		add_action( 'woocommerce_subscription_status_on-hold_to_active', array(
 			$this,
 			"subscription_added",
 		), 10, 1 );
+		 */
 		
 		// For standard order(s)
 		add_action( "woocommerce_order_status_refunded", array( $this, 'order_cancelled' ), 10, 1 );
@@ -513,7 +522,6 @@ class WooCommerce extends Membership_Plugin {
 			$levels = $woo_levels;
 		}
 		
-		
 		$utils->log( "Returning " . count( $levels ) . " 'levels' as WooCommerce product groups" );
 		
 		return $levels;
@@ -529,6 +537,14 @@ class WooCommerce extends Membership_Plugin {
 		$utils = Utilities::get_instance();
 		$mh    = Member_Handler::get_instance();
 		
+		$order = wc_get_order( $order_id );
+		if ( function_exists( 'wcs_order_contains_renewal' ) && wcs_order_contains_renewal( $order ) ) {
+			
+			$utils->log("Renewal payment for subscription. Not going to process it!");
+			return;
+		}
+		
+		
 		list( $user_id, $category_ids ) = $this->get_category_ids( $order_id );
 		
 		foreach ( $category_ids as $category_id ) {
@@ -536,16 +552,46 @@ class WooCommerce extends Membership_Plugin {
 			$utils->log( "Adding {$user_id} to mailchimp list for {$category_id}" );
 			$mh->on_add_to_new_level( $category_id, $user_id );
 		}
-		
-		unset( $order );
 	}
 	
+	/**
+	 * Process the (new) subscription
+	 *
+	 * @param \WC_Subscription $subscription
+	 */
 	public function subscription_added( $subscription ) {
-	
+		
+		/*
+		$utils = Utilities::get_instance();
+		
+		$utils->log("Processing new subscription for subscription ID: " . $subscription->get_id() );
+		
+		// @var \WC_Order $subscription_order
+		$subscription_order = $subscription->get_last_order();
+		
+		$utils->log("Processing order for subscription ID: " . $subscription_order->get_id() );
+		
+		$this->order_completed( $subscription_order->get_id() );
+		
+		*/
 	}
 	
+	/**
+	 * User cancelled subscription payments
+	 *
+	 * @param \WC_Subscription $subscription
+	 */
 	public function subscription_cancelled( $subscription ) {
-	
+		
+		/*
+		$utils = Utilities::get_instance();
+		$utils->log("Processing subscription (it's being cancelled!");
+		
+		$subscription_order = $subscription->get_last_order();
+		
+		$this->order_cancelled( $subscription_order->get_id() );
+		$this->from_subscription = true;
+		*/
 	}
 	
 	/**
@@ -565,8 +611,6 @@ class WooCommerce extends Membership_Plugin {
 			$utils->log( "Deactivating 'membership' list for {$user_id}/{$category_id} " );
 			$mh_class->cancelled_membership( 0, $user_id, $category_id );
 		}
-		
-		unset( $order );
 	}
 	
 	/**
