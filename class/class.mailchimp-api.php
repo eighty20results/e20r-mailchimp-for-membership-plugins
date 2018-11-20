@@ -389,7 +389,7 @@ class MailChimp_API {
 				$defaults = $this->get_default_options();
 				$utils->log( "Defaults contain " . count( $defaults ) . " options. Processing {$name}" );
 				
-				$this->options[ $name ] = $defaults[ $name ];
+				$this->options[ $name ] = isset( $defaults[ $name ] ) ? $defaults[ $name ] : null;
 			}
 			
 			return isset( $this->options[ $name ] ) ? $this->options[ $name ] : null;
@@ -496,7 +496,7 @@ class MailChimp_API {
 			
 			return false;
 		} else {
-			$utils->log( "Response code was: {$code} and payload: " . print_r( $resp['body'], true ) );
+			$utils->log( "Response code was: {$code} and we received a payload? " . ( !empty( $resp['body'] ) ? 'Yes' : 'No' ) );
 		}
 		
 		return true;
@@ -620,13 +620,18 @@ class MailChimp_API {
 				
 			} else { */
 			
-			$utils->log( "Error submitting subscription request to MailChimp.com: " . print_r( $utils->decode_response( $resp['body'] ), true ) );
-			$utils->add_message( wp_remote_retrieve_response_message( $resp ), 'error', 'backend' );
+			$utils->log( "Error submitting subscription request to MailChimp.com!" );
+			$GLOBALS['e20r_mc_error_msg'] = array( 'title' => $resp['body']->title, 'msg' => $resp['body']->detail );
+			
+			if ( ! defined ( 'DOING_AJAX' ) || ( defined('DOING_AJAX' ) && false === DOING_AJAX ) ) {
+				$utils->add_message( wp_remote_retrieve_response_message( $resp ), 'error', 'backend' );
+			}
 			
 			return false;
 			/* } */
 		}
 		
+		$GLOBALS['e20r_mc_error_msg'] = null;
 		return true;
 	}
 	
