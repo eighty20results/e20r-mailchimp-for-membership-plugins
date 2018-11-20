@@ -516,4 +516,6 @@ if ( file_exists( plugin_dir_path( __FILE__ ) . "plugin-updates/plugin-update-ch
 	);
 }
 
+$GLOBALS[ 'e20r_mc_error_msg' ] = null;
+
 add_action( 'plugins_loaded', array( Controller::get_instance(), 'plugins_loaded' ) );
