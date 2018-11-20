@@ -252,7 +252,7 @@ class Interest_Groups {
 			$level_lists = $mc_api->get_option( 'members_list' );
 		}
 		
-		$utils->log( "Level Lists; " . print_r( $level_lists, true ) );
+		$utils->log( "Level Lists; " . implode( ', ', $level_lists ) );
 		
 		$list_id     = array_pop( $level_lists );
 		$list_config = $mc_api->get_list_conf_by_id( $list_id );
@@ -593,7 +593,7 @@ class Interest_Groups {
 			if ( 'Bad Request' === $msg && 'Invalid Resource' === $error->title && false !== stripos( $error->detail, 'already exists' ) ) {
 				
 				$utils->log( "MCAPI: Interest '{$interest}' is already upstream for category {$category_id} in list {$list_id}" );
-				$interests = $mc->get_cache( "{$list_id}-{$category_id}",'interests', false );
+				$interests = $mc->get_cache( "{$list_id}-{$category_id}", 'interests', false );
 				
 				return true;
 			}
@@ -609,6 +609,28 @@ class Interest_Groups {
 			
 			return $this->build_interest_settings( $int );
 		}
+	}
+	
+	/**
+	 * Build the settings for the interest group/interest
+	 *
+	 * @param mixed $int
+	 *
+	 * @return array
+	 */
+	private function build_interest_settings( $int ) {
+		
+		$utils = Utilities::get_instance();
+		
+		$utils->log( "Added interest {$int->name} on the MailChimp Server: {$int->id}" );
+		
+		$settings[ $int->id ]              = new \stdClass();
+		$settings[ $int->id ]->name        = $int->name;
+		$settings[ $int->id ]->list_id     = $int->list_id;
+		$settings[ $int->id ]->category_id = $int->category_id;
+		$settings[ $int->id ]->id          = $int->id;
+		
+		return $settings;
 	}
 	
 	/**
@@ -665,28 +687,6 @@ class Interest_Groups {
 	}
 	
 	/**
-	 * Build the settings for the interest group/interest
-	 *
-	 * @param mixed $int
-	 *
-	 * @return array
-	 */
-	private function build_interest_settings( $int ) {
-		
-		$utils = Utilities::get_instance();
-		
-		$utils->log( "Added interest {$int->name} on the MailChimp Server: {$int->id}" );
-		
-		$settings[ $int->id ]              = new \stdClass();
-		$settings[ $int->id ]->name        = $int->name;
-		$settings[ $int->id ]->list_id     = $int->list_id;
-		$settings[ $int->id ]->category_id = $int->category_id;
-		$settings[ $int->id ]->id          = $int->id;
-		
-		return $settings;
-	}
-	
-	/**
 	 * Configure interests for the user in MailChimp list
 	 *
 	 * @param   string     $list_id        ID of MC list
@@ -716,7 +716,7 @@ class Interest_Groups {
 		$upstream      = $mc_api->get_listinfo_for_member( $list_id, $user );
 		$old_interests = isset( $upstream->interests ) ? (array) $upstream->interests : array();
 		
-		$utils->log( "Upstream Interest Group config for {$user->ID}: " . print_r( $old_interests, true ) );
+		$utils->log( "Found upstream Interest Group config for user (ID: {$user->ID})? " . ( ! empty( $old_interests ) ? 'Yes' : 'No' ) );
 		
 		// Clear the list of interests (since we're updating).
 		foreach ( array_keys( $old_interests ) as $old_int_id ) {
@@ -742,10 +742,10 @@ class Interest_Groups {
 						
 						if ( ! empty( $interest_list ) && is_array( $interest_list ) ) {
 							
-							foreach ( $interest_list as $interest => $enabled ) {
+							foreach ( $interest_list as $interest => $enable ) {
 								
-								if ( true === (bool) $enabled && true === $cancelling ) {
-									$enabled = false;
+								if ( true === (bool) $enable && true === $cancelling ) {
+									$enable = false;
 								}
 								
 								/**
@@ -753,7 +753,7 @@ class Interest_Groups {
 								 *
 								 * @filter  'e20r-mailchimp-assign-interest-to-user' - Whether to actually assign an interest to the specified user
 								 *
-								 * @param bool     $enabled
+								 * @param bool     $enable
 								 * @param \WP_User $user
 								 * @param string   $interest - ID of interest to assign the user
 								 * @param string   $list_id  - ID of the list being processed
@@ -763,14 +763,14 @@ class Interest_Groups {
 								 *
 								 * @since   2.0 - ENHANCEMENT: Updated filter string for e20r-mailchimp-assign-interest-to-user and documented it
 								 */
-								$interests[ $interest ] = (bool) apply_filters( 'e20r-mailchimp-assign-interest-to-user', $enabled, $user, $interest, $list_id, $level_id );
+								$interests[ $interest ] = (bool) apply_filters( 'e20r-mailchimp-assign-interest-to-user', $enable, $user, $interest, $list_id, $level_id );
 							}
 						} else if ( ! is_array( $interest_list ) ) {
 							$utils->log( "Warning: Interest Group is not an array and contains: " . print_r( $interest_list, true ) );
 						}
 					}
 					
-					$utils->log( "Returning interest groups level {$level_id} and list {$list_id}: " . print_r( $interests, true ) );
+					$utils->log( "Returning interest groups level {$level_id} and list {$list_id}: " . implode( ', ', array_keys( $interests ) ) );
 				}
 			}
 			
@@ -782,7 +782,7 @@ class Interest_Groups {
 			$utils->log( "User is not an active member & needs to be configured as 'cancelled' " );
 			$cancelled_id               = $this->get_cancelled_for_list( $list_id );
 			$interests[ $cancelled_id ] = true;
-			$utils->log( "Returning interest groups for list {$list_id}: " . print_r( $interests, true ) );
+			$utils->log( "Returning interest groups for list {$list_id}: " . implode( ', ', array_keys($interests ) ) );
 		}
 		
 		/**
