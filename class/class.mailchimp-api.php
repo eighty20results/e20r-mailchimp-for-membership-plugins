@@ -621,10 +621,13 @@ class MailChimp_API {
 			} else { */
 			
 			$utils->log( "Error submitting subscription request to MailChimp.com!" );
-			$GLOBALS['e20r_mc_error_msg'] = array( 'title' => $resp['body']->title, 'msg' => $resp['body']->detail );
 			
-			if ( ! defined ( 'DOING_AJAX' ) || ( defined('DOING_AJAX' ) && false === DOING_AJAX ) ) {
-				$utils->add_message( wp_remote_retrieve_response_message( $resp ), 'error', 'backend' );
+			$errors = $utils->decode_response( $resp['body'] );
+			$GLOBALS['e20r_mc_error_msg'] = array( 'title' => $errors->title, 'msg' => $errors->detail );
+			// $utils->log("Error info: " . print_r( $errors, true ) );
+   
+			if ( defined('DOING_AJAX' ) && false === DOING_AJAX ) {
+				$utils->add_message( $errors->title, 'error', 'backend' );
 			}
 			
 			return false;
