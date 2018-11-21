@@ -8,7 +8,7 @@ Stable tag: 2.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Sync WordPress based Users, Members or customers to MailChimp list with support for Groups (Interests) and Merge Tags.
+Sync WordPress based Users, Members (Paid Memberships Pro) or customers (WooCommerce) to a MailChimp list with support for Groups (Interests) and Merge Tags.
 
 == Description ==
 
@@ -85,6 +85,20 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 2.10 ==
+
+* BUG FIX: Would trigger MailChimp update for renewal subscription payments
+* BUG FIX: PHP Notice if unexpected setting name
+* BUG FIX: Remove extra debug logging in MailChimp_API() class
+* BUG FIX: Simplify debug logging output (less print_r() of arrays)
+* BUG FIX: WooCommerce Customer import to MailChimp is in the Plus module
+* BUG FIX: PMPro Member import to MailChimp is in the Plus module
+* BUG FIX: Make WooCommmerce::get_category_ids() a public interface
+* BUG FIX: Didn't save the MailChimp error messages when subscribe operation failed
+* ENHANCEMENT: Use global to let us track MailChimp server error messages
+* ENHANCEMENT: Track reason why MailChimp subscribe() operation failed
+* ENHANCEMENT: Renamed $enabled to $enable for the interest(s) to enable
 
 == 2.9.2 ==
 
