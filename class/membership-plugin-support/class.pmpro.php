@@ -100,7 +100,7 @@ class PMPro extends Membership_Plugin {
 			add_filter( 'e20r-mailchimp-all-membership-levels', array( $this, 'all_membership_level_defs' ), 10, 2 );
 			add_filter( 'e20r-mailchimp-member-merge-field-values', array( $this, 'set_mf_values_for_member' ), 10, 4 );
 			add_filter( 'e20r-mailchimp-member-merge-field-defs', array( $this, 'set_mf_definition' ), 10, 3 );
-			add_filter( 'e20r-mailchimp-membership-list-all-members', array( $this, 'list_members_for_update'), 10, 1 );
+			
 			add_filter(
 				'e20r-mailchimp-get-user-membership-level',
 				array( $this, 'primary_membership_level' ),
@@ -517,25 +517,6 @@ class PMPro extends Membership_Plugin {
 		}
 		
 		return $levels_to_unsubscribe_from;
-	}
-	
-	/**
-	 * Load list of User IDs, membership IDs and the current status of that membership ID for the user ID (PMPro)
-	 *
-	 * @param array $member_list
-	 *
-	 * @return array
-	 */
-	public function list_members_for_update( $member_list ) {
-		
-		global $wpdb;
-		
-		if ( true === $this->load_this_membership_plugin( 'pmpro' ) ) {
-			// Grab the PMPro version of the members list from the DB on the system and sort it by user ID & status
-			$member_list = $wpdb->get_results( "SELECT DISTINCT mu.user_id, mu.membership_id, mu.status FROM {$wpdb->pmpro_memberships_users} as mu ORDER BY mu.user_id, status" );
-		}
-		
-		return $member_list;
 	}
 	
 	/**
