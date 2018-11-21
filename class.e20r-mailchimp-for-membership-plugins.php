@@ -3,7 +3,7 @@
 Plugin Name: E20R MailChimp Interest Groups for Paid Memberships Pro and WooCommerce
 Plugin URI: https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins/
 Description: Automatically add users to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and/or Mailchimp Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
-Version: 2.9.2
+Version: 2.10
 WC requires at least: 3.3
 WC tested up to: 3.5
 Requires at least: 4.9
@@ -49,7 +49,7 @@ if ( ! defined( 'E20R_MC_TESTING' ) ) {
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_VERSION' ) ) {
-	define( 'E20R_MAILCHIMP_VERSION', '2.9.2' );
+	define( 'E20R_MAILCHIMP_VERSION', '2.10' );
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_DIR' ) ) {
