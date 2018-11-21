@@ -122,10 +122,7 @@ class WooCommerce extends Membership_Plugin {
 		add_filter( 'e20r-mailchimp-all-membership-levels', array( $this, 'all_membership_level_defs' ), 10, 2 );
 		add_filter( 'e20r-mailchimp-member-merge-field-values', array( $this, 'set_mf_values_for_member' ), 10, 4 );
 		add_filter( 'e20r-mailchimp-member-merge-field-defs', array( $this, 'set_mf_definition' ), 10, 3 );
-		add_filter( 'e20r-mailchimp-membership-list-all-members', array(
-			$this,
-			'list_members_for_update',
-		), 10, 1 );
+		
 		add_filter(
 			'e20r-mailchimp-get-user-membership-level',
 			array( $this, 'primary_membership_level' ),
@@ -307,8 +304,10 @@ class WooCommerce extends Membership_Plugin {
 	 * @param int $order_id
 	 *
 	 * @return array( int, int[] )
+	 *
+	 * @since v2.xxx - ENHANCEMENT: Make WooCommerce::get_category_ids() a public interface
 	 */
-	private function get_category_ids( $order_id ) {
+	public function get_category_ids( $order_id ) {
 		
 		$order        = wc_get_order( $order_id );
 		$user_id      = $order->get_customer_id();
@@ -718,55 +717,6 @@ class WooCommerce extends Membership_Plugin {
 		$class = strtolower( get_class( $this ) );
 		
 		return apply_filters( "e20r-mailchimp-{$class}-user-defined-merge-tag-fields", $level_fields, $user, $list_id );
-	}
-	
-	/**
-	 * Load list of User IDs, membership IDs and the current status of that membership ID for the user ID (WooCommerce)
-	 *
-	 * @param array $member_list
-	 *
-	 * @return array
-	 */
-	public function list_members_for_update( $member_list ) {
-		
-		$utils = Utilities::get_instance();
-		
-		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
-			return $member_list;
-		}
-		
-		$member_list = array();
-		$order_args  = array(
-			'numberposts' => - 1,
-			'post_type'   => wc_get_order_types(),
-			'post_status' => 'wc-completed',
-		);
-		
-		$order_list = get_posts( $order_args );
-		
-		foreach ( $order_list as $p_order ) {
-			
-			list( $user_id, $category_ids ) = $this->get_category_ids( $p_order->ID );
-			
-			if ( ! empty( $user_id ) ) {
-				
-				$info          = new \stdClass();
-				$info->user_id = $user_id;
-				$info->status  = 'active';
-				
-				$utils->log( "Found " . count( $category_ids ) . " categories for {$info->user_id}" );
-				
-				foreach ( $category_ids as $cat_id ) {
-					
-					// Add once for each category ID found
-					$info->membership_id = $cat_id;
-					$member_list[]       = $info;
-				}
-			}
-		}
-		
-		
-		return $member_list;
 	}
 	
 	/**
