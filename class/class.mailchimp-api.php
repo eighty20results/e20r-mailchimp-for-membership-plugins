@@ -84,6 +84,7 @@ class MailChimp_API {
 	 */
 	private $error_class = array();
 	
+	private $default_timeout = 10;
 	/**
 	 * API constructor - Configure the settings, if the API key gets passed on instantiation.
 	 *
@@ -96,6 +97,8 @@ class MailChimp_API {
 			$this,
 			'fix_listsubscribe_fields',
 		), - 1, 3 );
+		
+		$this->default_timeout = apply_filters( 'e20r-mailchimp-api-http-timeout', 10 );
 	}
 	
 	/**
@@ -141,19 +144,22 @@ class MailChimp_API {
 		
 		$request = $this->build_request( 'GET', null );
 		
-		$resp        = wp_remote_get( $url, $request );
-		$code        = wp_remote_retrieve_response_code( $resp );
-		$member_info = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+		$resp = $this->execute( $url, $request ); // $resp = wp_remote_get( $url, $request );
+		$code = wp_remote_retrieve_response_code( $resp );
 		
-		if ( 200 > $code || 300 <= $code ) {
+		if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
 			
-			$msg = "{$member_info->title} - {$member_info->detail}";
+			$errors = $this->process_error( $resp );
+			
+			$msg = "Error getting info for {$user_data->ID}: {$errors->title} - {$errors->detail}";
 			$utils->log( $msg );
 			
 			// $utils->add_message( $msg, 'error', 'backend' );
 			
 			return false;
 		}
+		
+		$member_info = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
 		
 		return $member_info;
 	}
@@ -210,7 +216,7 @@ class MailChimp_API {
 		$request = array(
 			'method'     => $command,
 			'user-agent' => self::$user_agent,
-			'timeout'    => $this->url_args['timeout'],
+			'timeout'    => isset( $this->url_args['timeout'] ) ? $this->url_args['timeout'] : $this->default_timeout,
 			'headers'    => $this->url_args['headers'],
 		);
 		
@@ -219,6 +225,71 @@ class MailChimp_API {
 		}
 		
 		return $request;
+	}
+	
+	/**
+	 * Trigger remote call (use time of call to calculate appropriate timeout value for the remote request)
+	 *
+	 * @param string $url
+	 * @param array  $request
+	 *
+	 * @return array|\WP_Error
+     *
+     * @since v2.11 - ENHANCEMENT: Dynamic update of remote request timeout value(s)
+	 */
+	private function execute( $url, $request ) {
+		
+		$utils = Utilities::get_instance();
+		$utils->log("Executing remote request...");
+		
+		$start_of_request = current_time( 'timestamp' );
+		$response         = wp_remote_request( $url, $request );
+		$utils->log("Returned from wp_remote_request(). Response contains error? " . ( is_wp_error( $response ) ? 'Yes' : 'No' ) );
+		
+		$end_of_request   = current_time( 'timestamp' );
+		
+		$current_timeout_limit = floor( ( isset( $request['timeout'] ) ? $request['timeout'] : $this->default_timeout ) * 0.8 );
+		$time_of_request       = ( $end_of_request - $start_of_request );
+		$max_php_execution     = ( intval( ini_get( 'max_execution_time' ) ) * 0.5 );
+		
+		$utils->log( "Request took {$time_of_request} seconds..." );
+		
+		if ( $current_timeout_limit >= $max_php_execution ) {
+			$msg = __( 'Error: Timeout >= half of PHP Max Execution Time!', Controller::plugin_slug );
+			$utils->log( $msg );
+			$utils->add_message( $msg, 'error', 'backend' );
+		}
+  
+		// Extend the timeout value (dynamically)?
+		if ( $current_timeout_limit < $time_of_request && $current_timeout_limit < $max_php_execution ) {
+			$utils->log( "Have to extend the timeout value ({$time_of_request}) by 50%" );
+			$this->url_args['timeout'] = $time_of_request + ceil( $time_of_request * .5 );
+		}
+		
+		return $response;
+	}
+	
+	/**
+	 * Process the response (error)
+	 *
+	 * @param \WP_Error|string $response
+	 *
+	 * @return \stdClass
+	 */
+	private function process_error( $response ) {
+		
+		$utils = Utilities::get_instance();
+		
+		if ( is_wp_error( $response ) ) {
+			$errors         = new \stdClass();
+			$errors->detail = implode( ', ', $response->get_error_messages() );
+			$errors->title  = sprintf( 'Status: %s', implode( ', ', $response->get_error_codes() ) );
+			
+		} else {
+			$errors = $utils->decode_response( $response['body'] );
+		}
+		
+		return $errors;
 	}
 	
 	/**
@@ -278,12 +349,14 @@ class MailChimp_API {
 		}
 		
 		$args = $this->build_request( 'PATCH', $utils->encode( $request ) );
-		$resp = wp_remote_request( $url, $args );
+		$resp = $this->execute( $url, $args ); // $resp = wp_remote_request( $url, $args );
 		$code = wp_remote_retrieve_response_code( $resp );
 		
-		if ( 200 > $code || 300 <= $code ) {
+		if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
 			
-			$utils->add_message( wp_remote_retrieve_response_message( $resp ), 'error', 'backend' );
+		    $errors = $this->process_error( $resp );
+		    
+			$utils->add_message( $errors->detail, 'error', 'backend' );
 			
 			return false;
 		}
@@ -319,9 +392,10 @@ class MailChimp_API {
 			$users = array( $users );
 		}
 		
-		$url  = $this->get_api_url( "/lists/{$list_id}/members" );
-		$args = $this->build_request( 'DELETE', null );
+		$url     = $this->get_api_url( "/lists/{$list_id}/members" );
+		$request = $this->build_request( 'DELETE', null );
 		
+		/*
 		// Add populated merge fields (if applicable)
 		if ( ! empty( $merge_fields ) ) {
 			$request['merge_fields'] = $merge_fields;
@@ -331,6 +405,7 @@ class MailChimp_API {
 		if ( ! empty( $interests ) ) {
 			$request['interests'] = $interests;
 		}
+		*/
 		
 		$retval = true;
 		
@@ -339,7 +414,7 @@ class MailChimp_API {
 			switch ( $unsub_setting ) {
 				case 2:
 					// Update the mailing list interest groups for the user
-					$retval = $retval && $this->remote_user_update( $users, $list_id, null, null, true );
+					$retval = $retval && $this->remote_user_update( $users, $list_id, $merge_fields, $interests, true );
 					break;
 				
 				default:
@@ -347,16 +422,16 @@ class MailChimp_API {
 					$user_id  = $this->subscriber_id( $user->user_email );
 					$user_url = $url . "/{$user_id}";
 					
-					$resp = wp_remote_request( $user_url, $args );
+					$resp = $this->execute( $user_url, $request ); // $resp = wp_remote_request( $user_url, $args );
 					$code = wp_remote_retrieve_response_code( $resp );
 					
-					if ( 200 > $code || 300 <= $code ) {
-						if ( is_wp_error( $resp ) ) {
-							$utils->add_message( $resp->get_error_message(), 'warning', 'frontend' );
-						} else {
-							$utils->log( "Error submitting subscription request to MailChimp.com: " . print_r( $utils->decode_response( $resp['body'] ), true ) );
-							$utils->add_message( sprintf( __( "Unsubscribe Error: %s", Controller::plugin_slug ), wp_remote_retrieve_response_message( $resp ) ), 'warning', 'backend' );
-						}
+					if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
+						
+						$errors = $this->process_error( $resp );
+						$msg    = sprintf( __( "Unsubscribe Error: %s", Controller::plugin_slug ), $errors->detail );
+						
+						$utils->log( "Error submitting unsubscribe request to MailChimp.com: {$msg}" );
+						$utils->add_message( $msg, 'warning', 'backend' );
 						
 						$retval = false;
 					}
@@ -481,12 +556,14 @@ class MailChimp_API {
 		}
 		
 		$request = $mc_api->build_request( 'PATCH', $args );
-		$resp    = wp_remote_request( $url, $request );
+		$resp    = $this->execute( $url, $request ); // $resp    = wp_remote_request( $url, $request );
 		$code    = wp_remote_retrieve_response_code( $resp );
 		
-		if ( 200 > $code || 300 <= $code ) {
+		if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
 			
-			$msg = sprintf( __( 'Unable to update %s: %s', Controller::plugin_slug ), $user->user_email, wp_remote_retrieve_response_message( $resp ) );
+			$errors = $this->process_error( $resp );
+			
+			$msg = sprintf( __( 'Unable to update %s (ID: %d): %s', Controller::plugin_slug ), $user->user_email, $user->ID, $errors->detail );
 			
 			$utils->log( $msg );
 			
@@ -496,7 +573,7 @@ class MailChimp_API {
 			
 			return false;
 		} else {
-			$utils->log( "Response code was: {$code} and we received a payload? " . ( !empty( $resp['body'] ) ? 'Yes' : 'No' ) );
+			$utils->log( "Response code was: {$code} and we received a payload? " . ( ! empty( $resp['body'] ) ? 'Yes' : 'No' ) );
 		}
 		
 		return true;
@@ -596,17 +673,19 @@ class MailChimp_API {
 		$url  = $this->get_api_url( "/lists/{$list_id}/members/" . $this->subscriber_id( $user->user_email ) );
 		
 		//Connect to api server
-		$resp = wp_remote_request( $url, $args );
+		$resp = $this->execute( $url, $args ); // $resp = wp_remote_request( $url, $args );
 		$code = wp_remote_retrieve_response_code( $resp );
 		
-		if ( 200 > $code || 300 <= $code ) {
+		if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
+			
+			$errors = $this->process_error( $resp );
 			
 			// Try updating the Merge Fields & Interest Groups on the MailChimp Server(s).
 			/*
 			if ( true === $this->update_server_settings( $list_id, $merge_fields, $interests ) ) {
 				
 				// retry the update with updated interest & merge groups
-				$resp = wp_remote_request( $url, $args );
+				$resp = $this->execute( $url, $args ); // $resp = wp_remote_request( $url, $args );
 				$code = wp_remote_retrieve_response_code( $resp );
 				
 				if ( 200 > $code || 300 <= $code ) {
@@ -622,11 +701,10 @@ class MailChimp_API {
 			
 			$utils->log( "Error submitting subscription request to MailChimp.com!" );
 			
-			$errors = $utils->decode_response( $resp['body'] );
 			$GLOBALS['e20r_mc_error_msg'] = array( 'title' => $errors->title, 'msg' => $errors->detail );
-			// $utils->log("Error info: " . print_r( $errors, true ) );
-   
-			if ( defined('DOING_AJAX' ) && false === DOING_AJAX ) {
+			$utils->log( "Error info: " . print_r( $errors, true ) );
+			
+			if ( defined( 'DOING_AJAX' ) && false === DOING_AJAX ) {
 				$utils->add_message( $errors->title, 'error', 'backend' );
 			}
 			
@@ -635,6 +713,7 @@ class MailChimp_API {
 		}
 		
 		$GLOBALS['e20r_mc_error_msg'] = null;
+		
 		return true;
 	}
 	
@@ -764,7 +843,10 @@ class MailChimp_API {
 		if ( false === $this->set_key() ) {
 			
 			$utils->log( "MailChimp API settings missing!" );
-			$msg = sprintf( __( 'Please configure your MailChimp.com settings (API key, etc) on the <a href="" target="_blank">E20R MailChimp Settings</a> page', Controller::plugin_slug ), add_query_arg( 'page', 'e20r_mc_settings', admin_url( 'options-general.php' ) ) );
+			$msg = sprintf( __( 'Please configure your MailChimp.com settings (API key, etc) on the %1$sE20R MailChimp Settings%2$s page', Controller::plugin_slug ),
+				sprintf( '<a href="%1$s" target="_blank">', add_query_arg( 'page', 'e20r_mc_settings', admin_url( 'options-general.php' ) ) ),
+				'</a>'
+			);
 			$utils->add_message( $msg, 'error', 'backend' );
 			
 			return false;
@@ -788,20 +870,23 @@ class MailChimp_API {
 		}
 		
 		$url      = $this->get_api_url( "/lists/?count={$max}" );
-		$response = wp_remote_get( $url, $this->url_args );
+		$request  = $this->build_request( 'GET', null );
+		$response = $this->execute( $url, $request );
 		$code     = wp_remote_retrieve_response_code( $response );
 		
 		// Fix: is_wp_error() appears to be unreliable since WordPress v4.5
-		if ( 200 > $code || 300 <= $code ) {
+		if ( is_wp_error( $request ) || 200 > $code || 300 <= $code ) {
 			
 			$utils->log( "Something wrong with the request?!?" );
+			
+			$errors = $this->process_error( $request );
 			
 			switch ( wp_remote_retrieve_response_code( $response ) ) {
 				case 401:
 					$msg = sprintf(
 						'%s: <p><em>%s</em> %s',
 						__( 'Sorry, but MailChimp was unable to verify your API key. MailChimp gave this response', Controller::plugin_slug ),
-						wp_remote_retrieve_response_message( $response ),
+						$errors->detail,
 						__( 'Please try entering your API key again.', Controller::plugin_slug )
 					);
 					
@@ -814,14 +899,14 @@ class MailChimp_API {
 				default:
 					$msg = sprintf(
 						__(
-							'Error while communicating with the Mailchimp servers: <p><em>%s</em></p>',
+							'Error while communicating with the MailChimp servers: <p><em>%s</em></p>',
 							Controller::plugin_slug
 						),
-						wp_remote_retrieve_response_message( $response )
+						$errors->detail
 					);
 					
 					$utils->add_message( $msg, 'error', 'backend' );
-					$utils->log( wp_remote_retrieve_response_message( $response ) );
+					$utils->log( $msg );
 					
 					return false;
 			}
@@ -852,13 +937,13 @@ class MailChimp_API {
 		self::$api_key = $this->options['api_key'];
 		
 		$this->url_args = array(
-			'timeout' => apply_filters( 'e20r_mailchimp_api_timeout', 10 ),
+			'timeout' => $this->default_timeout,
 			'headers' => array(
 				'Authorization' => 'Basic ' . self::$api_key,
 			),
 		);
 		
-		// the datacenter that the key belongs to.
+		// The MailChimp datacenter that the key belongs to.
 		list( , self::$dc ) = explode( '-', self::$api_key );
 		
 		// Build the URL based on the datacenter
@@ -895,25 +980,28 @@ class MailChimp_API {
 		$max       = apply_filters( 'e20r_mailchimp_object_fetch_limit', $max );
 		$body      = null;
 		
-		$utils->log("Looking in the {$cache_key} cache for list info from upstream");
+		$utils->log( "Looking in the {$cache_key} cache for list info from upstream" );
 		
 		if ( null === ( $body = Cache::get( $cache_key, 'e20r_mc_api' ) ) ) {
 			
 			$url      = $this->get_api_url( "/lists/?count={$max}" );
-			$response = wp_remote_get( $url, $this->url_args );
+			$request  = $this->build_request( 'GET', null );
+			$response = $this->execute( $url, $request ); // $response = wp_remote_get( $url, $this->url_args );
 			$code     = wp_remote_retrieve_response_code( $response );
 			
 			// Fix: is_wp_error() appears to be unreliable since WordPress v4.5
-			if ( 200 > $code || 300 <= $code ) {
+			if ( is_wp_error( $response ) || 200 > $code || 300 <= $code ) {
 				
+			    $errors = $this->process_error( $response );
+			    
 				$utils->log( "Something wrong with the request?!?" );
 				
-				switch ( wp_remote_retrieve_response_code( $response ) ) {
+				switch ( $code ) {
 					case 401:
 						$msg = sprintf(
 							'%s: <p><em>%s</em> %s',
 							__( 'Sorry, but MailChimp was unable to verify your API key. MailChimp gave this response', Controller::plugin_slug ),
-							wp_remote_retrieve_response_message( $response ),
+							$errors->detail,
 							__( 'Please try entering your API key again.', Controller::plugin_slug )
 						);
 						
@@ -929,11 +1017,11 @@ class MailChimp_API {
 								'Error while communicating with the Mailchimp servers: <p><em>%s</em></p>',
 								Controller::plugin_slug
 							),
-							wp_remote_retrieve_response_message( $response )
+							$errors->detail
 						);
 						
 						$utils->add_message( $msg, 'error', 'backend' );
-						$utils->log( wp_remote_retrieve_response_message( $response ) );
+						$utils->log( $errors->detail );
 						
 						$body = false;
 				}
@@ -1168,11 +1256,11 @@ class MailChimp_API {
 		if ( ! is_null( $cache_key ) ) {
 			
 			/**
-			 * @filter pmpromc_api_cache_timeout_secs   Configure timeout value for cached MC API Server info
+			 * @filter e20r-mailchimp-cache-timeout-secs   Configure timeout value for cached MC API Server info
 			 *
 			 * @param int $cache_timeout Time before the cache refreshes (Default: HOUR_IN_SECONDS)
 			 */
-			$cache_timeout = apply_filters( 'e20r_mailchimp_cache_timeout_secs', HOUR_IN_SECONDS );
+			$cache_timeout = apply_filters( 'e20r-mailchimp-cache-timeout-secs', HOUR_IN_SECONDS );
 			
 			return Cache::set( $cache_key, $data, $cache_timeout, 'e20r_mc_api' );
 		}
