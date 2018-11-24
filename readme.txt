@@ -4,7 +4,7 @@ Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing
 Requires at least: 4.5
 Requires PHP: 5.6
 Tested up to: 5.0
-Stable tag: 2.9.2
+Stable tag: 2.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,21 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 2.11 ==
+
+* BUG FIX: Handle both WP_Error and fail codes for HTTP status on return of request
+* BUG FIX: Use MailChimp_API::execute() method for all requests
+* BUG FIX: Don't send error messages to backend/front-end when running in background
+* BUG FIX: Move HTML elements from translatable text
+* BUG FIX: Skip unnecessary executions of wp_remote_retrieve_response_message()
+* BUG FIX: Renamed e20r_mailchimp_cache_timeout_secs filter to e20r-mailchimp-cache-timeout-secs
+* BUG FIX: Background task handler looping infinitely if server had unexpected process timeout values
+* ENHANCEMENT: Make request timeout (default_timeout) a class member variable
+* ENHANCEMENT: Add e20r-mailchimp-api-http-timeout filter (to set request timeout value)
+* ENHANCEMENT: Add own MailChimp_API::execution() method to extend request timeout if needed
+* ENHANCEMENT: Add MailChimp_API::process_error() method to return standard format for WP_Error and request statuses other than 2xx/3xx
+* ENHANCEMENT: Add additional section if plugin isn't licensed
 
 == 2.10 ==
 
