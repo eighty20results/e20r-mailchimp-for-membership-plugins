@@ -722,7 +722,6 @@ class Merge_Fields {
 		if ( ! empty( $user ) && empty( $level_id ) ) {
 			
 			$utils->log( "No membership level found for {$user->ID}" );
-			// TODO: Grab the most recent membership level (or last order) for the user (by filter)
 			
 			if ( empty( $level_id ) ) {
 				//$levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses
