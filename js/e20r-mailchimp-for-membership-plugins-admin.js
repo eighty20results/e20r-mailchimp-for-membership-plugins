@@ -16,13 +16,13 @@
  along with this program; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-jQuery(document).ready(function( $ ) {
+(function ($) {
     "use strict";
 
     var e20rmc_admin = {
-        init: function() {
+        init: function () {
 
-            window.console.log("Loading the E20R Admin class");
+            window.console.log("Loading the E20R MC Admin class");
             this.refresh_btn = $('input.e20rmc_server_refresh');
             this.bg_update_btn = $('#e20rmc_background');
             this.ack = $('#e20rmc-warning-ack');
@@ -32,46 +32,46 @@ jQuery(document).ready(function( $ ) {
             this.list_is_defined = $('#e20rmc-list-is-defined').val();
             var self = this;
 
-            self.clear_cache_btn.on('click', function(event){
+            self.clear_cache_btn.on('click', function (event) {
 
                 event.preventDefault();
                 self.clear_cache();
             });
 
-            self.reset_update_btn.on('click',function(event){
+            self.reset_update_btn.on('click', function (event) {
                 event.preventDefault();
                 self.reset_update();
             });
 
-            self.refresh_btn.each( function() {
+            self.refresh_btn.each(function () {
 
                 var btn = $(this);
 
-                btn.unbind('click').on('click', function() {
+                btn.unbind('click').on('click', function () {
 
-                    window.console.log("Processing click action for: ", this );
+                    window.console.log("Processing click action for: ", this);
                     event.preventDefault();
 
-                    var element = $(this).closest( 'div.e20rmc-server-refresh-form' );
+                    var element = $(this).closest('div.e20rmc-server-refresh-form');
                     var list_id = element.find('.e20rmc_refresh_list_id').val();
                     var level = element.find('.e20rmc_refresh_list_level_id').val();
-                    var $nonce = element.find( '#e20rmc_refresh_' + list_id ).val();
-                    window.console.log("List ID: " + list_id + ", Level: " + level );
-                    self.trigger_server_refresh( level, list_id, $nonce );
-                   //
+                    var $nonce = element.find('#e20rmc_refresh_' + list_id).val();
+                    window.console.log("List ID: " + list_id + ", Level: " + level);
+                    self.trigger_server_refresh(level, list_id, $nonce);
+                    //
                 });
             });
 
-            self.bg_update_btn.unbind('click').on('click', function() {
+            self.bg_update_btn.unbind('click').on('click', function () {
 
                 event.preventDefault();
-                window.console.log("Processing click action for: ", this );
+                window.console.log("Processing click action for: ", this);
                 self.trigger_background_operation();
             });
 
-            self.ack.unbind('click').on('click', function() {
+            self.ack.unbind('click').on('click', function () {
 
-                if ( $(this).is(':checked') ) {
+                if ($(this).is(':checked')) {
                     window.console.log("Requesting that the background processing button is shown");
                     self.bg_update_btn.show();
                 } else {
@@ -79,93 +79,93 @@ jQuery(document).ready(function( $ ) {
                 }
             });
         },
-        clear_cache: function() {
+        clear_cache: function () {
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
-                timeout: 15000,
+                timeout: 30000,
                 dataType: 'JSON',
                 data: {
                     action: 'e20rmc_clear_cache',
                     e20rmc_update_nonce: $('#e20rmc_update_nonce').val()
                 },
-                success: function( $response ) {
+                success: function ($response) {
 
-                    if ( $response.success === false && $response.data.msg.length > 0 ) {
-                        window.alert( $response.data.msg );
+                    if ($response.success === false && $response.data.msg.length > 0) {
+                        window.alert($response.data.msg);
                         return;
                     }
 
-                    location.reload( true );
+                    location.reload(true);
                 },
-                error: function( hdr, $error, errorThrown ) {
+                error: function (hdr, $error, errorThrown) {
                     window.alert("Error ( " + $error + " ) while clearing local mailchimp.com settings");
-                    window.console.log("Error:", errorThrown, $error, hdr  );
+                    window.console.log("Error:", errorThrown, $error, hdr);
                 }
             });
         },
-        reset_update: function() {
+        reset_update: function () {
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
-                timeout: 15000,
+                timeout: 30000,
                 dataType: 'JSON',
                 data: {
                     action: 'e20rmc_reset_update',
                     e20rmc_update_nonce: $('#e20rmc_update_nonce').val()
                 },
-                success: function( $response ) {
+                success: function ($response) {
 
-                    if ( $response.success === false && $response.data.msg.length > 0 ) {
-                        window.alert( $response.data.msg );
+                    if ($response.success === false && $response.data.msg.length > 0) {
+                        window.alert($response.data.msg);
                         return;
                     }
 
-                    location.reload( true );
+                    location.reload(true);
                 },
-                error: function( hdr, $error, errorThrown ) {
+                error: function (hdr, $error, errorThrown) {
                     window.alert("Error ( " + $error + " ) while reactivating local mailchimp.com settings");
-                    window.console.log("Error:", errorThrown, $error, hdr  );
+                    window.console.log("Error:", errorThrown, $error, hdr);
                 }
             });
         },
-        trigger_background_operation: function() {
+        trigger_background_operation: function () {
 
             var self = this;
 
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
-                timeout: 10000,
+                timeout: 30000,
                 dataType: 'JSON',
                 data: {
                     action: 'e20rmc_update_members',
                     list_defined: self.list_is_defined,
-                    e20rmc_update_nonce: $('#e20rmc_update_nonce' ).val()
+                    e20rmc_update_nonce: $('#e20rmc_update_nonce').val()
                 },
-                success: function( $response ) {
+                success: function ($response) {
 
-                    if ( $response.success === false && $response.data.msg.length > 0 ) {
-                        window.alert( $response.data.msg );
+                    if ($response.success === false && $response.data.msg.length > 0) {
+                        window.alert($response.data.msg);
                         return;
                     }
 
-                    location.reload( true );
+                    location.reload(true);
                 },
-                error: function( hdr, $error, errorThrown ) {
+                error: function (hdr, $error, errorThrown) {
                     window.alert("Error ( " + $error + " ) while triggering background update");
-                    window.console.log("Error:", errorThrown, $error, hdr  );
+                    window.console.log("Error:", errorThrown, $error, hdr);
                 }
             });
         },
-        trigger_server_refresh: function( $level_id, $list_id, $nonce ) {
+        trigger_server_refresh: function ($level_id, $list_id, $nonce) {
 
             var $class = this;
             var $list_nonce = 'e20r_mc_refresh_' + $list_id;
 
             var data = {
                 action: 'e20rmc_refresh_list_id',
-                'e20rmc_refresh_list_id' : $list_id,
+                'e20rmc_refresh_list_id': $list_id,
                 'e20rmc_refresh_list_level': $level_id
             };
 
@@ -178,17 +178,19 @@ jQuery(document).ready(function( $ ) {
                 timeout: 30000,
                 dataType: 'JSON',
                 data: data,
-                success: function( $response ) {
+                success: function ($response) {
                     window.console.log("Completed AJAX operation: ", $response);
-                    location.reload( true );
+                    location.reload(true);
                 },
-                error: function( hdr, $error, errorThrown ) {
+                error: function (hdr, $error, errorThrown) {
                     window.alert("Error ( " + $error + " ) while refreshing MailChimp server info");
-                    window.console.log("Error:", errorThrown, $error, hdr  );
+                    window.console.log("Error:", errorThrown, $error, hdr);
                 }
             });
         }
     };
 
-    e20rmc_admin.init();
-});
+    $(document).ready(function () {
+        e20rmc_admin.init();
+    });
+})(jQuery);
