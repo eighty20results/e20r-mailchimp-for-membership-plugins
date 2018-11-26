@@ -33,4 +33,5 @@ for e in ${exclude[@]}; do
 done
 
 cd ${svn_full_path}
-sed -i 's/\b\/\*\* One-Click update support \*\*\/\b.*\b\/\*\* End of One-Click update support \*\*\/\b//' class.${short_name}
+echo "Remove One-click update support"
+perl -i -0777 -p -e 's/\s\/\*\* One-Click update support \*\*\/.*\/\*\* End of One-Click update support \*\*\/\s//ms;' class.${short_name}.php
