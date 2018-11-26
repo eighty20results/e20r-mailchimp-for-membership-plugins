@@ -1,12 +1,10 @@
-BUG FIX: Handle both WP_Error and fail codes for HTTP status on return of request
-BUG FIX: Use MailChimp_API::execute() method for all requests
-BUG FIX: Don't send error messages to backend/front-end when running in background
-BUG FIX: Move HTML elements from translatable text
-BUG FIX: Skip unnecessary executions of wp_remote_retrieve_response_message()
-BUG FIX: Renamed e20r_mailchimp_cache_timeout_secs filter to e20r-mailchimp-cache-timeout-secs
-BUG FIX: Background task handler looping infinitely if server had unexpected process timeout values
-ENHANCEMENT: Make request timeout (default_timeout) a class member variable
-ENHANCEMENT: Add e20r-mailchimp-api-http-timeout filter (to set request timeout value)
-ENHANCEMENT: Add own MailChimp_API::execution() method to extend request timeout if needed
-ENHANCEMENT: Add MailChimp_API::process_error() method to return standard format for WP_Error and request statuses other than 2xx/3xx
-ENHANCEMENT: Add additional section if plugin isn't licensed
+ENHANCEMENT: Add button processing to re-enable the background update of members button
+ENHANCEMENT: Better articulation of purpose of the E20R MailChimp Plus (Support & Updates) license
+ENHANCEMENT: Better highlight the value of the E20R MailChimp Plus (Support & Updates) license
+ENHANCEMENT: Add 'build-for-svn.sh' script
+ENHANCEMENT: Support the 'build-for-svn.sh' script
+BUG FIX: Load testing functionality if E20R_MC_TESTING constant isn't FALSE
+BUG FIX: Add languages folder (.pot file) for translation
+BUG FIX: Didn't remove the One-Click updater in build-for-svn.sh script
+BUG FIX: Clarify renewal message text
+BUG FIX: Error isolation for E20R MailChimp admin features

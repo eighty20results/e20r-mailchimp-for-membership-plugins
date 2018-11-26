@@ -4,7 +4,7 @@ Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing
 Requires at least: 4.5
 Requires PHP: 5.6
 Tested up to: 5.0
-Stable tag: 2.11
+Stable tag: 3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,19 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 3.0 ==
+
+* ENHANCEMENT: Add button processing to re-enable the background update of members button
+* ENHANCEMENT: Better articulation of purpose of the E20R MailChimp Plus (Support & Updates) license
+* ENHANCEMENT: Better highlight the value of the E20R MailChimp Plus (Support & Updates) license
+* ENHANCEMENT: Add 'build-for-svn.sh' script
+* ENHANCEMENT: Support the 'build-for-svn.sh' script
+* BUG FIX: Load testing functionality if E20R_MC_TESTING constant isn't FALSE
+* BUG FIX: Add languages folder (.pot file) for translation
+* BUG FIX: Didn't remove the One-Click updater in build-for-svn.sh script
+* BUG FIX: Clarify renewal message text
+* BUG FIX: Error isolation for E20R MailChimp admin features
 
 == 2.11 ==
 
