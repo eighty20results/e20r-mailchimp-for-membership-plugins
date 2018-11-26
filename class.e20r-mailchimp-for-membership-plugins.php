@@ -504,6 +504,7 @@ spl_autoload_register( 'E20R\MailChimp\Controller::auto_loader' );
 
 register_activation_hook( __FILE__, array( Controller::get_instance(), "activation" ) );
 
+/** One-Click update support **/
 // Load one-click update support for v3.x BETA from custom repository
 if ( file_exists( plugin_dir_path( __FILE__ ) . "plugin-updates/plugin-update-checker.php" ) ) {
 	
@@ -515,6 +516,7 @@ if ( file_exists( plugin_dir_path( __FILE__ ) . "plugin-updates/plugin-update-ch
 		Controller::get_instance()->get_plugin_name()
 	);
 }
+/** End of One-Click update support **/
 
 $GLOBALS[ 'e20r_mc_error_msg' ] = null;
 
