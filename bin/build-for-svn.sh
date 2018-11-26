@@ -2,9 +2,9 @@
 # Build script for Eighty/20 Results - E20R MailChimp Integration for Membership Plugins
 #
 short_name="e20r-mailchimp-for-membership-plugins"
-svn_target="e20r-mailchimp-for-paid-memberships-pro"
-svn_directory="../../svn/"
-svn_full_path=${svn_directory}/${svn_target}
+svn_target="e20r-mailchimp-interest-groups-for-paid-memberships-pro-and-woocommerce"
+svn_directory="/Users/sjolshag/PhpStormProjects/svn/"
+svn_full_path="${svn_directory}/${svn_target}/trunk/"
 server="eighty20results.com"
 include=(class css js languages class.${short_name}.php readme.txt)
 exclude=(*.yml *.phar composer.* vendor plugin-updates)
@@ -20,7 +20,7 @@ kit_name="${kit_path}/${short_name}-${version}"
 debug_name="${kit_path}-debug/${short_name}-debug-${version}"
 debug_path="../build/${plugin_path}-debug"
 
-echo "Building kit for version ${version}"
+echo "Building kit for version ${version} in ${svn_full_path}"
 
 mkdir -p ${svn_full_path}
 
