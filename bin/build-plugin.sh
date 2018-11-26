@@ -3,7 +3,7 @@
 #
 short_name="e20r-mailchimp-for-membership-plugins"
 server="eighty20results.com"
-include=(class css js plugin-updates class.${short_name}.php readme.txt)
+include=(class css js languages plugin-updates class.${short_name}.php readme.txt)
 exclude=(*.yml *.phar composer.* vendor)
 sed=/usr/bin/sed
 build=(plugin-updates/vendor/*.php)
