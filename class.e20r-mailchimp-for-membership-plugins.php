@@ -457,7 +457,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
  */
 function test_e20rmc_listsubscribe_fields( $fields, $user = null, $list_id = null ) {
 	
-	if ( defined( 'E20R_MC_TESTING' ) && true === E20R_MC_TESTING ) {
+	if ( defined( 'E20R_MC_TESTING' ) && false !== E20R_MC_TESTING ) {
 		if ( WP_DEBUG ) {
 			error_log( "PMPROMC: Loading test filter for listsubscribe fields" );
 		}
