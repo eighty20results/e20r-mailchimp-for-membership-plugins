@@ -60,7 +60,7 @@ class Mailchimp_License extends License_Client {
 		switch ( Licensing::is_license_expiring( 'e20r_mc' ) ) {
 			
 			case true:
-				$utils->add_message( sprintf( __( 'The license for %s will renew soon. As this is an automatic payment, you will not have to do anything. To modify %syour license%s, you will need to go to %syour account page%s' ), 'Support and Updates Plus License', '<a href="https://eighty20results.com/shop/licenses/" target="_blank">', '</a>', '<a href="https://eighty20results.com/account/" target="_blank">', '</a>' ), 'info', 'backend' );
+				$utils->add_message( sprintf( __( 'The license for %s will renew soon. As this is an automatic payment, you will not have to do anything. To change %syour license%s, please go to %syour account page%s' ), 'E20R MailChimp Plus License (with Support &amp; Updates)', '<a href="https://eighty20results.com/shop/licenses/" target="_blank">', '</a>', '<a href="https://eighty20results.com/account/" target="_blank">', '</a>' ), 'info', 'backend' );
 				break;
 			case - 1:
 				$utils->add_message( sprintf( __( 'Your %s license has expired. To continue to get updates and support for this plugin, you will need to %srenew and install your license%s.' ), 'Support and Updates Plus License', '<a href="https://eighty20results.com/shop/licenses/" target="_blank">', '</a>' ), 'error', 'backend' );
