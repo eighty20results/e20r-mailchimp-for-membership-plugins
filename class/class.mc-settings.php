@@ -473,7 +473,7 @@ class MC_Settings {
 							} else if ( false === $is_licensed || false === $plugin_loaded ) {
 								
 								$utils->log( "Plus plugin is inactive _or_ this plugin isn't licensed..." ); ?>
-								<?php printf( __( '%1$sPurchase or renew your %3$sE20R MailChimp Plus (Support and Updates)%4$s license to enable the automated background update for pre-existing active members%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', '<a href="https://eighty20results.com/shop/licenses/e20r-mailchimp-membership-plugins" target="_blank">', '</a>' ); ?>
+								<?php printf( __( '%1$sBuy your %3$sE20R MailChimp Plus (Support and Updates)%4$s module and license to enable the automated background update for pre-existing active members%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', '<a href="https://eighty20results.com/shop/licenses/e20r-mailchimp-membership-plugins" target="_blank">', '</a>' ); ?>
 							<?php } ?>
                         </div>
                     </div>
@@ -778,7 +778,7 @@ class MC_Settings {
                 </ol>
 				<?php _e( 'You can also any extra Interests and Groups via your account on mailchimp.com and click the "Clear local Cache" and reload', Controller::plugin_slug ); ?>
                 </p>
-				<?php printf( __( '%1$sPurchase or renew your %3$sE20R MailChimp Plus (Support and Updates) license%4$s. Then enable "Point and click" configuration for Merge Tags and Interest Groups!%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', sprintf( '<a href="%1$s" target="_blank">', $purchase_url ), '</a>' ); ?>
+				<?php printf( __( '%1$sBuy your %3$sE20R MailChimp Plus (Support and Updates) module and license%4$s. Then use "Point and click" configuration for Merge Tags and Interest Groups!%2$s', Controller::plugin_slug ), '<strong style="color: red;">', '</strong>', sprintf( '<a href="%1$s" target="_blank">', $purchase_url ), '</a>' ); ?>
             </div>
         </div>
 		
@@ -797,14 +797,15 @@ class MC_Settings {
             <div class="inside">
                 <h3><?php _e( "For non-programmers", Controller::plugin_slug ); ?></h3>
                 <p><?php
-		            _e( "Want to configure all of the plugin settings with a Graphical User Interface? ", Controller::plugin_slug );
+		            _e( "Prefer a graphical user interface (GUI) to configure all of the plugin settings? ", Controller::plugin_slug );
 		            ?><br/><br/>
-		            <?php _e( 'Then, with a single click you can assign all interests and merge field info for your entire member database, in the background and without impacting your site\'s responsiveness.', Controller::plugin_slug ); ?>
+		            <?php printf( __( 'How about, with a single click, %1$simport and assign all users with configured interests and merge field info for your entire member database%2$s to MailChimp.com, in the background and %1$swithout impacting your site\'s responsiveness%2$s?', Controller::plugin_slug ), '<strong>', '</strong>'); ?>
                     <br/><br/>
-                    <?php printf( __( 'The "E20R MailChimp Plus (Support and Updates)" %1$slicense also includes 1 year of unlimited free support, bug fixes and feature updates!%2$s',Controller::plugin_slug ),'<strong>', '</strong>' );?>
+                    <?php printf( __( 'The "E20R MailChimp Plus (Support and Updates)" %1$slicense includes 1 year of unlimited free support, bug fixes and feature updates!%2$s',Controller::plugin_slug ),'<strong>', '</strong>' );?>
                     <br/><br/><?php
-		            _e( 'Our "Point and Click" configuration feature is available when you have an active E20R MailChimp Plus (Support and Updates) license installed.', Controller::plugin_slug );
-		            _e( 'No need to spend money on a programmer or wait for support to help you. Simply...', Controller::plugin_slug ); ?>
+		            _e( 'Our "Point and Click" configuration feature is added when you install and activate the E20R MailChimp Plus (Support and Updates) module, then activate its included license.', Controller::plugin_slug ); ?>
+		            <br/>
+		            <?php _e( 'No need to spend money on a programmer or wait for support to help you. Simply...', Controller::plugin_slug ); ?>
                 <ol>
                     <li><?php printf( __( '%1$sBuy%3$s and %2$sInstall%3$s the E20R MailChimp Plus (Support and Updates) license', Controller::plugin_slug ),
 		                    sprintf(
@@ -817,16 +818,17 @@ class MC_Settings {
 				            ),
 				            '</a>'
 			            ); ?></li>
+                    <li><?php _e( 'Click the "Clear local Cache" button', Controller::plugin_slug ); ?></li>
                     <li><?php _e( 'Click the "Sync with MailChimp.com" button (a couple of times)', Controller::plugin_slug ); ?></li>
                     <li><?php _e( 'Reload the page', Controller::plugin_slug ); ?></li>
                     <li><?php _e( "Select the Interests to assign when a user signs up for a level", Controller::plugin_slug ); ?></li>
-                    <li><?php _e( "Select user data fields to assign to your merge tags (including Register Helper info)", Controller::plugin_slug ); ?></li>
+                    <li><?php _e( "Select user data fields to assign to your Merge Fields/Merge Tags (including PMPro Register Helper field data)", Controller::plugin_slug ); ?></li>
                 </ol>
                 <p>
-	            <?php _e( 'You can also create extra Interests and Groups via your account on mailchimp.com and click the "Clear local Cache" and reload', Controller::plugin_slug ); ?>
+	            <?php _e( 'You can also create extra Interests and Groups via your account on mailchimp.com and click the "Clear local Cache" and reload to let you assign those custom interests', Controller::plugin_slug ); ?>
                 </p>
 	            <?php printf(
-	                    __( '%1$sPurchase or renew your %3$sE20R MailChimp Plus (Support and Updates) license%4$s. Then %5$sactivate the license%6$s to enable "Point and click" configuration for Merge Tags and Interest Groups!%2$s',
+	                    __( '%1$sBuy your %3$sE20R MailChimp Plus (Support and Updates) license%4$s. Then %5$sactivate the license%6$s to enable "Point and click" configuration for Merge Tags and Interest Groups!%2$s',
                             Controller::plugin_slug
                         ),
                         '<strong style="color: red;">',
@@ -836,6 +838,8 @@ class MC_Settings {
                     sprintf( '<a href="%1$s" target="_blank">', $activation_url ),
                         '</a>'
                 ); ?>
+                <br/><br/>
+	            <?php printf( __( '%1$sDid we remember to mention the full year of unlimited support, bug fixes and updates included with the E20R MailChimp Plus (Support and Updates) module..?%2$s', Controller::plugin_slug ), '<small>', '</small>' ); ?>
             </div>
         </div>
 
@@ -867,9 +871,7 @@ class MC_Settings {
 	 *
 	 * @param array $settings
 	 */
-	public function select(
-		$settings
-	) {
+	public function select( $settings ) {
 		
 		$options = get_option( 'e20r_mc_settings' );
 		
@@ -907,15 +909,15 @@ class MC_Settings {
 		$membership_controller = Member_Handler::get_instance();
 		$utils                 = Utilities::get_instance();
 		
+		$utils->log( "Received settings: " . print_r( $input, true ) );
+		
 		$new_input = array();
 		$current   = $mc_api->get_option(); // Load all existing options
 		$input     = wp_parse_args( $input, $current );
 		$defaults  = $mc_api->get_default_options();
 		$prefix    = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
 		
-		// $newinput = array();
-		
-		// $utils->log( "Received settings: " . print_r( $input, true ) );
+		$utils->log( "Merged settings: " . print_r( $input, true ) );
 		
 		foreach ( $input as $key => $value ) {
 			
