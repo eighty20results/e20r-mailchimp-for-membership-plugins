@@ -27,6 +27,7 @@ jQuery(document).ready(function( $ ) {
             this.bg_update_btn = $('#e20rmc_background');
             this.ack = $('#e20rmc-warning-ack');
             this.clear_cache_btn = $('#e20r-mc-reset-cache');
+            this.reset_update_btn = $('#e20r-reset-update');
 
             this.list_is_defined = $('#e20rmc-list-is-defined').val();
             var self = this;
@@ -35,6 +36,11 @@ jQuery(document).ready(function( $ ) {
 
                 event.preventDefault();
                 self.clear_cache();
+            });
+
+            self.reset_update_btn.on('click',function(event){
+                event.preventDefault();
+                self.reset_update();
             });
 
             self.refresh_btn.each( function() {
@@ -94,6 +100,31 @@ jQuery(document).ready(function( $ ) {
                 },
                 error: function( hdr, $error, errorThrown ) {
                     window.alert("Error ( " + $error + " ) while clearing local mailchimp.com settings");
+                    window.console.log("Error:", errorThrown, $error, hdr  );
+                }
+            });
+        },
+        reset_update: function() {
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                timeout: 15000,
+                dataType: 'JSON',
+                data: {
+                    action: 'e20rmc_reset_update',
+                    e20rmc_update_nonce: $('#e20rmc_update_nonce').val()
+                },
+                success: function( $response ) {
+
+                    if ( $response.success === false && $response.data.msg.length > 0 ) {
+                        window.alert( $response.data.msg );
+                        return;
+                    }
+
+                    location.reload( true );
+                },
+                error: function( hdr, $error, errorThrown ) {
+                    window.alert("Error ( " + $error + " ) while reactivating local mailchimp.com settings");
                     window.console.log("Error:", errorThrown, $error, hdr  );
                 }
             });
