@@ -140,26 +140,39 @@ class MailChimp_API {
 			return false;
 		}
 		
-		$url = $this->get_api_url( "/lists/{$list_id}/members/" . $this->subscriber_id( $user_data->user_email ) );
+		$utils->log("Try to load from cache first...");
+		$member_info = Cache::get( "{$list_id}_user_{$user_data->ID}", 'e20rmc_user_cache' );
 		
-		$request = $this->build_request( 'GET', null );
-		
-		$resp = $this->execute( $url, $request ); // $resp = wp_remote_get( $url, $request );
-		$code = wp_remote_retrieve_response_code( $resp );
-		
-		if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
+		if ( empty( $member_info ) ) {
+      
+		    $utils->log("Have to load from upstream MailChimp.com server for {$user_data->ID}");
+		    
+			$url = $this->get_api_url( "/lists/{$list_id}/members/" . $this->subscriber_id( $user_data->user_email ) );
 			
-			$errors = $this->process_error( $resp );
+			$request = $this->build_request( 'GET', null );
 			
-			$msg = "Error getting info for {$user_data->ID}: {$errors->title} - {$errors->detail}";
-			$utils->log( $msg );
+			$resp = $this->execute( $url, $request ); // $resp = wp_remote_get( $url, $request );
+			$code = wp_remote_retrieve_response_code( $resp );
 			
-			// $utils->add_message( $msg, 'error', 'backend' );
+			if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
+				
+				$errors = $this->process_error( $resp );
+				
+				$msg = "Error getting info for {$user_data->ID}: {$errors->title} - {$errors->detail}";
+				$utils->log( $msg );
+				// $utils->add_message( $msg, 'error', 'backend' );
+				
+				$member_info = false;
+			} else {
+				
+				$member_info = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
+			}
 			
-			return false;
+			if ( !empty( $member_info ) ) {
+			    $utils->log("Updating cache info for {$user_data->ID}/{$list_id}");
+			    Cache::set( "{$list_id}_user_{$user_data->ID}", $member_info, 120, 'e20rmc_user_cache' );
+            }
 		}
-		
-		$member_info = $utils->decode_response( wp_remote_retrieve_body( $resp ) );
 		
 		return $member_info;
 	}
@@ -240,9 +253,12 @@ class MailChimp_API {
 	private function execute( $url, $request ) {
 		
 		$utils = Utilities::get_instance();
-		$utils->log("Executing remote request...");
+		$utils->log("Executing remote request... " . print_r( $request, true ) );
+		$utils->log("Using URL: {$url}");
 		
 		$start_of_request = current_time( 'timestamp' );
+		// $request['body'] = isset( $request['body'] ) ? json_encode( $request['body'] ) : null;
+		
 		$response         = wp_remote_request( $url, $request );
 		$utils->log("Returned from wp_remote_request(). Response contains error? " . ( is_wp_error( $response ) ? 'Yes' : 'No' ) );
 		
@@ -531,8 +547,6 @@ class MailChimp_API {
 	public function remote_user_update( $user, $list_id, $merge_fields = null, $interests = null, $show_warnings = true ) {
 		
 		$mc_api        = MailChimp_API::get_instance();
-		$mf_controller = Merge_Fields::get_instance();
-		$ig_controller = Interest_Groups::get_instance();
 		
 		$utils = Utilities::get_instance();
 		
@@ -555,8 +569,9 @@ class MailChimp_API {
 			$args['interests'] = $interests;
 		}
 		
-		$request = $mc_api->build_request( 'PATCH', $args );
+		$request = $mc_api->build_request( 'PUT', $args );
 		$resp    = $this->execute( $url, $request ); // $resp    = wp_remote_request( $url, $request );
+        $utils->log(json_encode( $request['body'] ) );
 		$code    = wp_remote_retrieve_response_code( $resp );
 		
 		if ( is_wp_error( $resp ) || 200 > $code || 300 <= $code ) {
@@ -574,6 +589,9 @@ class MailChimp_API {
 			return false;
 		} else {
 			$utils->log( "Response code was: {$code} and we received a payload? " . ( ! empty( $resp['body'] ) ? 'Yes' : 'No' ) );
+			$url = $mc_api->get_api_url( "/lists/{$list_id}/members/{$subscriber_id}" );
+			$utils->log( print_r( $this->execute( $url,$mc_api->build_request( 'GET', $this->url_args ) ), true ) );
+			// $utils->log( "Payload ---> " . print_r(  $resp, true ) );
 		}
 		
 		return true;
