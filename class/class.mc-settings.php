@@ -350,6 +350,7 @@ class MC_Settings {
 	public function settings_page() {
 		
 		global $e20r_mc_lists;
+		global $e20r_mailchimp_plugins;
 		
 		$utils  = Utilities::get_instance();
 		$mc_api = MailChimp_API::get_instance();
@@ -408,6 +409,7 @@ class MC_Settings {
 		$is_licensed   = Licensing::is_licensed( 'e20r_mc', true );
 		$plugin_loaded = $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ||
 		                 $utils->plugin_is_active( 'e20r-mailchimp-plus-debug/class.e20r-mailchimp-plus.php' );
+		$active_plugin = $mc_api->get_option( 'membership_plugin' );
 		
 		$utils->log( "Loading Settings page HTML" ); ?>
         <div class="wrap">
@@ -494,7 +496,7 @@ class MC_Settings {
 				
 				if ( ! empty( $levels ) && true === $is_licensed && true === $plugin_loaded ) {
 					
-					$utils->log( "Have " . count( $levels ) . " levels" );
+					$utils->log( "Have " . count( $levels ) . " levels for {$active_plugin}" );
 					
 					$option_tabs = array_merge( $option_tabs, $levels ); ?>
 
@@ -503,12 +505,17 @@ class MC_Settings {
 						foreach ( $option_tabs as $level_id => $level_info ) {
 							
 							if ( empty( $level_info->name ) ) {
-								$option_label = __( 'Level: Empty', Controller::plugin_slug );
+								$option_label = sprintf( __( '%s: Empty', Controller::plugin_slug ), $e20r_mailchimp_plugins[ $active_plugin ]['label'] );
 							} else {
+							 
+							 
 								$option_label = (
 									__( 'General Settings', Controller::plugin_slug ) !== $level_info->name ) ?
-									sprintf( __( 'Level: %s', Controller::plugin_slug ), wp_unslash( $level_info->name ) ) :
-									wp_unslash( $level_info->name );
+									sprintf(
+									        __( '%1$s %2$s', Controller::plugin_slug ),
+                                            $e20r_mailchimp_plugins[ $active_plugin ]['label'],
+                                            wp_unslash( $level_info->name )
+                                    ) : wp_unslash( $level_info->name );
 							}
 							
 							$url = add_query_arg( array(
@@ -790,34 +797,34 @@ class MC_Settings {
 	 */
 	public function section_unlicensed_igs() {
 		
-		$mc_url = sprintf( "https://%s.admin.mailchimp.com/lists/", MailChimp_API::get_mc_dc() );
-        $purchase_url = 'https://eighty20results.com/product/e20r-mailchimp-membership-plugins/';
-        $activation_url = add_query_arg( 'page', 'e20r-licensing', admin_url( 'general-options.php' ) ); ?>
+		$mc_url         = sprintf( "https://%s.admin.mailchimp.com/lists/", MailChimp_API::get_mc_dc() );
+		$purchase_url   = 'https://eighty20results.com/product/e20r-mailchimp-membership-plugins/';
+		$activation_url = add_query_arg( 'page', 'e20r-licensing', admin_url( 'general-options.php' ) ); ?>
         <div id="e20r_mc_update_members" class="postbox">
             <div class="inside">
                 <h3><?php _e( "For non-programmers", Controller::plugin_slug ); ?></h3>
                 <p><?php
-		            _e( "Prefer a graphical user interface (GUI) to configure all of the plugin settings? ", Controller::plugin_slug );
-		            ?><br/><br/>
-		            <?php printf( __( 'How about, with a single click, %1$simport and assign all users with configured interests and merge field info for your entire member database%2$s to MailChimp.com, in the background and %1$swithout impacting your site\'s responsiveness%2$s?', Controller::plugin_slug ), '<strong>', '</strong>'); ?>
+					_e( "Prefer a graphical user interface (GUI) to configure all of the plugin settings? ", Controller::plugin_slug );
+					?><br/><br/>
+					<?php printf( __( 'How about, with a single click, %1$simport and assign all users with configured interests and merge field info for your entire member database%2$s to MailChimp.com, in the background and %1$swithout impacting your site\'s responsiveness%2$s?', Controller::plugin_slug ), '<strong>', '</strong>' ); ?>
                     <br/><br/>
-                    <?php printf( __( 'The "E20R MailChimp Plus (Support and Updates)" %1$slicense includes 1 year of unlimited free support, bug fixes and feature updates!%2$s',Controller::plugin_slug ),'<strong>', '</strong>' );?>
+					<?php printf( __( 'The "E20R MailChimp Plus (Support and Updates)" %1$slicense includes 1 year of unlimited free support, bug fixes and feature updates!%2$s', Controller::plugin_slug ), '<strong>', '</strong>' ); ?>
                     <br/><br/><?php
-		            _e( 'Our "Point and Click" configuration feature is added when you install and activate the E20R MailChimp Plus (Support and Updates) module, then activate its included license.', Controller::plugin_slug ); ?>
-		            <br/>
-		            <?php _e( 'No need to spend money on a programmer or wait for support to help you. Simply...', Controller::plugin_slug ); ?>
+					_e( 'Our "Point and Click" configuration feature is added when you install and activate the E20R MailChimp Plus (Support and Updates) module, then activate its included license.', Controller::plugin_slug ); ?>
+                    <br/>
+					<?php _e( 'No need to spend money on a programmer or wait for support to help you. Simply...', Controller::plugin_slug ); ?>
                 <ol>
                     <li><?php printf( __( '%1$sBuy%3$s and %2$sInstall%3$s the E20R MailChimp Plus (Support and Updates) license', Controller::plugin_slug ),
-		                    sprintf(
-			                    '<a href="%1$s" target="_blank">',
-			                    $purchase_url
-		                    ),
-				            sprintf(
-					            '<a href="%1$s" target="_blank">',
-					            $activation_url
-				            ),
-				            '</a>'
-			            ); ?></li>
+							sprintf(
+								'<a href="%1$s" target="_blank">',
+								$purchase_url
+							),
+							sprintf(
+								'<a href="%1$s" target="_blank">',
+								$activation_url
+							),
+							'</a>'
+						); ?></li>
                     <li><?php _e( 'Click the "Clear local Cache" button', Controller::plugin_slug ); ?></li>
                     <li><?php _e( 'Click the "Sync with MailChimp.com" button (a couple of times)', Controller::plugin_slug ); ?></li>
                     <li><?php _e( 'Reload the page', Controller::plugin_slug ); ?></li>
@@ -825,21 +832,21 @@ class MC_Settings {
                     <li><?php _e( "Select user data fields to assign to your Merge Fields/Merge Tags (including PMPro Register Helper field data)", Controller::plugin_slug ); ?></li>
                 </ol>
                 <p>
-	            <?php _e( 'You can also create extra Interests and Groups via your account on mailchimp.com and click the "Clear local Cache" and reload to let you assign those custom interests', Controller::plugin_slug ); ?>
+					<?php _e( 'You can also create extra Interests and Groups via your account on mailchimp.com and click the "Clear local Cache" and reload to let you assign those custom interests', Controller::plugin_slug ); ?>
                 </p>
-	            <?php printf(
-	                    __( '%1$sBuy your %3$sE20R MailChimp Plus (Support and Updates) license%4$s. Then %5$sactivate the license%6$s to enable "Point and click" configuration for Merge Tags and Interest Groups!%2$s',
-                            Controller::plugin_slug
-                        ),
-                        '<strong style="color: red;">',
-                        '</strong>',
-                        sprintf( '<a href="%1$s" target="_blank">', $purchase_url ),
-                        '</a>',
-                    sprintf( '<a href="%1$s" target="_blank">', $activation_url ),
-                        '</a>'
-                ); ?>
+				<?php printf(
+					__( '%1$sBuy your %3$sE20R MailChimp Plus (Support and Updates) license%4$s. Then %5$sactivate the license%6$s to enable "Point and click" configuration for Merge Tags and Interest Groups!%2$s',
+						Controller::plugin_slug
+					),
+					'<strong style="color: red;">',
+					'</strong>',
+					sprintf( '<a href="%1$s" target="_blank">', $purchase_url ),
+					'</a>',
+					sprintf( '<a href="%1$s" target="_blank">', $activation_url ),
+					'</a>'
+				); ?>
                 <br/><br/>
-	            <?php printf( __( '%1$sDid we remember to mention the full year of unlimited support, bug fixes and updates included with the E20R MailChimp Plus (Support and Updates) module..?%2$s', Controller::plugin_slug ), '<small>', '</small>' ); ?>
+				<?php printf( __( '%1$sDid we remember to mention the full year of unlimited support, bug fixes and updates included with the E20R MailChimp Plus (Support and Updates) module..?%2$s', Controller::plugin_slug ), '<small>', '</small>' ); ?>
             </div>
         </div>
 
