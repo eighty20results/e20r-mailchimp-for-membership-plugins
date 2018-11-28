@@ -710,6 +710,7 @@ class Interest_Groups {
 		$utils     = Utilities::get_instance();
 		$prefix    = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
 		$interests = array();
+		$unsubscribe_option = $mc_api->get_option( 'unsubscribe' );
 		
 		$utils->log( "Number of levels the user has: " . count( $level_ids ) );
 		
@@ -778,12 +779,27 @@ class Interest_Groups {
 			$utils->log( "No levels to process for populate function!" );
 		}
 		
-		if ( true === $cancelling ) {
+		// Set the interests based on the Unsubscribe setting(s)
+		if ( true === $cancelling || ( empty( $level_ids ) ) ) {
+			
 			$utils->log( "User is not an active member & needs to be configured as 'cancelled' " );
-			$cancelled_id               = $this->get_cancelled_for_list( $list_id );
-			$interests[ $cancelled_id ] = true;
-			$utils->log( "Returning interest groups for list {$list_id}: " . implode( ', ', array_keys($interests ) ) );
+			
+			switch( $unsubscribe_option ) {
+				case 2:
+					$cancelled_id               = $this->get_cancelled_for_list( $list_id );
+					$interests[ $cancelled_id ] = true;
+					break;
+					
+				case 1:
+				case 'all':
+					foreach( $interests as $interest_id => $status ) {
+						$interests[$interest_id] = false;
+					}
+					break;
+			}
 		}
+		
+		$utils->log( "Returning interest groups for list {$list_id}: " . implode( ', ', array_keys($interests ) ) );
 		
 		/**
 		 * Process list of interests to assign for the user before returning it to the subscription process
@@ -823,9 +839,10 @@ class Interest_Groups {
 		
 		foreach ( $list_config->interest_categories as $category ) {
 			
-			if ( false !== stripos( $category->name, __( 'Membership Levels', Controller::plugin_slug ) ) ) {
+			if ( false !== stripos( $category->name, __( 'PMPro Membership Levels', Controller::plugin_slug ) ) ) {
 				
 				foreach ( $category->interests as $interest_id => $name ) {
+					
 					if ( false !== stripos( $name, __( "Cancelled", Controller::plugin_slug ) ) ) {
 						$utils->log( "Found ID for the 'Cancelled' Interest Group: {$interest_id} " );
 						
