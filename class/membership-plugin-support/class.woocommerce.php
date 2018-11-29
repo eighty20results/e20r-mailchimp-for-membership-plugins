@@ -47,6 +47,13 @@ class WooCommerce extends Membership_Plugin {
 	 * WooCommerce constructor.
 	 */
 	private function __construct() {
+		global $e20r_mailchimp_plugins;
+		
+		$e20r_mailchimp_plugins['woocommerce'] = array(
+			'plugin_slug' => 'woocommerce',
+			'class_name'  => 'WooCommerce',
+			'label' => __('Cat:', Controller::plugin_slug )
+		);
 	}
 	
 	/**
@@ -67,7 +74,7 @@ class WooCommerce extends Membership_Plugin {
 	public function load_hooks() {
 		
 		$utils = Utilities::get_instance();
-		$utils->log( "Processing the 'load_hooks' method for the PMPro plugin" );
+		$utils->log( "Processing the 'load_hooks' method for the PMWooCommercePro plugin" );
 		
 		add_filter(
 			'e20r-mailchimp-supported-membership-plugin-list',
@@ -145,6 +152,8 @@ class WooCommerce extends Membership_Plugin {
 			$this,
 			'recent_membership_levels_for_user',
 		), 10, 4 );
+		
+		add_filter( 'e20r-mailchimp-user-last-level', array( $this, 'get_last_for_user' ), 10, 2 );
 		
 		// Add "additional lists" option to checkout page for WooCommerce
 		add_action( 'woocommerce_after_order_notes', array( $this, 'view_additional_lists' ), 10 );
@@ -883,6 +892,47 @@ class WooCommerce extends Membership_Plugin {
 		}
 		
 		return $statuses;
+	}
+	
+	/**
+	 * Return the most recent Membership level for the user
+	 *
+	 * @param intp[] $level_ids
+	 * @param int $user_id
+	 *
+	 * @return int[]
+	 */
+	public function get_last_for_user( $level_ids, $user_id ) {
+		
+		if ( false === $this->load_this_membership_plugin( 'woocommerce' ) ) {
+			return $level_ids;
+		}
+		
+		/**
+		 * @var \WC_Order $last_order
+		 */
+		$last_order = wc_get_customer_last_order( $user_id );
+		
+		if ( empty( $last_order ) ) {
+			return null;
+		}
+		
+		$level_ids = array();
+		
+		/**
+		 * Save the unique product category IDs for the order items
+		 * @var \WC_Order_Item_Product $item_product
+		 */
+		foreach( $last_order->get_items() as $item_id => $item_product ) {
+			
+			$order_product = $item_product->get_product();
+			$categories = $order_product->get_category_ids();
+			
+			// Merge the list of category IDs
+			$level_ids += $categories;
+		}
+		
+		return $level_ids;
 	}
 	
 	/**

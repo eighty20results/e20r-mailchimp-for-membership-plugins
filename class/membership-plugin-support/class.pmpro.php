@@ -43,6 +43,14 @@ class PMPro extends Membership_Plugin {
 	 * PMPro constructor.
 	 */
 	private function __construct() {
+		
+		global $e20r_mailchimp_plugins;
+		
+		$e20r_mailchimp_plugins['pmpro'] = array(
+			'plugin_slug' => 'pmpro',
+			'class_name'  => 'PMPro',
+			'label' => __('Level:', Controller::plugin_slug )
+		);
 	}
 	
 	/**
@@ -120,6 +128,7 @@ class PMPro extends Membership_Plugin {
 			);
 			
 			add_filter( 'e20r-mailchimp-user-old-membership-levels', array( $this, 'recent_membership_levels_for_user' ), 10, 4 );
+			add_filter( 'e20r-mailchimp-user-last-level', array( $this, 'get_last_for_user' ), 10, 2 );
 			add_filter( 'e20r-mailchimp-interest-category-label', array( $this, 'get_interest_cat_label'), 10 , 1);
 			add_filter( 'e20r-mailchimp-membership-new-user-level', array( $this, 'get_new_level_ids' ), 10, 3 );
 			add_filter( 'e20r-mailchimp-non-active-statuses', array( $this, 'statuses_inactive_membership' ), 10, 1 );
@@ -180,6 +189,38 @@ class PMPro extends Membership_Plugin {
 		}
 	}
 	
+	/**
+	 * Return the most recent Membership level for the user
+	 *
+	 * @param int[] $level_ids
+	 * @param int $user_id
+	 *
+	 * @return int[]
+	 */
+	public function get_last_for_user( $level_ids, $user_id ) {
+		
+		if ( false === $this->load_this_membership_plugin( 'pmpro' ) ) {
+			return $level_ids;
+		}
+		
+		$utils = Utilities::get_instance();
+		
+		global $wpdb;
+		
+		// Get the last entry in the PMPro Member list table for the user ID
+		$level_sql = $wpdb->prepare(
+			"SELECT membership_id
+				    FROM {$wpdb->pmpro_memberships_users}
+				    WHERE user_id = %d
+				    ORDER BY id DESC
+				    LIMIT 1",
+			$user_id
+		);
+		
+		$level_ids = $wpdb->get_var( $level_sql );
+		
+		return array( $level_ids );
+	}
 	/**
 	 * Generic registration checks (PMPro) handler
 	 *

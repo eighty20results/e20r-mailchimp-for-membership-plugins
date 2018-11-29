@@ -302,4 +302,14 @@ abstract class Membership_Plugin {
 	 * @return int[]
 	 */
 	abstract public function get_level_history_for_user( $level_ids, $user_id );
+	
+	/**
+	 * Return the most recent Membership level for the user
+	 *
+	 * @param int[] $level_ids
+	 * @param int $user_id
+	 *
+	 * @return int[]
+	 */
+	abstract public function get_last_for_user( $level_ids, $user_id );
 }
