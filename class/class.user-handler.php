@@ -243,7 +243,7 @@ class User_Handler {
 		$utils = Utilities::get_instance();
 		$controller = Controller::get_instance();
 		
-		$utils->log("Request from Profile update: " . print_r( $_REQUEST, true ));
+		$utils->log("Request from Profile update...");
 		
 		// Only worry about this if additional lists have been requested
 		$additional_user_lists = $utils->get_variable( 'additional_lists', array() );
