@@ -57,6 +57,65 @@ class Member_Handler {
 	}
 	
 	/**
+	 * Initialize the plugin (membership specific stuff, mostly)
+	 */
+	public function load_plugin() {
+		
+		// Load utilities
+		$utils = Utilities::get_instance();
+		$utils->log( "Loading the base class load_plugin method" );
+		
+		$this->load_member_plugin_support();
+		
+		// Load API
+		$mc_api = MailChimp_API::get_instance();
+		
+		// Check that API is loaded
+		if ( empty( $mc_api ) ) {
+			
+			$utils->add_message( __( "Unable to load MailChimp API interface", Controller::plugin_slug ), 'error', 'backend' );
+			
+			return;
+		}
+		
+		// Configure API key
+		$mc_api->set_key();
+		
+		// Configure any default merge tags and listsubscribe fields
+		add_filter( 'e20r-mailchimp-merge-tag-settings', array( $this, 'default_merge_field_settings' ), 10, 2 );
+		add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields',
+			array( Merge_Fields::get_instance(), 'admin_defined_listsubscribe', ),
+			999,
+			3
+		);
+		add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array(
+			$this,
+			'default_listsubscribe_fields',
+		), 10, 3 );
+		
+		//On the checkout page?
+		$on_checkout_page = apply_filters( 'e20r-mailchimp-on-membership-checkout-page', false );
+		$member_list      = $mc_api->get_option( 'members_list' );
+		$additional_lists = $mc_api->get_option( 'additional_lists' );
+		
+		//Configure the user_register hook (outside of a membership plugin.
+		if ( ( ! empty( $member_list ) || ! empty( $additional_lists ) ) && ! $on_checkout_page ) {
+			add_action( 'user_register', array( User_Handler::get_instance(), 'user_register' ) );
+		}
+		
+		add_action( 'e20r-mailchimp-membership-level-update',
+			array( Interest_Groups::get_instance(), 'create_categories_for_membership' ),
+			10,
+			1
+		);
+		
+		add_action( 'e20r-mailchimp-plugin-activation', array( $this, 'create_default_groups' ) );
+		
+		$utils->log( "Trigger membership plugin operations" );
+		do_action( 'e20r-mailchimp-membership-plugin-load', $on_checkout_page );
+	}
+	
+	/**
 	 * Identify (find) the Membership Plugin configuration to load
 	 */
 	public function load_member_plugin_support() {
@@ -84,61 +143,6 @@ class Member_Handler {
 		$plugin_path = '\\E20R\\MailChimp\\Membership_Support\\' . $plugin_settings['class_name'];
 		
 		$this->member_modules[ $slug ] = $plugin_path::get_instance();
-	}
-	
-	/**
-	 * Initialize the plugin (membership specific stuff, mostly)
-	 */
-	public function load_plugin() {
-		
-		// Load utilities
-		$utils  = Utilities::get_instance();
-		$utils->log( "Loading the base class load_plugin method");
-		
-		// Load API
-		$mc_api = MailChimp_API::get_instance();
-		
-		// Check that API is loaded
-		if ( empty( $mc_api ) ) {
-			
-			$utils->add_message( __( "Unable to load MailChimp API interface", Controller::plugin_slug ), 'error', 'backend' );
-			
-			return;
-		}
-		
-		// Configure API key
-		$mc_api->set_key();
-		$this->load_member_plugin_support();
-		
-		// Configure any default merge tags and listsubscribe fields
-		add_filter( 'e20r-mailchimp-merge-tag-settings', array( $this, 'default_merge_field_settings' ), 10, 2 );
-		add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields',
-			array( Merge_Fields::get_instance(), 'admin_defined_listsubscribe', ),
-			999,
-			3
-		);
-		add_filter( 'e20r-mailchimp-user-defined-merge-tag-fields', array( $this, 'default_listsubscribe_fields' ), 10, 3 );
-		
-		//On the checkout page?
-		$on_checkout_page = apply_filters( 'e20r-mailchimp-on-membership-checkout-page', false );
-		$member_list      = $mc_api->get_option( 'members_list' );
-		$additional_lists = $mc_api->get_option( 'additional_lists' );
-		
-		//Configure the user_register hook (outside of a membership plugin.
-		if ( ( ! empty( $member_list ) || ! empty( $additional_lists ) ) && ! $on_checkout_page ) {
-			add_action( 'user_register', array( User_Handler::get_instance(), 'user_register' ) );
-		}
-		
-		add_action( 'e20r-mailchimp-membership-level-update',
-			array( Interest_Groups::get_instance(), 'create_categories_for_membership' ),
-			10,
-			1
-		);
-		
-		add_action( 'e20r-mailchimp-plugin-activation', array( $this, 'create_default_groups' ) );
-		
-		$utils->log("Trigger membership plugin operations");
-		do_action( 'e20r-mailchimp-membership-plugin-load', $on_checkout_page );
 	}
 	
 	/**
@@ -170,8 +174,8 @@ class Member_Handler {
 	 * Membership level as merge values.
 	 *
 	 * @param array       $default_fields - Merge fields (preexisting)
-	 * @param \WP_User    $user   - User object
-	 * @param string|null $list_id   - MailChimp List ID
+	 * @param \WP_User    $user           - User object
+	 * @param string|null $list_id        - MailChimp List ID
 	 *
 	 * @return mixed - Array of $merge fields;
 	 */
@@ -211,12 +215,11 @@ class Member_Handler {
 	 */
 	public function get_levels( $prefix = 'any' ) {
 		
-		$utils = Utilities::get_instance();
-		$mc_api = MailChimp_API::get_instance();
+		$utils  = Utilities::get_instance();
 		
-        $utils->log("Attempting to load level(s)");
-        
-        // $member_plugin = $mc_api->get_option( 'membership_plugin' );
+		$utils->log( "Attempting to load level(s)" );
+		
+		// $member_plugin = $mc_api->get_option( 'membership_plugin' );
 		
 		if ( null === ( $e20r_mc_levels = Cache::get( "e20r_lvls_{$prefix}", 'e20r_mailchimp' ) ) ) {
 			
@@ -249,11 +252,13 @@ class Member_Handler {
 			return true;
 		}
 		
+		/*
 		if ( empty( $old_level_id ) ) {
 		    $utils->log("Old level not specified!");
 		    return false;
         }
-        
+        */
+		
 		$utils->log( "Cancelling membership level {$old_level_id}" );
 		
 		$mc_controller = Controller::get_instance();
@@ -261,7 +266,7 @@ class Member_Handler {
 		$mf_controller = Merge_Fields::get_instance();
 		$ig_controller = Interest_Groups::get_instance();
 		
-		$prefix      = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
+		$prefix = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
 		
 		$api_key        = $mc_api->get_option( 'api_key' );
 		$levels         = null;
@@ -269,15 +274,15 @@ class Member_Handler {
 		$merge_fields   = null;
 		
 		$user_level_ids = apply_filters( 'e20r-mailchimp-user-membership-levels', $user_level_ids, $user_id );
-        
-        $level_lists    = $mc_api->get_option( "level_{$prefix}_{$old_level_id}_lists" );
-        
-        if ( empty( $level_lists ) ) {
-            $utils->log("No level specific lists defined for {$level_id}. Grabbing the default list");
-            $level_lists = $mc_api->get_option( "members_list" );
-        }
-        
-        if ( empty( $user_level_ids ) && ! is_array( $user_level_ids ) ) {
+		
+		$level_lists = $mc_api->get_option( "level_{$prefix}_{$old_level_id}_lists" );
+		
+		if ( empty( $level_lists ) ) {
+			$utils->log( "No level specific lists defined for {$level_id}. Grabbing the default list" );
+			$level_lists = $mc_api->get_option( "members_list" );
+		}
+		
+		if ( empty( $user_level_ids ) && ! is_array( $user_level_ids ) ) {
 			$user_level_ids = array();
 		}
 		
@@ -298,10 +303,10 @@ class Member_Handler {
 			// Unsubscribe from each list (have to make sure)
 			foreach ( $level_lists as $list_id ) {
 				
-				$interests = $ig_controller->populate( $list_id, $list_user, $user_level_ids, true );
+				$interests    = $ig_controller->populate( $list_id, $list_user, $user_level_ids, true );
 				$merge_fields = $mf_controller->populate( $list_id, $list_user, $user_level_ids, true );
 				
-				$utils->log( "Cancelling subscription for {$list_user->user_email} from {$list_id}" );
+				$utils->log( "Updating (cancelling?) subscription for {$list_user->user_email} from {$list_id}" );
 				$mc_controller->unsubscribe( $list_id, $list_user, $merge_fields, $interests );
 			}
 			
@@ -320,11 +325,11 @@ class Member_Handler {
 	public function on_add_to_new_level( $level_id, $user_id, $old_level_id = null ) {
 		
 		$utils = Utilities::get_instance();
-		$utils->log("Adding user {$user_id} to MailChimp lists for {$level_id}");
+		$utils->log( "Adding user {$user_id} to MailChimp lists for {$level_id}" );
 		
 		// Updating or updating membership level?
-		if ( !empty( $level_id ) ) {
-   
+		if ( ! empty( $level_id ) ) {
+			
 			clean_user_cache( $user_id );
 			
 			$utils         = Utilities::get_instance();
@@ -334,14 +339,14 @@ class Member_Handler {
 			$prefix      = apply_filters( 'e20r-mailchimp-membership-plugin-prefix', null );
 			$api_key     = $mc_api->get_option( 'api_key' );
 			$level_lists = $mc_api->get_option( "level_{$prefix}_{$level_id}_lists" );
-   
+			
 			if ( empty( $level_lists ) ) {
-			    $utils->log("No level specific lists defined for {$level_id}. Grabbing default list");
-			    $level_lists = $mc_api->get_option( "members_list" );
-            }
-            
-            $utils->log( "Adding membership level {$level_id} for user {$user_id} to: " . print_r( $level_lists, true  ) );
-            
+				$utils->log( "No level specific lists defined for {$level_id}. Grabbing default list" );
+				$level_lists = $mc_api->get_option( "members_list" );
+			}
+			
+			$utils->log( "Adding membership level {$level_id} for user {$user_id} to: " . print_r( $level_lists, true ) );
+			
 			// Do we have a list to add the user to?
 			if ( ! empty( $level_lists ) && ! empty( $api_key ) ) {
 				
@@ -356,7 +361,7 @@ class Member_Handler {
 					$mc_controller->subscribe( $list, $list_user, $level_id );
 				}
 				
-				$utils->log("Adding user ({$user_id}) to any additional lists requested & configured");
+				$utils->log( "Adding user ({$user_id}) to any additional lists requested & configured" );
 				
 				// Add user to any additional lists they selected
 				$mc_controller->subscribe_to_additional_lists( $user_id, $level_id );
