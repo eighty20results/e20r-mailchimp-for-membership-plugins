@@ -121,20 +121,20 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		 * The plugins_loader hook handler for the E20R MailChimp for PMPro plugin
 		 */
 		public function plugins_loaded() {
-			
+			Utilities::get_instance()->log("Loading action handlers for member plugins");
+			add_action( "plugins_loaded", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
 			add_action( 'plugins_loaded', array( GDPR_Enablement::get_instance(), 'load_hooks' ), 98 );
 			add_action( 'plugins_loaded', array( MC_Settings::get_instance(), 'load_actions' ), 99 );
+			
+			add_action( 'init', array( User_Handler::get_instance(), 'load_actions' ) );
+			
+			add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ), 999 );
 			
 			$plugin = plugin_basename( __FILE__ );
 			
 			add_filter( "plugin_action_links_{$plugin}", array( $this, 'add_action_links' ), 10, 1 );
 			add_filter( 'plugin_row_meta', array( $this, 'plugin_row_meta' ), 10, 2 );
-			
-			add_action( 'init', array( User_Handler::get_instance(), 'load_actions' ) );
-			add_action( "init", array( Member_Handler::get_instance(), "load_plugin" ), - 1 );
-			
-			add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
-			add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ), 999 );
 		}
 		
 		/**
@@ -265,10 +265,12 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		 *
 		 * @param string   $list_id - the List ID
 		 * @param \WP_User $user    - The WP_User object for the user
+		 * @param array|null $merge_fields - The Merge Fields to use for the user/list ID
+		 * @param array|null $interests - The Interests to use for the user/list ID
 		 *
 		 * @return bool
 		 */
-		public function unsubscribe( $list_id, $user, $merge_fields, $interests ) {
+		public function unsubscribe( $list_id, $user, $merge_fields = null, $interests = null ) {
 			
 			//make sure user has an email address
 			if ( empty( $user->user_email ) ) {
@@ -486,18 +488,26 @@ function test_e20rmc_listsubscribe_fields( $fields, $user = null, $list_id = nul
 
 global $e20r_mailchimp_plugins;
 
+/**
+ * @var string[] $e20r_mailchimp_plugins
+ *
+ * Format:
+ *      array( 'plugin_slug' => '', 'class_name' => '', 'label' => '' )
+ */
 if ( empty( $e20r_mailchimp_plugins ) ) {
 	$e20r_mailchimp_plugins = array();
 }
 
-$e20r_mailchimp_plugins[] = array(
+$e20r_mailchimp_plugins['pmpro'] = array(
 	'plugin_slug' => 'pmpro',
 	'class_name'  => 'PMPro',
+	'label' => __('Level:', Controller::plugin_slug )
 );
 
-$e20r_mailchimp_plugins[] = array(
+$e20r_mailchimp_plugins['woocommerce'] = array(
 	'plugin_slug' => 'woocommerce',
 	'class_name'  => 'WooCommerce',
+	'label' => __('Cat:', Controller::plugin_slug )
 );
 
 spl_autoload_register( 'E20R\MailChimp\Controller::auto_loader' );
@@ -520,4 +530,4 @@ if ( file_exists( plugin_dir_path( __FILE__ ) . "plugin-updates/plugin-update-ch
 
 $GLOBALS[ 'e20r_mc_error_msg' ] = null;
 
-add_action( 'plugins_loaded', array( Controller::get_instance(), 'plugins_loaded' ) );
+add_action( 'plugins_loaded', array( Controller::get_instance(), 'plugins_loaded' ), -1 );
