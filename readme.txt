@@ -4,7 +4,7 @@ Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing
 Requires at least: 4.5
 Requires PHP: 5.6
 Tested up to: 5.0
-Stable tag: 3.0
+Stable tag: 3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,28 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 3.1 ==
+
+* ENHANCEMENT: Clear the list/user cache entry for the user in the MailChimp_API::delete(), subscribe() and remote_user_update() methods
+* ENHANCEMENT: Cache list info for user (avoid remote requests when possible)
+* ENHANCEMENT: WPCS applied to Member_Handler() class
+* ENHANCEMENT: Add Membership_Plugin::get_last_for_user() abstract function
+* ENHANCEMENT: Add filter to fetch most recent 'levels' (or category IDs) for a user based on their last order/checkout
+* ENHANCEMENT: Set the cursor to 'waiting' after submitting AJAX requests
+* ENHANCEMENT: Set the cursor back to normal if we receive an error from the AJAX call
+* ENHANCEMENT: Added the appropriate label for the plugin on the tabbed Settings page
+* BUG FIX: Empty list of membership IDs didn't trigger cancellation processing in Merge_Fields::populate()
+* BUG FIX: Didn't always respect unsubscribe setting in Interest_Groups::populate()
+* BUG FIX: Would use 'Level:' label for WooCommerce categories
+* BUG FIX: Improved text for the Plus license banner
+* BUG FIX: Didn't include PHPDoc block for default_timeout variable
+* BUG FIX: Have to json_encode() the body before submitting the request in MailChimp_API::execute()
+* BUG FIX: Refactored MailChimp_API::update_list_member() to use remote_user_update()
+* BUG FIX: Always returned true in MailChimp_API::delete()
+* BUG FIX: Don't log the REQUEST during user save operation
+* BUG FIX: MailChimp_API::delete() didn't handle empty interests or merge fields when using unsubscribe option 2 (change interest groups)
+* BUG FIX: Fix the PHPDoc block for Controller::unsubscribe()
 
 == 3.0 ==
 

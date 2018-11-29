@@ -1,10 +1,19 @@
-ENHANCEMENT: Add button processing to re-enable the background update of members button
-ENHANCEMENT: Better articulation of purpose of the E20R MailChimp Plus (Support & Updates) license
-ENHANCEMENT: Better highlight the value of the E20R MailChimp Plus (Support & Updates) license
-ENHANCEMENT: Add 'build-for-svn.sh' script
-ENHANCEMENT: Support the 'build-for-svn.sh' script
-BUG FIX: Load testing functionality if E20R_MC_TESTING constant isn't FALSE
-BUG FIX: Add languages folder (.pot file) for translation
-BUG FIX: Didn't remove the One-Click updater in build-for-svn.sh script
-BUG FIX: Clarify renewal message text
-BUG FIX: Error isolation for E20R MailChimp admin features
+ENHANCEMENT: Clear the list/user cache entry for the user in the MailChimp_API::delete(), subscribe() and remote_user_update() methods
+ENHANCEMENT: Cache list info for user (avoid remote requests when possible)
+ENHANCEMENT: WPCS applied to Member_Handler() class
+ENHANCEMENT: Add Membership_Plugin::get_last_for_user() abstract function
+ENHANCEMENT: Add filter to fetch most recent 'levels' (or category IDs) for a user based on their last order/checkout
+ENHANCEMENT: Set the cursor to 'waiting' after submitting AJAX requests
+ENHANCEMENT: Set the cursor back to normal if we receive an error from the AJAX call
+ENHANCEMENT: Added the appropriate label for the plugin on the tabbed Settings page
+BUG FIX: Empty list of membership IDs didn't trigger cancellation processing in Merge_Fields::populate()
+BUG FIX: Didn't always respect unsubscribe setting in Interest_Groups::populate()
+BUG FIX: Would use "Level:" label for WooCommerce categories
+BUG FIX: Improved text for the Plus license banner
+BUG FIX: Didn't include PHPDoc block for default_timeout variable
+BUG FIX: Have to json_encode() the body before submitting the request in MailChimp_API::execute()
+BUG FIX: Refactored MailChimp_API::update_list_member() to use remote_user_update()
+BUG FIX: Always returned true in MailChimp_API::delete()
+BUG FIX: Don't log the REQUEST during user save operation
+BUG FIX: MailChimp_API::delete() didn't handle empty interests or merge fields when using unsubscribe option 2 (change interest groups)
+BUG FIX: Fix the PHPDoc block for Controller::unsubscribe()
