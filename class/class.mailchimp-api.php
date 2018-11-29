@@ -390,15 +390,29 @@ class MailChimp_API {
 		$retval  = true;
 		
 		foreach ( $users as $user ) {
-			
+		 
 			switch ( $unsub_setting ) {
 				case 2:
+					
+					if (empty( $merge_fields) || empty( $interests ) ) {
+						$last_level_ids = apply_filters( 'e20r-mailchimp-user-last-level', array(), $user->ID  );
+					}
+					
+					if ( empty( $merge_fields ) ) {
+						$merge_fields = Merge_Fields::get_instance()->populate( $list_id,$user,$last_level_ids, true );
+					}
+					
+					if ( empty( $interests ) ) {
+						$interests = Interest_Groups::get_instance()->populate( $list_id, $user, $last_level_ids,true );
+					}
+					
 					// Update the mailing list interest groups for the user
 					$retval = $retval && $this->remote_user_update( $users, $list_id, $merge_fields, $interests, true );
 					break;
 				
-				default:
-					
+                default:
+					// FIXME: Not handling option #1 or 'ALL'!?!
+     
 					$user_id  = $this->subscriber_id( $user->user_email );
 					$user_url = $url . "/{$user_id}";
 					
