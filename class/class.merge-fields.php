@@ -512,7 +512,7 @@ class Merge_Fields {
 		}
 		
 		// Only (possibly) add new merge fields upstream if we're adding user to new/updating list.
-		if ( false === $cancelling ) {
+		if ( false === $cancelling || empty( $level_ids )) {
 			
 			foreach ( $level_ids as $level_id ) {
 				$this->maybe_push_merge_fields( $list_id, $level_id );
