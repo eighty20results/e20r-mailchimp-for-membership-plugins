@@ -1,7 +1,7 @@
 /*
  * License:
 
- Copyright 2016-2017 - Eighty / 20 Results by Wicked Strong Chicks, LLC (thomas@eighty20results.com)
+ Copyright 2016-2018 - Eighty / 20 Results by Wicked Strong Chicks, LLC (thomas@eighty20results.com)
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License, version 2, as
@@ -28,17 +28,21 @@
             this.ack = $('#e20rmc-warning-ack');
             this.clear_cache_btn = $('#e20r-mc-reset-cache');
             this.reset_update_btn = $('#e20r-reset-update');
+            this.wait_area = $('body');
 
             this.list_is_defined = $('#e20rmc-list-is-defined').val();
             var self = this;
 
             self.clear_cache_btn.on('click', function (event) {
 
+                self.wait_area.css( 'cursor', 'wait' );
                 event.preventDefault();
                 self.clear_cache();
             });
 
             self.reset_update_btn.on('click', function (event) {
+
+                self.wait_area.css( 'cursor', 'wait' );
                 event.preventDefault();
                 self.reset_update();
             });
@@ -48,6 +52,8 @@
                 var btn = $(this);
 
                 btn.unbind('click').on('click', function () {
+
+                    self.wait_area.css( 'cursor', 'wait' );
 
                     window.console.log("Processing click action for: ", this);
                     event.preventDefault();
@@ -63,6 +69,8 @@
             });
 
             self.bg_update_btn.unbind('click').on('click', function () {
+
+                self.wait_area.css( 'cursor', 'wait' );
 
                 event.preventDefault();
                 window.console.log("Processing click action for: ", this);
@@ -80,6 +88,8 @@
             });
         },
         clear_cache: function () {
+            var self = this;
+
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
@@ -99,12 +109,14 @@
                     location.reload(true);
                 },
                 error: function (hdr, $error, errorThrown) {
+                    self.wait_area.css( 'cursor', 'default' );
                     window.alert("Error ( " + $error + " ) while clearing local mailchimp.com settings");
                     window.console.log("Error:", errorThrown, $error, hdr);
                 }
             });
         },
         reset_update: function () {
+            var self = this;
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
@@ -124,6 +136,7 @@
                     location.reload(true);
                 },
                 error: function (hdr, $error, errorThrown) {
+                    self.wait_area.css( 'cursor', 'default' );
                     window.alert("Error ( " + $error + " ) while reactivating local mailchimp.com settings");
                     window.console.log("Error:", errorThrown, $error, hdr);
                 }
@@ -153,8 +166,10 @@
                     location.reload(true);
                 },
                 error: function (hdr, $error, errorThrown) {
+                    self.wait_area.css( 'cursor', 'default' );
                     window.alert("Error ( " + $error + " ) while triggering background update");
                     window.console.log("Error:", errorThrown, $error, hdr);
+
                 }
             });
         },
@@ -183,6 +198,7 @@
                     location.reload(true);
                 },
                 error: function (hdr, $error, errorThrown) {
+                    $class.wait_area.css( 'cursor', 'default' );
                     window.alert("Error ( " + $error + " ) while refreshing MailChimp server info");
                     window.console.log("Error:", errorThrown, $error, hdr);
                 }
