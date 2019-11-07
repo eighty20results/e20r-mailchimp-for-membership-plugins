@@ -52,3 +52,7 @@ plugin-updates/
 /build_readmes/json_changelog.txt
 /build_readmes/readme_changelog.txt
 /metadata.json
+/composer.lock
+/test-ipn-handler.php
+/docker-env/e20r-mailchimp-plugin.sql
+/docker-env/e20r-mailchimp-for-membership-plugins.sql
