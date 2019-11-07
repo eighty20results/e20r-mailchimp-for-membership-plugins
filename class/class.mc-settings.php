@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017-2018 - Eighty / 20 Results by Wicked Strong Chicks.
+ * Copyright (c) 2017-2019 - Eighty / 20 Results by Wicked Strong Chicks.
  * ALL RIGHTS RESERVED
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,10 +19,10 @@
 
 namespace E20R\MailChimp;
 
-use E20R\MailChimp\Membership_Support\Membership_Plugin;
 use E20R\Utilities\Cache;
 use E20R\Utilities\Utilities;
 use E20R\Utilities\Licensing\Licensing;
+use E20R\Utilities\Licensing\License_Settings;
 
 class MC_Settings {
 	
@@ -99,7 +99,7 @@ class MC_Settings {
 			array( $this, 'settings_page' )
 		);
 		
-		Licensing::add_options_page();
+		License_Settings::add_options_page();
 	}
 	
 	/**
@@ -341,7 +341,7 @@ class MC_Settings {
 			);
 		}
 		
-		Licensing::register_settings();
+		License_Settings::register_settings();
 	}
 	
 	/**
