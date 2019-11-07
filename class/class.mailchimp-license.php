@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017 - Eighty / 20 Results by Wicked Strong Chicks.
+ * Copyright (c) 2017-2019 - Eighty / 20 Results by Wicked Strong Chicks.
  * ALL RIGHTS RESERVED
  *
  * This program is free software: you can redistribute it and/or modify
@@ -96,6 +96,7 @@ class Mailchimp_License extends License_Client {
 		$plugin_settings['e20r_mc'] = array(
 			'label'      => __( 'E20R MailChimp', Controller::plugin_slug ),
 			'key_prefix' => 'e20r_mc',
+			'product_sku' => 'E20R_MC',
 			'stub'       => 'e20r_mc'
 		);
 		
