@@ -3,9 +3,9 @@
 Plugin Name: E20R MailChimp Interest Groups for Paid Memberships Pro (and WooCommerce)
 Plugin URI: https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins/
 Description: Use MailChimp Interest Groups and Merge Fields when adding members to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and/or MailChimp Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
-Version: 3.1
+Version: 4.0
 WC requires at least: 3.3
-WC tested up to: 3.5
+WC tested up to: 3.8
 Requires at least: 4.5
 Tested up to: 5.0
 Author: Eighty/20 Results <thomas@eighty20results.com>
@@ -16,7 +16,7 @@ Text Domain: e20r-mailchimp-for-membership-plugins
 Domain Path: /languages
 License: GPLv2
 
-* Copyright (c) 2017-2018 - Eighty / 20 Results by Wicked Strong Chicks.
+* Copyright (c) 2017-2019 - Eighty / 20 Results by Wicked Strong Chicks.
 * ALL RIGHTS RESERVED
 *
 * This program is free software: you can redistribute it and/or modify
@@ -37,6 +37,7 @@ License: GPLv2
 namespace E20R\MailChimp;
 
 use E20R\Utilities\GDPR_Enablement;
+use E20R\Utilities\Licensing\Licensing;
 use E20R\Utilities\Licensing\Mailchimp_License;
 use E20R\Utilities\Utilities;
 
@@ -122,6 +123,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 		 */
 		public function plugins_loaded() {
 			Utilities::get_instance()->log("Loading action handlers for member plugins");
+			add_action( 'plugins_loaded', array( Licensing::get_instance(), 'load_hooks' ), 11 );
 			add_action( "plugins_loaded", array( Member_Handler::get_instance(), "load_plugin" ), 5 );
 			add_action( 'plugins_loaded', array( GDPR_Enablement::get_instance(), 'load_hooks' ), 98 );
 			add_action( 'plugins_loaded', array( MC_Settings::get_instance(), 'load_actions' ), 99 );
@@ -516,9 +518,9 @@ register_activation_hook( __FILE__, array( Controller::get_instance(), "activati
 
 /** One-Click update support **/
 // Load one-click update support for v3.x BETA from custom repository
-if ( file_exists( plugin_dir_path( __FILE__ ) . "plugin-updates/plugin-update-checker.php" ) ) {
+if ( file_exists( plugin_dir_path( __FILE__ ) . "inc/yahnis-elsts/plugin-update-checker/plugin-updates/plugin-update-checker.php" ) ) {
 	
-	require_once( plugin_dir_path( __FILE__ ) . "plugin-updates/plugin-update-checker.php" );
+	require_once( plugin_dir_path( __FILE__ ) . "inc/yahnis-elsts/plugin-update-checker/plugin-updates/plugin-update-checker.php" );
 	
 	$plugin_updates = \PucFactory::buildUpdateChecker(
 		'https://eighty20results.com/protected-content/e20r-mailchimp-for-membership-plugins/metadata.json',
