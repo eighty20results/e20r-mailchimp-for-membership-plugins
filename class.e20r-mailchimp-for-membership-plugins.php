@@ -520,11 +520,11 @@ try {
 register_activation_hook( __FILE__, array( Controller::get_instance(), "activation" ) );
 
 /** One-Click update support **/
-error_log("Loading: " . plugin_dir_path( __FILE__ ) . "lib/yahnis-elsts/plugin-update-checker/plugin-update-checker.php" );
+
 // Load one-click update support for v3.x BETA from custom repository
-if ( file_exists( plugin_dir_path( __FILE__ ) . "lib/yahnis-elsts/plugin-update-checker/plugin-update-checker.php" ) ) {
+if ( file_exists( plugin_dir_path( __FILE__ ) . "inc/yahnis-elsts/plugin-update-checker/plugin-update-checker.php" ) ) {
 	
-	require_once( plugin_dir_path( __FILE__ ) . "lib/yahnis-elsts/plugin-update-checker/plugin-update-checker.php" );
+	require_once( plugin_dir_path( __FILE__ ) . "inc/yahnis-elsts/plugin-update-checker/plugin-update-checker.php" );
 	
 	$plugin_updates = \Puc_v4_Factory::buildUpdateChecker(
 		'https://eighty20results.com/protected-content/e20r-mailchimp-for-membership-plugins/metadata.json',
