@@ -91,6 +91,8 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 * ENHANCEMENT: Added docker based test environment
 * ENHANCEMENT: Updated copyright notice
 * ENHANCEMENT: Change license management tools
+* BUG FIX: Didn't handle spl errors
+* BUG FIX: Didn't load the correct update checker
 
 == 3.1 ==
 
