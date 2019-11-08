@@ -3,7 +3,7 @@
 #
 short_name="e20r-mailchimp-for-membership-plugins"
 server="eighty20results.com"
-include=(class css js languages plugin-updates class.${short_name}.php readme.txt)
+include=(class css js languages inc/yahnis-elsts/plugin-update-checker class.${short_name}.php readme.txt)
 exclude=(*.yml *.phar composer.* vendor)
 sed=/usr/bin/sed
 build=(plugin-updates/vendor/*.php)
@@ -23,6 +23,8 @@ mkdir -p ${kit_path}
 mkdir -p ${kit_path}-debug
 mkdir -p ${dst_path}
 mkdir -p ${debug_path}
+mkdir -p ${dst_path}/inc/yahnis-elsts/
+mkdir -p ${debug_path}/inc/yahnis-elsts/
 
 if [[ -f  ${kit_name} ]]
 then
@@ -34,23 +36,28 @@ then
 fi
 
 for p in ${include[@]}; do
-	cp -R ${src_path}${p} ${dst_path}
-	cp -R ${src_path}${p} ${debug_path}
+    if [[ 'inc/yahnis-elsts/plugin-update-checker' == ${p} ]]; then
+        cp -R ${src_path}${p} ${dst_path}/inc/yahnis-elsts/
+        cp -R ${src_path}${p} ${debug_path}/inc/yahnis-elsts/
+    else
+    	cp -R ${src_path}${p} ${dst_path}
+	    cp -R ${src_path}${p} ${debug_path}
+    fi
 done
 
 echo "Stripping Debug data from sources"
-find ${dst_path} -type d -name 'plugin-updates' -prune -o -type f -name '*.php' | xargs ${sed} -i '' "/.*->log\(.*\);$/d"
+find ${dst_path} -type d -name 'inc/yahnis-elsts/plugin-update-checker' -prune -o -type f -name '*.php' | xargs ${sed} -i '' "/.*->log\(.*\);$/d"
 
 for e in ${exclude[@]}; do
     find ${dst_path} -type d -iname ${e} -exec rm -rf {} \;
     find ${debug_path} -type d -iname ${e} -exec rm -rf {} \;
 done
 
-mkdir -p ${dst_path}/plugin-updates/vendor/
-for b in ${build[@]}; do
-    cp ${src_path}${b} ${dst_path}/plugin-updates/vendor/
-    cp ${src_path}${b} ${debug_path}/plugin-updates/vendor/
-done
+#mkdir -p ${dst_path}/plugin-updates/vendor/
+#for b in ${build[@]}; do
+#    cp ${src_path}${b} ${dst_path}/plugin-updates/vendor/
+#    cp ${src_path}${b} ${debug_path}/plugin-updates/vendor/
+#done
 
 
 cd ${dst_path}/..
@@ -58,10 +65,10 @@ zip -r ${kit_name}.zip ${plugin_path}
 cd ${debug_path}/..
 zip -r ${debug_name}.zip ${plugin_path}-debug
 cd ${dst_path}/..
-ssh ${server} "cd ./www/protected-content/ ; mkdir -p \"${short_name}\""
-scp ${kit_name}.zip ${server}:./www/protected-content/${short_name}/
-scp ${kit_name}-debug.zip ${server}:./www/protected-content/${short_name}/
-scp ${metadata} ${server}:./www/protected-content/${short_name}/
-ssh ${server} "cd ./www/protected-content/ ; ln -sf \"${short_name}\"/\"${short_name}\"-\"${version}\".zip \"${short_name}\".zip"
+ssh ${server} "cd ./eighty20results.com/protected-content/ ; mkdir -p \"${short_name}\""
+scp ${kit_name}.zip ${server}:./eighty20results.com/protected-content/${short_name}/
+scp ${kit_name}-debug.zip ${server}:./eighty20results.com/protected-content/${short_name}/
+scp ${metadata} ${server}:./eighty20results.com/protected-content/${short_name}/
+ssh ${server} "cd ./eighty20results.com/protected-content/ ; ln -sf \"${short_name}\"/\"${short_name}\"-\"${version}\".zip \"${short_name}\".zip"
 rm -rf ${dst_path}
 rm -rf ${debug_path}
