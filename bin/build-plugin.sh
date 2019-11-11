@@ -3,7 +3,7 @@
 #
 short_name="e20r-mailchimp-for-membership-plugins"
 server="eighty20results.com"
-include=(class css js languages inc/yahnis-elsts/plugin-update-checker class.${short_name}.php readme.txt)
+include=(class css js languages class.${short_name}.php readme.txt)
 exclude=(*.yml *.phar composer.* vendor)
 sed=/usr/bin/sed
 build=(plugin-updates/vendor/*.php)
@@ -23,8 +23,6 @@ mkdir -p ${kit_path}
 mkdir -p ${kit_path}-debug
 mkdir -p ${dst_path}
 mkdir -p ${debug_path}
-mkdir -p ${dst_path}/inc/yahnis-elsts/
-mkdir -p ${debug_path}/inc/yahnis-elsts/
 
 if [[ -f  ${kit_name} ]]
 then
@@ -36,13 +34,8 @@ then
 fi
 
 for p in ${include[@]}; do
-    if [[ 'inc/yahnis-elsts/plugin-update-checker' == ${p} ]]; then
-        cp -R ${src_path}${p} ${dst_path}/inc/yahnis-elsts/
-        cp -R ${src_path}${p} ${debug_path}/inc/yahnis-elsts/
-    else
-    	cp -R ${src_path}${p} ${dst_path}
-	    cp -R ${src_path}${p} ${debug_path}
-    fi
+	cp -R ${src_path}${p} ${dst_path}
+	cp -R ${src_path}${p} ${debug_path}
 done
 
 echo "Stripping Debug data from sources"
