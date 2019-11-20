@@ -1,1 +1,1 @@
-ENHANCEMENT: Updated the Utilities module
+BUG FIX: Add support for PMPro registration checks in WooCommerce plugin support module

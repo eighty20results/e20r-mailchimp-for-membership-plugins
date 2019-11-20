@@ -111,7 +111,7 @@ class WooCommerce extends Membership_Plugin {
 			add_action( 'pmpro_save_membership_level', array( $this, 'clear_levels_cache' ), 10 );
 			add_action( 'pmpro_checkout_before_submit_button', array( $this, 'view_additional_lists' ), 10 );
 			
-			add_filter( 'pmpro_registration_checks', array( $this, 'registration_checks' ), 10, 1);
+			add_filter( 'pmpro_registration_checks', array( PMPro::get_instance(), 'registration_checks' ), 10, 1);
 		}
 		
 		// If the PMPro Signup Shortcode plugin is active
