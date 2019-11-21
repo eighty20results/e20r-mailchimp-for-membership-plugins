@@ -1,1 +1,1 @@
-BUG FIX: Add support for PMPro registration checks in WooCommerce plugin support module
+BUG FIX: Updated Utilities module to fix PHP Notice messages 
