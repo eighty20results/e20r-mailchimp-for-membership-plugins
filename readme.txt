@@ -3,8 +3,8 @@ Contributors: eighty20results
 Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups, mailchimp interest groups
 Requires at least: 4.5
 Requires PHP: 5.6
-Tested up to: 5.0
-Stable tag: 4.1.2
+Tested up to: 5.3
+Stable tag: 4.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,10 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 4.1.3 ==
+
+* BUG FIX: Updated Licensing module 
 
 == 4.1.2 ==
 

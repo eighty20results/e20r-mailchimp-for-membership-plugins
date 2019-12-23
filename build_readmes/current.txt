@@ -1,1 +1,1 @@
-BUG FIX: Updated Utilities module to fix PHP Notice messages 
+BUG FIX: Updated Licensing module 
