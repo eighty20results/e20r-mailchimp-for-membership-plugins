@@ -8,9 +8,9 @@ services:
 
   nginx:
     volumes:
-      - /Volumes/Development/www/clean.local/wp-content/themes/e20r-coaching:/var/www/html/wp-content/themes/e20r-coaching
-      - /Volumes/Development/www/clean.local/wp-content/plugins/paid-memberships-pro:/var/www/html/wp-content/plugins/paid-memberships-pro:ro
-      - /Volumes/Development/www/clean.local/wp-content/plugins/e20r-mailchimp-for-membership-plugins:/var/www/html/wp-content/plugins/e20r-mailchimp-for-membership-plugins
+    - /Volumes/Development/www/clean.local/wp-content/themes/e20r-coaching:/var/www/html/wp-content/themes/e20r-coaching
+    - /Volumes/Development/www/clean.local/wp-content/plugins/paid-memberships-pro:/var/www/html/wp-content/plugins/paid-memberships-pro:ro
+    - /Volumes/Development/www/clean.local/wp-content/plugins/e20r-mailchimp-for-membership-plugins:/var/www/html/wp-content/plugins/e20r-mailchimp-for-membership-plugins
     ports:
     - target: 80 # Web server
       published: 80
@@ -45,12 +45,9 @@ services:
     #      PHP_XDEBUG_REMOTE_HOST: 10.0.75.1 # Windows
     volumes:
     - ./:/var/www/html
-    - /Volumes/Development/www/clean.local/wp-content/themes/e20r-coaching:/var/www/html/wp-content/themes/e20r-coaching
-    - /Volumes/Development/www/clean.local/wp-content/plugins/pmpro-email-confirmation:/var/www/html/wp-content/plugins/pmpro-email-confirmation:ro
+    - /Volumes/Development/www/clean.local/wp-content/themes/e20r-coaching:/var/www/html/wp-content/themes/e20r-coaching:ro
     - /Volumes/Development/www/clean.local/wp-content/plugins/paid-memberships-pro:/var/www/html/wp-content/plugins/paid-memberships-pro:ro
-    - /Volumes/Development/www/clean.local/wp-content/plugins/e20r-payment-warning-pmpro:/var/www/html/wp-content/plugins/e20r-payment-warning-pmpro:ro
-    - /Volumes/Development/www/clean.local/wp-content/plugins/theme-my-login:/var/www/html/wp-content/plugins/theme-my-login:ro
-    - /Volumes/Development/www/clean.local/wp-content/plugins/tml-profiles:/var/www/html/wp-content/plugins/tml-profiles:ro
+    - /Volumes/Development/www/clean.local/wp-content/plugins/e20r-mailchimp-for-membership-plugins:/var/www/html/wp-content/plugins/e20r-mailchimp-for-membership-plugins
     labels:
     - "traefik.enable=true"
     - "traefik.frontend.rule=Host:development.local"
