@@ -4,7 +4,7 @@ Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing
 Requires at least: 4.5
 Requires PHP: 7.1
 Tested up to: 5.4
-Stable tag: 5.0
+Stable tag: 5.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,9 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+== 5.0.1 ==
+
+* BUG FIX: Fatal error in the WooCommerce plugin helper class
 
 == 5.0 ==
 
