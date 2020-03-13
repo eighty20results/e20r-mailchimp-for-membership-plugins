@@ -420,7 +420,7 @@ class WooCommerce extends Membership_Plugin {
 			}
 
 			// Refresh cache(d) data from upstream MailChimp server
-			$this->$this->load_list_data( $level_lists, $level );
+			$this->load_list_data( $level_lists, $level );
 		}
 	}
 
