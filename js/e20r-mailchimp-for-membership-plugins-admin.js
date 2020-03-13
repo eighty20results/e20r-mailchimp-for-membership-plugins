@@ -51,12 +51,12 @@
 
                 var btn = $(this);
 
-                btn.unbind('click').on('click', function () {
+                btn.unbind('click').on('click', function (e) {
 
                     self.wait_area.css( 'cursor', 'wait' );
 
                     window.console.log("Processing click action for: ", this);
-                    event.preventDefault();
+                    e.preventDefault();
 
                     var element = $(this).closest('div.e20rmc-server-refresh-form');
                     var list_id = element.find('.e20rmc_refresh_list_id').val();
@@ -68,16 +68,16 @@
                 });
             });
 
-            self.bg_update_btn.unbind('click').on('click', function () {
+            self.bg_update_btn.unbind('click').on('click', function (e) {
 
                 self.wait_area.css( 'cursor', 'wait' );
 
-                event.preventDefault();
+                e.preventDefault();
                 window.console.log("Processing click action for: ", this);
                 self.trigger_background_operation();
             });
 
-            self.ack.unbind('click').on('click', function () {
+            self.ack.unbind('click').on('click', function (e) {
 
                 if ($(this).is(':checked')) {
                     window.console.log("Requesting that the background processing button is shown");
@@ -181,11 +181,12 @@
             var data = {
                 action: 'e20rmc_refresh_list_id',
                 'e20rmc_refresh_list_id': $list_id,
-                'e20rmc_refresh_list_level': $level_id
+                'e20rmc_refresh_list_level': $level_id,
+                $list_nonce: $nonce
             };
 
             // Add custom nonce ID
-            data[$list_nonce] = $nonce;
+            // data[$list_nonce] = $nonce;
 
             $.ajax({
                 url: ajaxurl,

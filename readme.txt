@@ -2,9 +2,9 @@
 Contributors: eighty20results
 Tags: mailchimp, paid memberships pro, pmpro, membership plugin, email marketing, woocommerce, distribution list support, merge tags, interests, mailchimp groups, mailchimp interest groups
 Requires at least: 4.5
-Requires PHP: 5.6
-Tested up to: 5.3
-Stable tag: 4.1.3
+Requires PHP: 7.1
+Tested up to: 5.4
+Stable tag: 5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,25 @@ Please visit our premium [support](https://eighty20results.com/) for more docume
 2. Membership-level specific Groups/Interests and Merge Tag settings.
 
 == Changelog ==
+
+== 5.0 ==
+
+* ENHANCEMENT: Refactor settings & option handling
+* ENHANCEMENT: Add E20R MailChimp to PMPro 'Memberships' wp-admin menu(s)
+* ENHANCEMENT: Better logging w/E20R_LICENSING_DEBUG enabled
+* ENHANCEMENT: Added 'e20r-license-save-btn-text' field to allow user(s) to configure Submit/Save button for license(s)
+* ENHANCEMENT: Added support for verifying license manually (and refresh the cache) from the E20R License page
+* BUG FIX: Didn't always include add-on specific default settings
+* BUG FIX: Change on mailchimp.com and can no longer encode the JSON w/o triggering error
+* BUG FIX: Don't use default 'Basic' as user for authentication against MailChimp API
+* BUG FIX: Triggered an enormous number of requests against the license verification services. Now caching data a bit better (I hope)
+* BUG FIX: PHP Notice while processing when the license is scheduled to expire/be renewed
+* BUG FIX: Check License button is too big
+* BUG FIX: Updated license SKU info
+* BUG FIX: Didn't properly handle turning off checkbox options from 3rd party modules/plug-ins
+* BUG FIX: Loading settings page shouldn't force uncached license check
+* BUG FIX: Refactored load_list_data() method - shared between all modules so now in base class
+* BUG FIX: Didn't process events properly in JS files
 
 == 4.1.3 ==
 

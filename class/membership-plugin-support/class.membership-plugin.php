@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017-2019 - Eighty / 20 Results by Wicked Strong Chicks.
+ * Copyright (c) 2017-2020 - Eighty / 20 Results by Wicked Strong Chicks.
  * ALL RIGHTS RESERVED
  *
  * This program is free software: you can redistribute it and/or modify
@@ -33,28 +33,28 @@ use E20R\Utilities\Utilities;
  * @package E20R\MailChimp\Membership_Support
  */
 abstract class Membership_Plugin {
-	
+
 	/**
 	 * @var null|Membership_Plugin
 	 */
 	private static $instance = null;
-	
+
 	/**
 	 * Membership_Plugin constructor.
 	 */
 	private function __construct() {
 	}
-	
+
 	/**
 	 * Return or instantiate the Membership_PLugin abstract class
 	 *
 	 * @return Membership_Plugin|null
 	 */
 	public static function get_instance() {
-		
+
 		return self::$instance;
 	}
-	
+
 	/**
 	 * Test whether or not to load the specified membership plugin support (by plugin slug)
 	 *
@@ -63,104 +63,107 @@ abstract class Membership_Plugin {
 	 * @return bool
 	 */
 	public function load_this_membership_plugin( $plugin_slug ) {
-		
+
 		$mc_api = MailChimp_API::get_instance();
 		$utils = Utilities::get_instance();
-		
+
 		$utils->log("Loading option for 'membership_plugin' {$plugin_slug}");
 		$membership_plugin = $mc_api->get_option( 'membership_plugin' );
-		
+
 		if ( false === strpos( $plugin_slug, $membership_plugin ) ) {
 			$utils->log("Not loading filters for {$plugin_slug}");
 			return false;
 		}
-		
+
 		$utils->log("Selected plugin is {$membership_plugin}");
 		return true;
 	}
-	
+
 	/**
 	 * Add to Checkout page: Optional mailing lists a new member can add/subscribe to
 	 */
 	public function view_additional_lists() {
-		
+
 		$mc_api = MailChimp_API::get_instance();
 		$utils  = Utilities::get_instance();
-		
+
 		$api_key = $mc_api->get_option( 'api_key' );
-		
+
 		// Can we access the MailChimp API?
 		if ( ! empty( $api_key ) ) {
-			
+
 			if ( empty( $mc_api ) ) {
-				
+
 				$utils->add_message( __( "Unable to load MailChimp API interface", Controller::plugin_slug ), 'error', 'frontend' );
 				$utils->log("Unable to load MailChimp API class!");
 				return;
 			}
-			
+
 			$mc_api->set_key();
 		} else {
 			return;
 		}
-		
+
 		$additional_lists = $mc_api->get_option( 'additional_lists' );
-		
+
 		//are there additional lists?
 		if ( empty( $additional_lists ) ) {
 			$utils->log( "No additional lists found!" );
-			
+
 			return;
 		}
-		
+
 		//okay get through API
 		$lists = $mc_api->get_all_lists();
-		
+
 		//no lists?
 		if ( empty( $lists ) ) {
 			$utils->log( "Didn't actually find any lists at all.." );
-			
+
 			return;
 		}
-		
+
 		$utils->log( "Lists on local system: " . print_r( $lists, true ) );
-		
+
 		$additional_lists_array = array();
 		foreach ( $lists as $list_id => $list_config ) {
-			
+
 			if ( ! empty( $additional_lists ) ) {
-				
+
 				foreach ( $additional_lists as $additional_list ) {
-					
+
 					if ( $list_config['id'] == $additional_list ) {
 						$additional_lists_array[] = $list_config;
 					}
 				}
 			}
 		}
-		
+
 		// $this->add_opt_in_option();
-		
+
 		// No additional lists configured? Then return quietly
 		if ( empty( $additional_lists_array ) ) {
 			$utils->log( "Have no additional lists to worry about" );
-			
+
 			return;
 		}
-		
+
 		echo Member_Handler_View::addl_list_choice($additional_lists_array );
 	}
-	
+
 	/**
 	 * Add any extra views / fields on the checkout page (if applicable)
 	 */
 	public function add_custom_views() {
-		
+
+        $utils = Utilities::get_instance();
+        $utils->log("Loading the checkout page info for the supported membership plugin");
+
 		do_action( 'e20r-mailchimp-additional-checkout-info' );
 	}
-	
+
 	abstract public function init_default_groups();
-	
+
 	/**
 	 * Return the Membership statuses that signify an inactive 'membership'
 	 *
@@ -169,13 +172,20 @@ abstract class Membership_Plugin {
 	 * @return array
 	 */
 	abstract public function statuses_inactive_membership( $statuses );
-	
+
+    /**
+     * Get the prefix for the membership plugin to support
+     *
+     * @param string $prefix
+     *
+     * @return string
+     */
 	public function set_prefix( $prefix ) {
-		
+
 		$mc_api = MailChimp_API::get_instance();
-		
+
 		$type = $mc_api->get_option( 'membership_plugin' );
-		
+
 		switch( $type ) {
 			case 'woocommerce':
 				$prefix = 'wc';
@@ -186,7 +196,7 @@ abstract class Membership_Plugin {
 			default:
 				$prefix = 'na';
 		}
-		
+
 		return $prefix;
 	}
 	/**
@@ -195,10 +205,44 @@ abstract class Membership_Plugin {
 	 * @param int $level_id
 	 */
 	public function on_update_membership_level( $level_id ) {
-		
+
 		do_action( 'e20r-mailchimp-membership-level-update', $level_id );
 	}
-	
+
+    /**
+     * Load interest group & merge field data from upstream or local cache
+     *
+     * @param array $level_lists - The list of membership level(s) to process
+     * @param \stdClass $level - The PMPro Membership level definition (or WooCommerce product definition converted to PMPro structure(s)
+     */
+	public function load_list_data( $level_lists, $level ) {
+
+	    $utils = Utilities::get_instance();
+	    $mc_api = MailChimp_API::get_instance();
+
+        foreach ( $level_lists as $list_id ) {
+
+            $utils->log( "List config for {$list_id} found" );
+
+            // Force update from upstream interest groups
+            if ( ! is_null( $list_id ) && false === ( $ig_sync_status = $mc_api->get_cache( $list_id, 'interest_groups', false ) ) ) {
+
+                $msg = sprintf( __( "Unable to refresh MailChimp Interest Group information for %s", Controller::plugin_slug ), $level->name );
+                $utils->add_message( $msg, 'error', 'backend' );
+
+                $utils->log( "Error: Unable to update interest group information for list {$list_id} from API server" );
+            }
+
+            // Force refresh of upstream merge fields
+            if ( ! is_null( $list_id ) && false === ( $mg_sync_status = $mc_api->get_cache( $list_id, 'merge_fields', false ) ) ) {
+
+                $msg = sprintf( __( "Unable to refresh MailChimp Merge Field information for %s", Controller::plugin_slug ), $level->name );
+                $utils->add_message( $msg, 'error', 'backend' );
+
+                $utils->log( "Error: Unable to update merge field information for list {$list_id} from API server" );
+            }
+        }
+    }
 	/**
 	 * Return old/previous membership levels the user (recently) had.
 	 *
@@ -210,7 +254,7 @@ abstract class Membership_Plugin {
 	 * @return int[]
 	 */
 	abstract public function recent_membership_levels_for_user( $levels_to_unsubscribe_from, $user_id, $current_user_level_ids, $statuses );
-	
+
 	/**
 	 * Returns the membership level ID that is currently being assigned to the member (during checkout)
 	 *
@@ -221,7 +265,7 @@ abstract class Membership_Plugin {
 	 * @return mixed
 	 */
 	abstract public function new_user_level_assigned( $level_id, $user_id, $order );
-	
+
 	/**
 	 * Load any plugin specific filters needed to manage interest group settings, merge fields, etc
 	 *
@@ -230,7 +274,7 @@ abstract class Membership_Plugin {
 	 * @return mixed
 	 */
 	abstract public function plugin_load( $on_checkout_page );
-	
+
 	/**
 	 * Return the Membership Level definition
 	 *
@@ -240,7 +284,7 @@ abstract class Membership_Plugin {
 	 * @return \stdClass
 	 */
 	abstract public function get_level_definition( $level_info, $level_id );
-	
+
 	/**
 	 * Returns an array of (all) membership plugin level definitions
 	 *
@@ -249,12 +293,12 @@ abstract class Membership_Plugin {
 	 * @return array
 	 */
 	abstract public function all_membership_level_defs( $levels );
-	
+
 	/**
 	 * Add membership specific filter handlers for the e20r-mailchimp-
 	 */
 	abstract public function load_hooks();
-	
+
 	/**
 	 * Add the current plugin to the list of supported plugin options
 	 *
@@ -263,7 +307,7 @@ abstract class Membership_Plugin {
 	 * @return array
 	 */
 	abstract public function add_supported_plugin( $plugin_list );
-	
+
 	/**
 	 * Test whether a/the membership module is active
 	 *
@@ -272,7 +316,7 @@ abstract class Membership_Plugin {
 	 * @return bool
 	 */
 	abstract public function has_membership_plugin( $is_active );
-	
+
 	/**
 	 * Return the primary membership level info for the user ID
 	 *
@@ -282,7 +326,7 @@ abstract class Membership_Plugin {
 	 * @return \stdClass|null
 	 */
 	abstract public function primary_membership_level( $level, $user_id );
-	
+
 	/**
 	 * Return all membership level IDs the user ID has assigned to them
 	 *
@@ -292,7 +336,7 @@ abstract class Membership_Plugin {
 	 * @return int[]
 	 */
 	abstract public function membership_level_ids_for_user( $level_ids, $user_id );
-	
+
 	/**
 	 * Return any level/category history for the user
 	 *
@@ -302,7 +346,7 @@ abstract class Membership_Plugin {
 	 * @return int[]
 	 */
 	abstract public function get_level_history_for_user( $level_ids, $user_id );
-	
+
 	/**
 	 * Return the most recent Membership level for the user
 	 *
