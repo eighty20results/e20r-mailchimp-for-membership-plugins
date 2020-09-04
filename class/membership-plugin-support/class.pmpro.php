@@ -487,6 +487,7 @@ class PMPro extends Membership_Plugin {
 
 		if ( true === $this->load_this_membership_plugin( 'pmpro' ) && !empty( $user ) && !empty( $level_id ) ) {
 
+		    /** FIXME: Should use the pmpro_getMembershipLevelsForUser() function to support MMPU */
 			$level = pmpro_getMembershipLevelForUser( $user->ID );
 
 			$level_fields = array(
