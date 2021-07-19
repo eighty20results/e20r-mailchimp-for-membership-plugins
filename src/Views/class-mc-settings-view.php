@@ -1,4 +1,23 @@
 <?php
+/*
+ * Copyright (c) 2021. - Eighty / 20 Results by Wicked Strong Chicks.
+ * ALL RIGHTS RESERVED
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /**
  * Copyright (c) 2020. - Eighty / 20 Results by Wicked Strong Chicks.
  * ALL RIGHTS RESERVED
@@ -18,13 +37,13 @@
  *
  */
 
-namespace E20R_Email_Memberships;
+namespace E20R\MailChimp\Views;
 
 
 use E20R\MailChimp\Controller;
-use E20R\MailChimp\MailChimp_API;
-use E20R\MailChimp\MC_Settings;
-use E20R\MailChimp\Member_Handler;
+use E20R\MailChimp\Server\MailChimp_API;
+use E20R\MailChimp\Admin\MC_Settings;
+use E20R\MailChimp\Handlers\Member_Handler;
 use E20R\Utilities\Licensing\Licensing;
 use E20R\Utilities\Utilities;
 

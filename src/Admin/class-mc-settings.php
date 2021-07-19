@@ -1,4 +1,23 @@
 <?php
+/*
+ * Copyright (c) 2021. - Eighty / 20 Results by Wicked Strong Chicks.
+ * ALL RIGHTS RESERVED
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /**
  * Copyright (c) 2017-2019 - Eighty / 20 Results by Wicked Strong Chicks.
  * ALL RIGHTS RESERVED
@@ -17,12 +36,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace E20R\MailChimp;
+namespace E20R\MailChimp\Admin;
 
+use E20R\MailChimp\Controller;
+use E20R\MailChimp\Server\Interest_Groups;
 use E20R\Utilities\Cache;
 use E20R\Utilities\Utilities;
-use E20R\Utilities\Licensing\Licensing;
-use E20R\Utilities\Licensing\License_Settings;
+use E20R\MailChimp\Handlers\Member_Handler;
+use E20R\MailChimp\Server\MailChimp_API;
+
 
 class MC_Settings {
 
@@ -43,7 +65,7 @@ class MC_Settings {
     public static function get_instance() {
 
         if ( is_null( self::$instance ) ) {
-            self::$instance = new self;
+            self::$instance = new self();
         }
 
         return self::$instance;
@@ -349,7 +371,7 @@ class MC_Settings {
                 }
 
                 $new_field                = new \stdClass();
-                $new_field->is_serialized = ( $is_serialized === false ? false : true );
+                $new_field->is_serialized = !($is_serialized === false);
                 $new_field->field_name    = $field_name;
 
                 $meta_fields[ $field_name ] = $new_field;
@@ -418,7 +440,6 @@ class MC_Settings {
         }
 
         wp_send_json_success();
-        wp_die();
     }
 
     /**
@@ -437,7 +458,6 @@ class MC_Settings {
             $utils->add_message( $msg, 'error', 'backend' );
             $utils->log( $msg );
             wp_send_json_error( $msg );
-            wp_die();
         }
 
         wp_verify_nonce( 'e20rmc', "e20rmc_refresh_{$list_id}" );
@@ -458,7 +478,6 @@ class MC_Settings {
             $utils->add_message( $error_msg, 'error', 'backend' );
             $utils->log( $error_msg );
             wp_send_json_error( $error_msg );
-            wp_die();
         }
 
         /*
@@ -483,7 +502,6 @@ class MC_Settings {
             $utils->log( "Error: {$msg}" );
 
             wp_send_json_error( $msg );
-            wp_die();
         }
 
         // Force update of upstream interest groups
@@ -494,7 +512,6 @@ class MC_Settings {
 
             $utils->log( "Error: Unable to update interest group information" );
             wp_send_json_error( $msg );
-            wp_die();
         }
 
         // Force refresh of upstream merge fields
@@ -505,14 +522,12 @@ class MC_Settings {
 
             $utils->log( "Error: Unable to update merge field information for list {$list_id} from API server" );
             wp_send_json_error( $msg );
-            wp_die();
         }
 
         // $mg_class->get_from_remote( $list_id, true );
 
         $utils->clear_buffers();
         wp_send_json_success();
-        wp_die();
 
     }
 }

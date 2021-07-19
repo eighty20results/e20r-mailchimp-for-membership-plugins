@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace E20R\MailChimp\Membership_Support;
+namespace E20R\MailChimp\Plugin_Support;
 
 use E20R\MailChimp\Interest_Groups;
 use E20R\MailChimp\MailChimp_API;

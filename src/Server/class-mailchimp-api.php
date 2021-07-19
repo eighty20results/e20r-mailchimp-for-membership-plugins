@@ -1,5 +1,24 @@
 <?php
 /*
+ * Copyright (c) 2021. - Eighty / 20 Results by Wicked Strong Chicks.
+ * ALL RIGHTS RESERVED
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/*
  * License:
 
 	Copyright 2016-2019 - Eighty / 20 Results by Wicked Strong Chicks, LLC (thomas@eighty20results.com)
@@ -18,7 +37,7 @@
 	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-namespace E20R\MailChimp;
+namespace E20R\MailChimp\Server;
 
 use E20R\Utilities\Utilities;
 use E20R\Utilities\Cache;
@@ -235,7 +254,7 @@ class MailChimp_API {
 		$request = array(
 			'method'     => $command,
 			'user-agent' => self::$user_agent,
-			'timeout'    => isset( $this->url_args['timeout'] ) ? $this->url_args['timeout'] : $this->default_timeout,
+			'timeout'    => $this->url_args['timeout'] ?? $this->default_timeout,
 			'headers'    => $this->url_args['headers'],
 		);
 
@@ -271,7 +290,7 @@ class MailChimp_API {
 
 		$end_of_request = current_time( 'timestamp' );
 
-		$current_timeout_limit = floor( ( isset( $request['timeout'] ) ? $request['timeout'] : $this->default_timeout ) * 0.8 );
+		$current_timeout_limit = floor( ( $request['timeout'] ?? $this->default_timeout ) * 0.8 );
 		$time_of_request       = ( $end_of_request - $start_of_request );
 		$max_php_execution     = ( intval( ini_get( 'max_execution_time' ) ) * 0.5 );
 
@@ -462,10 +481,10 @@ class MailChimp_API {
 				$defaults = $this->get_default_options();
 				$utils->log( "Defaults contain " . count( $defaults ) . " options. Processing {$name}" );
 
-				$this->options[ $name ] = isset( $defaults[ $name ] ) ? $defaults[ $name ] : null;
+				$this->options[ $name ] = $defaults[$name] ?? null;
 			}
 
-			return isset( $this->options[ $name ] ) ? $this->options[ $name ] : null;
+			return $this->options[$name] ?? null;
 		} else {
 			if ( empty( $this->options ) ) {
 				$this->options = $this->get_default_options();
@@ -1127,7 +1146,7 @@ class MailChimp_API {
 
 			$utils->log( "Have a list config and a list ID ({$list_id})..." );
 
-			if ( empty( $list_conf[ $list_id ] ) ) {
+			if ( ! isset( $list_conf[ $list_id ] ) ) {
 				$list_conf = $this->create_default_list_conf( $list_id );
 			}
 

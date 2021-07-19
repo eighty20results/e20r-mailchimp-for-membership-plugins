@@ -49,7 +49,7 @@ require_once plugin_dir_path( __FILE__ ) . "class-activateutilitiesplugin.php";
 
 if ( ! apply_filters( 'e20r_utilities_module_installed', false ) ) {
 
-    $required_plugin = $required_plugin = __( "E20R MailChimp Interest Groups for Paid Memberships Pro (and WooCommerce)", 'e20r-mailchimp-for-membership-plugins' );;
+    $required_plugin = __( "E20R MailChimp Interest Groups for Paid Memberships Pro (and WooCommerce)", 'e20r-mailchimp-for-membership-plugins' );;
 
     if ( false === \E20R\Utilities\ActivateUtilitiesPlugin::attempt_activation() ) {
         add_action( 'admin_notices', function () use ( $required_plugin ) {
@@ -112,16 +112,23 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
         public static $plugin;
 
 		/**
+		 * Server license object
+		 *
 		 * @var null|Licensing
 		 */
         private $licensing = null;
+
+		/**
+		 * Client license object
+		 *
+		 * @var null|Mailchimp_License $license_client
+		 */
+        private $license_client = null;
 
         /**
          * Controller constructor.
          */
         private function __construct() {
-
-            add_filter( 'e20r-licensing-text-domain', array( $this, 'get_plugin_name' ) );
         }
 
         /**
@@ -141,8 +148,10 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
         public static function get_instance() {
 
             if ( is_null( self::$instance ) ) {
-                self::$instance = new self;
-                self::$instance->licensing = new Licensing();
+                self::$instance = new self();
+                self::$instance->licensing = new Licensing( 'E20R_MC' );
+                self::$instance->license_client = new Mailchimp_License();
+				add_filter( 'e20r-licensing-text-domain', array( self::$instance, 'get_plugin_name' ) );
             }
 
             return self::$instance;
@@ -166,7 +175,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
             add_action( 'init', array( User_Handler::get_instance(), 'load_actions' ), 10 );
 
             if ( class_exists( 'E20R\MailChimp\Licensing\Mailchimp_License' ) ) {
-                add_action( 'init', array( Mailchimp_License::get_instance(), 'load_hooks' ), 99 );
+                add_action( 'init', array( $this->license_client, 'load_hooks' ), 99 );
             }
 
             add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );

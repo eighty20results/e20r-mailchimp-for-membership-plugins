@@ -1,4 +1,23 @@
 <?php
+/*
+ * Copyright (c) 2021. - Eighty / 20 Results by Wicked Strong Chicks.
+ * ALL RIGHTS RESERVED
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /**
  * Copyright (c) 2020. - Eighty / 20 Results by Wicked Strong Chicks.
  * ALL RIGHTS RESERVED
@@ -18,23 +37,38 @@
  *
  */
 
-namespace E20R_Email_Memberships;
+namespace E20R\MailChimp\Admin;
 
 
 use E20R\MailChimp\Controller;
-use E20R\MailChimp\MailChimp_API;
-use E20R\MailChimp\MC_Settings;
-use E20R\Utilities\Licensing\License_Settings;
+use E20R\MailChimp\Server\MailChimp_API;
+use E20R\MailChimp\Admin\MC_Settings;
+use E20R\MailChimp\Views\MC_Settings_View;
 use E20R\Utilities\Licensing\Licensing;
 use E20R\Utilities\Utilities;
 
 class Admin_Setup {
 
     /**
-     * @var null|Admin_Setup $instance - The instance of the Admin_Setup class
+	 * The instance of the Admin_Setup class
+	 *
+     * @var null|Admin_Setup $instance
      */
     private static $instance = null;
 
+	/**
+	 * Instance of the License management class
+	 *
+	 * @var null|Licensing $licensing
+	 */
+    private $licensing = null;
+
+	/**
+	 * The utilities class
+	 *
+	 * @var null|Utilities $utils
+	 */
+    private $utils = null;
     /**
      * Get or instantiate and get the class
      *
@@ -43,7 +77,9 @@ class Admin_Setup {
     public static function get_instance() {
 
         if ( is_null( self::$instance ) ) {
-            self::$instance = new self();
+            self::$instance            = new self();
+            self::$instance->licensing = new Licensing( 'E20R_MC' );
+            self::$instance->utils 	   = Utilities::get_instance();
         }
 
         return self::$instance;
@@ -72,7 +108,6 @@ class Admin_Setup {
      */
     public function admin_init() {
 
-        $utils            = Utilities::get_instance();
         $mc_api           = MailChimp_API::get_instance();
         $mc_settings      = MC_Settings::get_instance();
         $mc_settings_view = MC_Settings_View::get_instance();
@@ -83,7 +118,7 @@ class Admin_Setup {
 
         if ( ! empty( $membership_option ) ) {
 
-            $utils->log( "Check to see if current interest group(s) and merge fields exist for {$membership_option}" );
+            $this->utils->log( "Check to see if current interest group(s) and merge fields exist for {$membership_option}" );
             do_action( 'e20r-mailchimp-init-default-groups' );
         }
 
@@ -283,22 +318,22 @@ class Admin_Setup {
             );
         }
 
-        $is_licensed   = Licensing::is_licensed( 'E20R_MC', false );
-        $plugin_loaded = $utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ||
-                         $utils->plugin_is_active( 'e20r-mailchimp-plus-debug/class.e20r-mailchimp-plus.php' );
+        $is_licensed   = $this->licensing->is_licensed( 'E20R_MC', false );
+        $plugin_loaded = $this->utils->plugin_is_active( 'e20r-mailchimp-plus/class.e20r-mailchimp-plus.php' ) ||
+                         $this->utils->plugin_is_active( 'e20r-mailchimp-plus-debug/class.e20r-mailchimp-plus.php' );
 
-        $utils->log( "The product is licensed: " . ( $is_licensed ? 'Yes' : 'No' ) );
-        $utils->log( "The Plus plugin is active: " . ( $plugin_loaded ? 'Yes' : 'No' ) );
+        $this->utils->log( "The product is licensed: " . ( $is_licensed ? 'Yes' : 'No' ) );
+        $this->utils->log( "The Plus plugin is active: " . ( $plugin_loaded ? 'Yes' : 'No' ) );
 
         if ( true === $is_licensed && true === $plugin_loaded ) {
 
-            $utils->log( "Loading licensed settings" );
+            $this->utils->log( "Loading licensed settings" );
 
             do_action( 'e20r-mailchimp-licensed-register-settings', 'e20r_mc_settings', 'e20r_mc_licensed' );
 
         } else if ( false === $is_licensed || false === $plugin_loaded ) {
 
-            $utils->log( "Won't load GUI settings for interest groups and merge fields" );
+            $this->utils->log( "Won't load GUI settings for interest groups and merge fields" );
             /*
             add_settings_section(
                 'e20r_mc_unlicensed_section',
@@ -316,7 +351,7 @@ class Admin_Setup {
             );
         }
 
-        License_Settings::register_settings();
+        $this->licensing->register();
     }
 
     /**
@@ -342,7 +377,8 @@ class Admin_Setup {
                 array( MC_Settings_View::get_instance(), 'settings_page' )
             );
         }
-        License_Settings::add_options_page();
+
+        $this->licensing->get_class( 'page' )->add_options_page();
     }
 
     /**

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017-2019 - Eighty / 20 Results by Wicked Strong Chicks.
+ * Copyright (c) 2017-2021 - Eighty / 20 Results by Wicked Strong Chicks.
  * ALL RIGHTS RESERVED
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,13 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace E20R\MailChimp\Membership_Support;
+namespace E20R\MailChimp\Plugin_Support;
 
-use E20R\MailChimp\Interest_Groups;
-use E20R\MailChimp\MailChimp_API;
-use E20R\MailChimp\Member_Handler;
+use E20R\MailChimp\Server\Interest_Groups;
+use E20R\MailChimp\Server\MailChimp_API;
+use E20R\MailChimp\Handlers\Member_Handler;
 use E20R\MailChimp\Controller;
-use E20R\MailChimp\Merge_Fields;
+use E20R\MailChimp\Server\Merge_Fields;
 use E20R\Utilities\Utilities;
 use E20R\Utilities\Cache;
 
@@ -37,6 +37,11 @@ class PMPro extends Membership_Plugin {
 	 */
 	private static $instance = null;
 
+	/**
+	 * Type of plugin (i.e. which Membership plugin is being used)
+	 *
+	 * @var string $plugin_type
+	 */
 	protected $plugin_type = 'pmpro';
 
 	/**
