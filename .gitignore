@@ -53,3 +53,4 @@ fabric.properties
 /test-ipn-handler.php
 /docker-env/e20r-mailchimp-plugin.sql
 /docker-env/e20r-mailchimp-for-membership-plugins.sql
+/composer.phar
