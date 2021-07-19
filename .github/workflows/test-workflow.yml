@@ -1,0 +1,43 @@
+name: Test of "Release to Eighty20Results.com" workflows
+
+on:
+  push:
+    branches:
+      - test_workflow*
+    tags:
+      - test_workflow*
+
+jobs:
+  # To push the release (sources) to the Eighty20Results.com plugin store
+  test_workflow:
+    name: Push plugin to eighty20results.com
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: eighty20results/Utilities
+          ref: test_workflow
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+      - name: Adding Known Hosts
+        run: ssh-keyscan -H -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+      - name: Build and test plugin
+        run: make build
+        env:
+          E20R_PLUGIN_NAME: 00-e20r-utilities
+          GITHUB_TOKEN: ${{ secrets.GITHUB }}
+          CONTAINER_ACCESS_TOKEN: ${{ secrets.CONTAINER_ACCESS_TOKEN }}
+      - name: Deploy plugin to download server
+        run: make deploy
+        env:
+          E20R_PLUGIN_NAME: 00-e20r-utilities
+          GITHUB_TOKEN: ${{ secrets.GITHUB }}
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          CONTAINER_ACCESS_TOKEN: ${{ secrets.CONTAINER_ACCESS_TOKEN }}
+          E20R_SSH_SERVER: ${{ secrets.SSH_HOST }}
+          E20R_SSH_USER: ${{ secrets.SSH_USER }}
+          E20R_SSH_PORT: ${{ secrets.SSH_PORT }}

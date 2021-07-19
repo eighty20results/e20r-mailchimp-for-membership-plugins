@@ -1,0 +1,145 @@
+name: Run Unit Tests when creating a PR
+
+# Run Unit Test when new PR is created
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+#  # Execute tests when creating a PR
+#  pr_tests_70:
+#    name: Pull Request related testing - PHP 7.0
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Setup PHP with Composer V2+
+#        uses: shivammathur/setup-php@v2
+#        with:
+#          php-version: '7.0'
+#          extensions: mbstring, xdebug
+#          tools: composer:v2
+#          coverage: pcov
+#      - name: Checkout repository
+#        uses: actions/checkout@v2
+#        with:
+#          repository: eighty20results/pmpro-import-members-from-csv
+#      - name: Run Code Standard Tests
+#        run: make code-standard-test
+#      - name: Run PHP Stan Tests
+#        run: make phpstan-test
+#      - name: Run the unit tests
+#        run: make unit-test
+#
+#  pr_tests_71:
+#    name: Pull Request related testing - PHP 7.1
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Setup PHP with Composer V2+
+#        uses: shivammathur/setup-php@v2
+#        with:
+#          php-version: '7.1'
+#          extensions: mbstring, xdebug
+#          tools: composer:v2
+#          coverage: pcov
+#      - name: Checkout repository
+#        uses: actions/checkout@v2
+#        with:
+#          repository: eighty20results/pmpro-import-members-from-csv
+#      - name: Run Code Standard Tests
+#        run: make code-standard-test
+#      - name: Run PHP Stan Tests
+#        run: make phpstan-test
+#      - name: Run the unit tests
+#        run: make unit-test
+
+  pr_tests_73:
+    name: Pull Request related testing - PHP 7.3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup PHP with Composer V2+
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.3'
+          extensions: mbstring, xdebug
+          tools: composer:v2
+          coverage: pcov
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: eighty20results/pmpro-import-members-from-csv
+      - name: Run Code Standard Tests
+        run: make code-standard-test
+      - name: Run PHP Stan Tests
+        run: make phpstan-test
+      - name: Run the unit tests
+        run: make unit-test
+
+  pr_tests_74:
+    name: Pull Request related testing - PHP 7.4
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup PHP with Composer V2+
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, xdebug
+          tools: composer:v2
+          coverage: pcov
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: eighty20results/pmpro-import-members-from-csv
+      - name: Run Code Standard Tests
+        run: make code-standard-test
+      - name: Run PHP Stan Tests
+        run: make phpstan-test
+      - name: Run the unit tests
+        run: make unit-test
+
+
+  pr_tests_80:
+    name: Pull Request related testing - PHP 8.0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup PHP with Composer V2+
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: mbstring, xdebug
+          tools: composer:v2
+          coverage: pcov
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: eighty20results/pmpro-import-members-from-csv
+      - name: Run Code Standard Tests
+        run: make code-standard-test
+      - name: Run PHP Stan Tests
+        run: make phpstan-test
+      - name: Run the unit tests
+        run: make unit-test
+
+#  pr_tests_81:
+#    name: Pull Request related testing - PHP 8.1
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Setup PHP with Composer V2+
+#        uses: shivammathur/setup-php@v2
+#        with:
+#          php-version: '8.1'
+#          extensions: mbstring, xdebug
+#          tools: composer:v2
+#          coverage: pcov
+#      - name: Checkout repository
+#        uses: actions/checkout@v2
+#        with:
+#          repository: eighty20results/pmpro-import-members-from-csv
+#      - name: Run Code Standard Tests
+#        run: make code-standard-test
+#      - name: Run PHP Stan Tests
+#        run: make phpstan-test
+#      - name: Run the unit tests
+#        run: make unit-test
