@@ -3,11 +3,11 @@
 Plugin Name: E20R MailChimp Interest Groups for Paid Memberships Pro (and WooCommerce)
 Plugin URI: https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins/
 Description: Use MailChimp Interest Groups and Merge Fields when adding members to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and/or MailChimp Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href="https://wordpress.org/plugins/paid-memberships-pro/">Paid Memberships Pro</a> and <a href="https://wordpress.org/plugins/woocommerce/">WooCommerce</a>
-Version: 5.0.1
+Version: 6.0.1
 WC requires at least: 3.3
-WC tested up to: 4.0
+WC tested up to: 5.6
 Requires at least: 4.5
-Tested up to: 5.4
+Tested up to: 5.6
 Author: Eighty/20 Results <thomas@eighty20results.com>
 Author URI: https://eighty20results.com/thomas-sjolshagen/
 Developer: Thomas Sjolshagen <thomas@eighty20results.com>
@@ -16,7 +16,7 @@ Text Domain: e20r-mailchimp-for-membership-plugins
 Domain Path: /languages
 License: GPLv2
 
-* Copyright (c) 2017-2020 - Eighty / 20 Results by Wicked Strong Chicks.
+* Copyright (c) 2017-2021 - Eighty / 20 Results by Wicked Strong Chicks.
 * ALL RIGHTS RESERVED
 *
 * This program is free software: you can redistribute it and/or modify
@@ -38,9 +38,27 @@ namespace E20R\MailChimp;
 
 use E20R\Utilities\GDPR_Enablement;
 use E20R\Utilities\Licensing\Licensing;
-use E20R\Utilities\Licensing\Mailchimp_License;
+use E20R\MailChimp\Licensing\Mailchimp_License;
 use E20R\Utilities\Utilities;
 use E20R_Email_Memberships\Admin_Setup;
+
+/**
+ * Load the required E20R Utilities Module functionality
+ */
+require_once plugin_dir_path( __FILE__ ) . "class-activateutilitiesplugin.php";
+
+if ( ! apply_filters( 'e20r_utilities_module_installed', false ) ) {
+
+    $required_plugin = $required_plugin = __( "E20R MailChimp Interest Groups for Paid Memberships Pro (and WooCommerce)", 'e20r-mailchimp-for-membership-plugins' );;
+
+    if ( false === \E20R\Utilities\ActivateUtilitiesPlugin::attempt_activation() ) {
+        add_action( 'admin_notices', function () use ( $required_plugin ) {
+            \E20R\Utilities\ActivateUtilitiesPlugin::plugin_not_installed( $required_plugin );
+        } );
+
+        return false;
+    }
+}
 
 /**
  * Deny TESTING the "GROUPINGS" entry in the `e20r_mailchimp_merge_fields` supplied array of merge fields
@@ -51,7 +69,7 @@ if ( ! defined( 'E20R_MC_TESTING' ) ) {
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_VERSION' ) ) {
-    define( 'E20R_MAILCHIMP_VERSION', '5.0.1' );
+    define( 'E20R_MAILCHIMP_VERSION', '6.0.1' );
 }
 
 if ( ! defined( 'E20R_MAILCHIMP_DIR' ) ) {
@@ -93,12 +111,17 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
          */
         public static $plugin;
 
+		/**
+		 * @var null|Licensing
+		 */
+        private $licensing = null;
+
         /**
          * Controller constructor.
          */
         private function __construct() {
+
             add_filter( 'e20r-licensing-text-domain', array( $this, 'get_plugin_name' ) );
-            add_action( 'init', array( Mailchimp_License::get_instance(), 'load_hooks' ), 99 );
         }
 
         /**
@@ -119,6 +142,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
 
             if ( is_null( self::$instance ) ) {
                 self::$instance = new self;
+                self::$instance->licensing = new Licensing();
             }
 
             return self::$instance;
@@ -134,12 +158,16 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
             self::$plugin = plugin_basename( __FILE__ );
 
             add_action( 'plugins_loaded', array( Admin_Setup::get_instance(), 'load_hooks' ) );
-            add_action( 'plugins_loaded', array( Licensing::get_instance(), 'load_hooks' ), 11 );
+            add_action( 'plugins_loaded', array( $this->licensing, 'load_hooks' ), 11 );
             add_action( "plugins_loaded", array( Member_Handler::get_instance(), "load_plugin" ), 12 );
             add_action( 'plugins_loaded', array( GDPR_Enablement::get_instance(), 'load_hooks' ), 98 );
             add_action( 'plugins_loaded', array( MC_Settings::get_instance(), 'load_actions' ), 99 );
 
-            add_action( 'init', array( User_Handler::get_instance(), 'load_actions' ) );
+            add_action( 'init', array( User_Handler::get_instance(), 'load_actions' ), 10 );
+
+            if ( class_exists( 'E20R\MailChimp\Licensing\Mailchimp_License' ) ) {
+                add_action( 'init', array( Mailchimp_License::get_instance(), 'load_hooks' ), 99 );
+            }
 
             add_action( 'admin_enqueue_scripts', array( $this, 'load_admin_styles' ) );
             add_action( 'wp_enqueue_scripts', array( $this, 'load_frontend_styles' ), 999 );
@@ -167,7 +195,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
             global $post;
 
             $on_login_page = ( $GLOBALS['pagenow'] === 'wp-login.php' && ! empty( $_REQUEST['action'] ) && $_REQUEST['action'] === 'register' );
-            $on_login_page = $on_login_page || ( isset( $post->post_content ) ? has_shortcode( $post->post_content, 'theme-my-login' ) : false );
+            $on_login_page = $on_login_page || ( isset($post->post_content) && has_shortcode($post->post_content, 'theme-my-login') );
 
             return $on_login_page;
         }
@@ -209,7 +237,7 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
                 );
                 update_option( "e20r_mc_settings", $options );
 
-            } else if ( ! empty( $options ) && ! isset( $options['unsubscribe'] ) ) {
+            } else if (! isset( $options['unsubscribe'] )) {
 
                 $options['unsubscribe'] = 2;
                 update_option( "e20r_mc_settings", $options );
@@ -363,42 +391,51 @@ if ( ! class_exists( 'E20R\MailChimp\Controller' ) ) {
             $c_name     = strtolower( preg_replace( '/_/', '-', $parts[ ( count( $parts ) - 1 ) ] ) );
             $base_paths = apply_filters( 'e20r-mailchimp-autoloader-paths', array( plugin_dir_path( __FILE__ ) . 'classes/' ) );
 
-            if ( file_exists( plugin_dir_path( __FILE__ ) . 'class/' ) ) {
-                $base_paths = apply_filters( 'e20r-mailchimp-autoloader-paths', array( plugin_dir_path( __FILE__ ) . 'class/' ) );
+            if ( file_exists( plugin_dir_path( __FILE__ ) . 'src/' ) ) {
+                $base_paths = apply_filters( 'e20r-mailchimp-autoloader-paths', array( plugin_dir_path( __FILE__ ) . 'src/' ) );
             }
 
-            $filename = "class.{$c_name}.php";
+            $filename = "class-{$c_name}.php";
 
             foreach ( $base_paths as $base_path ) {
-                $iterator = new \RecursiveDirectoryIterator( $base_path, \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveIteratorIterator::SELF_FIRST | \RecursiveIteratorIterator::CATCH_GET_CHILD | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS );
+                $iterator = new \RecursiveDirectoryIterator(
+                	$base_path,
+					\RecursiveDirectoryIterator::SKIP_DOTS |
+					\RecursiveIteratorIterator::SELF_FIRST |
+					\RecursiveIteratorIterator::CATCH_GET_CHILD |
+					\RecursiveDirectoryIterator::FOLLOW_SYMLINKS
+				);
 
                 /**
                  * Load class member files, recursively
                  */
-                $filter = new \RecursiveCallbackFilterIterator( $iterator, function ( $current, $key, $iterator ) use ( $filename ) {
+                $filter = new \RecursiveCallbackFilterIterator(
+                	$iterator,
+					function ( $current, $key, $iterator ) use ( $filename ) {
 
-                    $file_name = $current->getFilename();
+						$file_name = $current->getFilename();
 
-                    // Skip hidden files and directories.
-                    if ( $file_name[0] == '.' || $file_name == '..' ) {
-                        return false;
-                    }
+						// Skip hidden files and directories.
+						if ( $file_name[0] == '.' || $file_name == '..' ) {
+							return false;
+						}
 
-                    if ( $current->isDir() ) {
-                        // Only recurse into intended subdirectories.
-                        return $file_name() === $filename;
-                    } else {
-                        // Only consume files of interest.
-                        return strpos( $file_name, $filename ) === 0;
-                    }
-                } );
+						if ( $current->isDir() ) {
+							// Only recurse into intended subdirectories.
+							return $file_name() === $filename;
+						} else {
+							// Only consume files of interest.
+							return strpos( $file_name, $filename ) === 0;
+						}
+                	}
+                );
 
                 foreach ( new \ RecursiveIteratorIterator( $iterator ) as $f_filename => $f_file ) {
 
                     $class_path = $f_file->getPath() . "/" . $f_file->getFilename();
 
                     if ( $f_file->isFile() && false !== strpos( $class_path, $filename ) ) {
-                        require_once( $class_path );
+                        require_once $class_path;
                     }
                 }
             }
@@ -475,13 +512,12 @@ try {
 }
 register_activation_hook( __FILE__, array( Controller::get_instance(), "activation" ) );
 
-/** One-Click update support **/
-
-// Load one-click update support for v3.x BETA from custom repository
-Utilities::configureUpdateServerV4( 'e20r-mailchimp-for-membership-plugins', plugin_dir_path( __FILE__ ) . 'class.e20r-mailchimp-for-membership-plugins.php' );
-
-/** End of One-Click update support **/
-
 $GLOBALS['e20r_mc_error_msg'] = null;
 
 add_action( 'plugins_loaded', array( Controller::get_instance(), 'plugins_loaded' ), - 1 );
+
+/** One-Click update support **/
+if ( class_exists( 'E20R\Utilities\Utilities' ) ) {
+    Utilities::configure_update( 'e20r-mailchimp-for-membership-plugins', __FILE__ );
+}
+/** End of One-Click update support **/
