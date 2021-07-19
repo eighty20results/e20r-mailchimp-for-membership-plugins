@@ -1,1 +1,1 @@
-BUG FIX: Fatal error in the WooCommerce plugin helper class
+BUG FIX: Disabled excessive error_log() message (Thomas Sjolshagen)
