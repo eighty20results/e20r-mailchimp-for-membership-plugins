@@ -48,12 +48,16 @@
   "autoload": {
     "psr-4": {
         "E20R\\": "",
-        "E20R\\MailChimp\\": "./",
-        "E20R\\MailChimp\\Views\\": "src/Views",
-        "E20R\\MailChimp\\Plugin_Support\\": "src/Plugin-Support",
-        "E20R\\MailChimp\\Admin": "./src/Admin",
-        "E20R\\Test\\Unit\\": "tests/unit/testcases",
-        "E20R\\Test\\WPUnit\\": "tests/wpunit/testcases"
+        "E20R\\MC_Loader\\": "./",
+        "E20R\\MailChimp\\": "./src",
+        "E20R\\MailChimp\\Admin\\": "./src/Admin",
+        "E20R\\MailChimp\\Handlers\\": "./src/Handlers",
+        "E20R\\MailChimp\\Licensing\\": "./src/Licensing",
+        "E20R\\MailChimp\\Plugin_Support\\": "./src/Plugin-Support",
+        "E20R\\MailChimp\\Server\\": "./src/Server",
+        "E20R\\MailChimp\\Views\\": "./src/Views",
+        "E20R\\Test\\Unit\\": "./tests/unit/testcases",
+        "E20R\\Test\\WPUnit\\": "./tests/wpunit/testcases"
     }
   },
   "scripts": {
