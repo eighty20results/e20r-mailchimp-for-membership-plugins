@@ -1,0 +1,35 @@
+paths:
+    tests: tests
+    output: tests/_output
+    data: tests/_data
+    support: tests/_support
+    envs: tests/_envs
+actor_suffix: Tester
+extensions:
+    enabled:
+        - Codeception\Extension\RunFailed
+    commands:
+        - Codeception\Command\GenerateWPUnit
+        - Codeception\Command\GenerateWPRestApi
+        - Codeception\Command\GenerateWPRestController
+        - Codeception\Command\GenerateWPRestPostTypeController
+        - Codeception\Command\GenerateWPAjax
+        - Codeception\Command\GenerateWPCanonical
+        - Codeception\Command\GenerateWPXMLRPC
+params:
+    - tests/_envs/.env.testing
+settings:
+  lint: true
+  colors: true
+coverage:
+  enabled: true
+  show_uncovered: true
+  show_only_summary: true
+  include:
+    - src/utilities/*.php
+    - src/licensing/*.php
+    - ./class-loader.php
+  exclude:
+    - inc/*
+    - languages/*
+    - tests/*

@@ -1,0 +1,29 @@
+{
+  "config": {
+    "vendor-dir": "inc/"
+  },
+  "name": "eight20results/e20r-mailchimp-for-membership-plugins",
+  "type": "plugin",
+  "description": "Use MailChimp Interest Groups and Merge Fields when adding members to your MailChimp.com list(s) when they purchase, sign up, or register to get access your site/products. Segment users with Merge Tags and/or MailChimp Interest Groups. Include custom user meta data in the merge tags/merge fields. Supports <a href=\"https://wordpress.org/plugins/paid-memberships-pro/\">Paid Memberships Pro</a> and <a href=\"https://wordpress.org/plugins/woocommerce/\">WooCommerce</a>",
+  "keywords": ["wordpress", "mailchimp", "pmpro", "pmpro-mailchimp", "interest groups", "woocommerce", "woocommerce-mailchimp"],
+  "minimum-stability": "stable",
+  "homepage": "https://eighty20results.com/wordpress-plugins/e20r-mailchimp-for-membership-plugins",
+  "license": "GPLv2",
+  "authors": [
+    {
+      "name": "Thomas Sjolshagen",
+      "email": "thomas@eighty20results.com",
+      "homepage": "https://eighty20results.com/thomas-sjolshagen",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=7.0",
+    "yahnis-elsts/plugin-update-checker": ">=4.5",
+    "ext-curl": "*"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "*",
+    "wp-conding-standards/wpcs": "*"
+  }
+}

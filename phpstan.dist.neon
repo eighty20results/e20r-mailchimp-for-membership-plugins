@@ -1,0 +1,24 @@
+parameters:
+    level: 5
+    dynamicConstantNames:
+    	- E20R_LICENSING_VERSION
+    	- E20R_LICENSE_SERVER_URL
+    	- E20R_LICENSING_DEBUG
+    	- E20R_MISSING_SETTING
+    	- WP_PLUGIN_DIR
+    parallel:
+    	maximumNumberOfProcesses: 2
+    ignoreErrors:
+        # Uses func_get_args()
+        - '#^Function apply_filters(_ref_array)? invoked with [34567] parameters, 2 required\.$#'
+        - '#^Access to an undefined property object::\$cycle_period\.$#'
+        - '#^Constant WP_PLUGIN_DIR not found\.$#'
+    scanDirectories:
+        - inc/
+    paths:
+        - class-loader.php
+        - src/
+    bootstrapFiles:
+        - class-loader.php
+    excludePaths:
+        - tests/

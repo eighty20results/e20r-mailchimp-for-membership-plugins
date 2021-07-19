@@ -1,0 +1,22 @@
+{
+  "name": "00-e20r-utilities",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/eighty20results/Utilities.git"
+  },
+  "version": "7.3",
+  "description": "E20R Better Members List for Paid Memberships Pro",
+  "homepage": "https://wordpress.org/plugins/00-e20r-utilities",
+  "bugs": {
+    "url": "https://github.com/eighty20results/Utilities/issues",
+    "email": "thomas@eighty20results.com"
+  },
+  "license": "GPL-2.0",
+  "author": {
+    "name": "Thomas Sjolshagen",
+    "email": "thomas@sjolshagen.net",
+    "url": "https://eighty20results.com/thomas-sjolshagen"
+  },
+  "dependencies": {
+  }
+}
