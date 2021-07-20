@@ -17,7 +17,7 @@ parameters:
         - inc/
     paths:
         - class.e20r-mailchimp-for-membership-plugins.php
-	- class-activateutilitiesplugin.php
+        - class-activateutilitiesplugin.php
         - src/
     bootstrapFiles:
         - class.e20r-mailchimp-for-membership-plugins.php
