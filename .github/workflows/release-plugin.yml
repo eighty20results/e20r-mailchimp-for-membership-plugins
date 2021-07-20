@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
-          repository: eighty20results/Utilities
+          repository: eighty20results/e20r-mailchimp-for-membership-plugins
           ref: main
 
       - name: Install SSH Key
