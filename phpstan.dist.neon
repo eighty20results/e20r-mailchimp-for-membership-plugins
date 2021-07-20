@@ -16,9 +16,10 @@ parameters:
     scanDirectories:
         - inc/
     paths:
-        - class-loader.php
+        - class.e20r-mailchimp-for-membership-plugins.php
+	- class-activateutilitiesplugin.php
         - src/
     bootstrapFiles:
-        - class-loader.php
+        - class.e20r-mailchimp-for-membership-plugins.php
     excludePaths:
         - tests/
